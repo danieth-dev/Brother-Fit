@@ -35,22 +35,23 @@ export async function render(el) {
 function renderKeyPrompt(el) {
   el.innerHTML = `
     <header class="page-head">
-      <h1>Gemini 3.8 Live</h1>
-      <p>Conecta tu API key para activar la conversacion en voz en tiempo real</p>
+      <h1>Fit AI · Gemini Live</h1>
+      <p>Compañera técnica por voz en tiempo real</p>
     </header>
 
     <div class="agent-key-card">
       <p class="agent-key-desc">
-        Fit utiliza el modelo <b>gemini-3.8-live</b> para dialogo bidireccional fluido con voz y memoria a largo plazo. 
+        Tu cuaderno de entrenamientos, series y marcas quedan <b>100% en tu teléfono</b> de forma local. 
+        Al activar la voz, tu audio se transmite a Google (Gemini Live) para el diálogo bidireccional. 
         Tu clave se guarda exclusivamente en tu dispositivo.
       </p>
       <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener" class="btn btn-block" id="btn-get-key">
-        ${icons.bolt({ size: 18 })} Obtener clave gratis en AI Studio
+        ${icons.bolt({ size: 18 })} Obtener clave gratis en Google AI Studio
       </a>
       <div class="field" style="margin-top:16px">
         <label class="field">
-          <span>API Key de Gemini (AQ... o AIza...)</span>
-          <input id="agent-key-input" type="password" placeholder="AQ... o AIza..." autocomplete="off" spellcheck="false">
+          <span>API Key de Gemini (AIza...)</span>
+          <input id="agent-key-input" type="password" placeholder="AIza..." autocomplete="off" spellcheck="false">
         </label>
       </div>
       <button class="btn btn-primary btn-block" id="btn-save-key" type="button" style="margin-top:12px">
@@ -83,8 +84,8 @@ function renderLiveChat(el, apiKey) {
   el.innerHTML = `
     <header class="page-head agent-chat-head">
       <div>
-        <h1>Fit <span class="chip chip-accent" style="font-size:10px;vertical-align:middle;margin-left:6px">3.8 LIVE</span></h1>
-        <p id="agent-status">Conectando con Gemini 3.8 Live...</p>
+        <h1>Fit <span class="chip chip-accent" style="font-size:10px;vertical-align:middle;margin-left:6px">LIVE</span></h1>
+        <p id="agent-status">Conectando con Gemini Live...</p>
       </div>
       <button class="agent-head-btn" data-action="memories" type="button" aria-label="Ver recuerdos" id="btn-memories">
         ${icons.bolt({ size: 20 })}
@@ -97,8 +98,8 @@ function renderLiveChat(el, apiKey) {
         ${icons.mic({ size: 28 })}
       </div>
       <div class="agent-live-info">
-        <strong id="agent-live-title">Hablar en tiempo real</strong>
-        <span id="agent-live-desc">Toca "Iniciar" para hablar directamente por voz con Fit</span>
+        <strong id="agent-live-title">Voz en tiempo real</strong>
+        <span id="agent-live-desc">Toca "Iniciar" para abrir la voz. En el descanso Fit te hablará; en la serie guarda silencio.</span>
       </div>
       <div style="display:flex;gap:6px;align-items:center">
         <button class="btn btn-primary btn-sm" id="btn-toggle-live" type="button">

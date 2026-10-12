@@ -12,7 +12,7 @@ import { db } from '../db.js';
 import { state } from '../store.js';
 import { getActiveWorkout, addSet, lastSetFor } from './workouts.js';
 
-const LIVE_MODEL = 'models/gemini-3.8-live';
+const LIVE_MODEL = 'models/gemini-2.5-flash-native-audio-preview-12-2025';
 const WS_URL = (apiKey) =>
   `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key=${apiKey}`;
 
@@ -148,6 +148,7 @@ async function buildSystemInstruction() {
     'CÓMO ASESORAS:\n' +
     '- Sin halago automático: celebra récords auténticos, pero no aplaudas cada respuesta.\n' +
     '- Si el atleta propone algo contraproducente, peligroso o basado en mitos, cuestiónalo con amabilidad y criterio científico.\n' +
+    '- REGLA DE DESCANSOS: Prohibido hablar por iniciativa propia durante los descansos entre series. Respirar no es un silencio que tengas que llenar. Solo hablas si el atleta te hace una pregunta o si la app te inyecta una orden explícita.\n' +
     '- Una sola corrección o foco técnico (cue) por turno, para que pueda aplicarlo en su siguiente serie sin sobrecarga mental.\n' +
     '- Tienes la herramienta registrar_serie: si el atleta pide registrar una serie (reps, peso, RPE), úsala inmediatamente.\n' +
     '- El atleta manda el tema: tus objetivos de registro jamás pisan lo que él decida consultar.\n' +
@@ -283,16 +284,16 @@ export class FitAgent {
     return this.#isLiveMode;
   }
 
-  /* --- Inyección de estado invisible (no se lee en voz alta) --- */
+  /* --- Inyección 2: Nota de estado invisible (turnComplete: false, no genera habla) --- */
   sendContext(note) {
     if (!this.connected) return;
     this.#send({
       clientContent: {
         turns: [{
           role: 'user',
-          parts: [{ text: `[CONTEXTO DE ENTRENAMIENTO - NO LEER EN VOZ ALTA]: ${note}. Usa esto únicamente como contexto para tus próximas intervenciones.` }],
+          parts: [{ text: `[CONTEXTO DE ENTRENAMIENTO - NO LO DIGAS EN VOZ ALTA]: ${note}. Usa esto únicamente como contexto para tus próximas intervenciones.` }],
         }],
-        turnComplete: true,
+        turnComplete: false,
       },
     });
   }

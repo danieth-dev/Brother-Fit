@@ -244,8 +244,10 @@ export async function render(el) {
       restEnd = Date.now() + restSecs * 1000;
 
       const curEx = exs.find((e) => e.id === exerciseId);
+      const exSetsCount = (detail?.groups?.find((g) => g.exercise.id === exerciseId)?.sets?.length ?? 0) + 1;
+      const prevMark = prev?.sets?.[0] ? `${fmtNum(prev.sets[0].peso)} kg × ${prev.sets[0].reps}` : 'ninguna';
       getActiveAgent()?.sendContext(
-        `Serie registrada en ${curEx?.nombre}: ${fmtNum(peso)} ${state.settings.unidad} × ${reps} reps${rpe ? ` (RPE ${rpe})` : ''}. Descanso iniciado: ${restSecs}s.`
+        `No lo digas. ${curEx?.nombre}, serie ${exSetsCount}, ${fmtNum(peso)} ${state.settings.unidad} × ${reps}, RPE ${rpe || 'no indicado'}, descanso ${restSecs} s, marca anterior ${prevMark}.`
       );
 
       if (peso > prevPR && prevPR > 0) {
@@ -284,12 +286,13 @@ function startTicker(el, w) {
     const rest = el.querySelector('#rest');
     if (rest) rest.innerHTML = restMarkup();
 
-    // Check-in por voz cuando el temporizador de descanso llega a 0
+    // Check-in por voz cuando el temporizador de descanso llega a 0 (saltar no lo dispara)
     if (restEnd > 0 && Math.ceil((restEnd - Date.now()) / 1000) <= 0) {
       restEnd = 0;
       const exName = state.activeExercise?.nombre || 'el ejercicio';
+      const curSets = el.querySelectorAll(`.group .sets li`).length;
       getActiveAgent()?.triggerCheckIn(
-        `El descanso de ${exName} acaba de terminar. Da un aviso corto de una sola oración indicando que el tiempo finalizó y pregunta si está listo para la siguiente serie. Luego escucha.`
+        `El descanso terminó. Una frase: sigue ${exName}, serie ${curSets + 1}. Después escuchá.`
       );
     }
   }, 1000);
