@@ -107,8 +107,15 @@ async function executeToolCall(name, args) {
     };
   }
   if (name === 'guardar_recuerdo') {
-    const id = await saveMemory(args.contenido);
-    return { ok: true, id, mensaje: `Recuerdo guardado con ID ${id}.` };
+    const raw = (args.contenido || '').trim();
+    // Filtro de integridad: no persistir marcas de peso, series ni reps en agentMemory.
+    // Solo guardar molestias físicas, cues/técnica, preferencias y objetivos del atleta.
+    const isWorkoutLog = /\b(\d+\s*(kg|kilos?|lb|libras?|reps?|series?|rpe))\b/i.test(raw);
+    if (isWorkoutLog) {
+      return { ok: true, mensaje: 'Las marcas de series y peso se gestionan automáticamente en el cuaderno local.' };
+    }
+    const id = await saveMemory(raw);
+    return { ok: true, id, mensaje: `Preferencia o nota técnica guardada con ID ${id}.` };
   }
   if (name === 'listar_recuerdos') {
     const mems = await loadAllMemories();
@@ -194,6 +201,9 @@ export class FitAgent {
   #sessionReady = false;
   #isSpeaking = false;
   #speechRec = null;
+  #isMuted = false;
+  #isUserSpeaking = false;
+  #pendingCheckIn = null;
 
   constructor(apiKey) {
     this.#apiKey = apiKey.trim();
@@ -284,6 +294,25 @@ export class FitAgent {
     return this.#isLiveMode;
   }
 
+  get isMuted() {
+    return this.#isMuted;
+  }
+
+  muteMic() {
+    this.#isMuted = true;
+    this.#speechRec?.abort?.();
+    this.#speechRec = null;
+    this.#emit('mic_muted');
+  }
+
+  unmuteMic() {
+    this.#isMuted = false;
+    this.#emit('mic_unmuted');
+    if (this.#isLiveMode && !this.#isSpeaking) {
+      this.#listenCycle();
+    }
+  }
+
   /* --- Inyección 2: Nota de estado invisible (turnComplete: false, no genera habla) --- */
   sendContext(note) {
     if (!this.connected) return;
@@ -298,9 +327,14 @@ export class FitAgent {
     });
   }
 
-  /* --- Evento del sistema para hablar (Check-in de temporizador) --- */
+  /* --- Inyección 3: Aviso de fin de descanso (turnComplete: true) --- */
   triggerCheckIn(instruction) {
     if (!this.connected) return;
+    // Si el atleta está hablando en este momento, retenemos la orden para no pisarlo
+    if (this.#isUserSpeaking) {
+      this.#pendingCheckIn = instruction;
+      return;
+    }
     this.#stopCurrentAudio();
     this.#send({
       clientContent: {
@@ -346,7 +380,7 @@ export class FitAgent {
   }
 
   #listenCycle() {
-    if (!this.#isLiveMode || !this.connected) return;
+    if (!this.#isLiveMode || !this.connected || this.#isMuted) return;
 
     // Si Fit está hablando, no escuchamos aún para evitar feedback de audio
     if (this.#isSpeaking) return;
@@ -360,10 +394,12 @@ export class FitAgent {
     let finalTranscript = '';
 
     this.#speechRec.onstart = () => {
+      this.#isUserSpeaking = false;
       this.#emit('listening');
     };
 
     this.#speechRec.onresult = (e) => {
+      this.#isUserSpeaking = true;
       let interim = '';
       for (let i = e.resultIndex; i < e.results.length; ++i) {
         if (e.results[i].isFinal) {
@@ -376,21 +412,27 @@ export class FitAgent {
     };
 
     this.#speechRec.onerror = (e) => {
-      // Si no hubo habla (no-speech) simplemente reiniciamos el ciclo
-      if (e.error === 'no-speech' && this.#isLiveMode && !this.#isSpeaking) {
+      // Si no hubo habla (no-speech) simplemente reiniciamos el ciclo si no está muteado
+      if (e.error === 'no-speech' && this.#isLiveMode && !this.#isSpeaking && !this.#isMuted) {
         this.#listenCycle();
       }
     };
 
     this.#speechRec.onend = () => {
+      this.#isUserSpeaking = false;
       if (finalTranscript.trim()) {
         const text = finalTranscript.trim();
+        this.#pendingCheckIn = null; // Si el atleta ya habló, descartamos el check-in automático
         this.#emit('user_speaking_finished', text);
-        // Enviamos la frase a Gemini 3.8 Live en la sesión activa
         this.sendText(text);
-      } else if (this.#isLiveMode && !this.#isSpeaking) {
-        // Reiniciamos escucha continua si no se dijo nada
-        setTimeout(() => this.#listenCycle(), 300);
+      } else {
+        if (this.#pendingCheckIn) {
+          const checkIn = this.#pendingCheckIn;
+          this.#pendingCheckIn = null;
+          this.triggerCheckIn(checkIn);
+        } else if (this.#isLiveMode && !this.#isSpeaking && !this.#isMuted) {
+          setTimeout(() => this.#listenCycle(), 300);
+        }
       }
     };
 

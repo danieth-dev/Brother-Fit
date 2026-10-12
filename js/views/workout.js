@@ -91,6 +91,17 @@ export async function render(el) {
     selectedEx ? prByExercise(selectedEx) : null,
   ]);
 
+  const curExSets = detail?.groups?.find((g) => g.exercise.id === selectedEx)?.sets || [];
+  const nextSetNum = curExSets.length + 1;
+  const lastSet = curExSets[curExSets.length - 1];
+  const expectedPeso = lastSet?.peso ?? prev?.sets?.[0]?.peso ?? 0;
+  const prevMark = prev?.sets?.[0] ? `${fmtNum(prev.sets[0].peso)} ${unidad} × ${prev.sets[0].reps}` : 'ninguna';
+
+  // Inyección 2: Hueco explícito de la serie abierta y pendiente
+  getActiveAgent()?.sendContext(
+    `No lo digas en voz alta. ${currentExObj?.nombre}: serie ${nextSetNum} abierta y pendiente. Carga esperada: ${fmtNum(expectedPeso)} ${unidad}. Marca anterior: ${prevMark}. Si el atleta pide registrar serie, usa registrar_serie sobre esta serie ${nextSetNum}.`
+  );
+
   el.innerHTML = `
     <header class="page-head">
       <h1>Entreno</h1>
@@ -175,7 +186,11 @@ export async function render(el) {
       await deleteSet(Number(t.dataset.id));
       await render(el);
     },
-    'skip-rest': () => { restEnd = 0; el.querySelector('#rest').innerHTML = ''; },
+    'skip-rest': () => {
+      restEnd = 0;
+      el.querySelector('#rest').innerHTML = '';
+      getActiveAgent()?.muteMic();
+    },
     finish: async () => {
       if (!confirm('¿Terminar este entrenamiento?')) return;
       const summary = await finishWorkoutSummary(w.id);
@@ -243,12 +258,8 @@ export async function render(el) {
         : state.settings.descanso;
       restEnd = Date.now() + restSecs * 1000;
 
-      const curEx = exs.find((e) => e.id === exerciseId);
-      const exSetsCount = (detail?.groups?.find((g) => g.exercise.id === exerciseId)?.sets?.length ?? 0) + 1;
-      const prevMark = prev?.sets?.[0] ? `${fmtNum(prev.sets[0].peso)} kg × ${prev.sets[0].reps}` : 'ninguna';
-      getActiveAgent()?.sendContext(
-        `No lo digas. ${curEx?.nombre}, serie ${exSetsCount}, ${fmtNum(peso)} ${state.settings.unidad} × ${reps}, RPE ${rpe || 'no indicado'}, descanso ${restSecs} s, marca anterior ${prevMark}.`
-      );
+      // El descanso comenzó: abrir micrófono para interacción durante la pausa
+      getActiveAgent()?.unmuteMic();
 
       if (peso > prevPR && prevPR > 0) {
         toast(`🏆 ¡Nuevo PR! ${fmtNum(peso)} ${state.settings.unidad}`);
@@ -289,6 +300,7 @@ function startTicker(el, w) {
     // Check-in por voz cuando el temporizador de descanso llega a 0 (saltar no lo dispara)
     if (restEnd > 0 && Math.ceil((restEnd - Date.now()) / 1000) <= 0) {
       restEnd = 0;
+      getActiveAgent()?.muteMic(); // El descanso finalizó: la serie física va a comenzar, muteamos el micro
       const exName = state.activeExercise?.nombre || 'el ejercicio';
       const curSets = el.querySelectorAll(`.group .sets li`).length;
       getActiveAgent()?.triggerCheckIn(
