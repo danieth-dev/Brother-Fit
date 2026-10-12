@@ -3,7 +3,8 @@
  * Real-time voice conversation with precision transcription + live voice playback + long-term memory.
  */
 
-import { FitAgent, loadAllMemories, deleteMemory } from '../services/agent.js';
+import { FitAgent, getActiveAgent, loadAllMemories, deleteMemory } from '../services/agent.js';
+import { state } from '../store.js';
 import { db } from '../db.js';
 import { icons } from '../utils/icons.js';
 import { toast, esc } from '../utils/dom.js';
@@ -71,7 +72,11 @@ function renderKeyPrompt(el) {
 
 /* --- Live Chat Interface --- */
 function renderLiveChat(el, apiKey) {
-  const agent = new FitAgent(apiKey);
+  let agent = getActiveAgent();
+  const isExisting = agent && agent.connected;
+  if (!agent) {
+    agent = new FitAgent(apiKey);
+  }
   let currentBotText = '';
   let botBubble = null;
 
@@ -285,14 +290,23 @@ function renderLiveChat(el, apiKey) {
     }
   });
 
-  /* Conectar */
-  agent.connect().catch((err) => {
-    setStatus('Fallo al conectar', false);
-    toast('No se pudo conectar a Gemini 3.8 Live: ' + err.message);
-  });
-
-  /* Limpieza al salir de la vista: cuando el hash cambia, el agente ya no es necesario */
-  window.addEventListener('hashchange', () => agent.disconnect(), { once: true });
+  /* Conectar solo si no estaba ya conectado */
+  if (isExisting) {
+    setStatus('En línea · Conectado', true);
+    enableControls(true);
+    if (agent.isLiveMode) {
+      liveBanner.classList.add('active');
+      toggleLiveBtn.textContent = 'Detener';
+      toggleLiveBtn.className = 'btn btn-danger btn-sm';
+      liveTitle.textContent = 'Fit te está escuchando...';
+      liveDesc.textContent = 'Habla claro. El micro está abierto.';
+    }
+  } else {
+    agent.connect().catch((err) => {
+      setStatus('Fallo al conectar', false);
+      toast('No se pudo conectar a Gemini 3.8 Live: ' + err.message);
+    });
+  }
 }
 
 /* --- Drawer de Recuerdos --- */

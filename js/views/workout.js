@@ -1,7 +1,8 @@
 import {
-  getActiveWorkout, startWorkout, finishWorkout, deleteWorkout, listExercises, addExercise,
+  getActiveWorkout, startWorkout, finishWorkout, finishWorkoutSummary, deleteWorkout, listExercises, addExercise,
   addSet, deleteSet, getWorkoutDetail, lastSessionSetsFor, prByExercise, GRUPOS
 } from '../services/workouts.js';
+import { getActiveAgent, saveMemory } from '../services/agent.js';
 import { state } from '../store.js';
 import { delegate, forms, changes, toast, esc, num, fmtNum, go } from '../utils/dom.js';
 import { formatDuration, formatShort } from '../utils/dates.js';
@@ -80,6 +81,10 @@ export async function render(el) {
   const [exs, detail] = await Promise.all([listExercises(), getWorkoutDetail(w.id)]);
   if (!exs.some((e) => e.id === selectedEx)) selectedEx = exs[0]?.id ?? null;
   const unidad = state.settings.unidad;
+
+  state.activeWorkoutId = w.id;
+  const currentExObj = exs.find((e) => e.id === selectedEx);
+  state.activeExercise = currentExObj ? { id: currentExObj.id, nombre: currentExObj.nombre, grupo: currentExObj.grupo } : null;
 
   const [prev, pr] = await Promise.all([
     selectedEx ? lastSessionSetsFor(selectedEx) : null,
@@ -173,13 +178,23 @@ export async function render(el) {
     'skip-rest': () => { restEnd = 0; el.querySelector('#rest').innerHTML = ''; },
     finish: async () => {
       if (!confirm('¿Terminar este entrenamiento?')) return;
+      const summary = await finishWorkoutSummary(w.id);
+      if (summary.totalSets > 0) {
+        const fechaStr = new Date().toLocaleDateString('es');
+        await saveMemory(`Sesión completada el ${fechaStr}: ${summary.detalles}. Volumen total: ${summary.volumenTotal} ${state.settings.unidad} en ${summary.totalSets} series.`);
+        getActiveAgent()?.sendContext(`La sesión de entrenamiento ha finalizado. Resumen: ${summary.totalSets} series, volumen total ${summary.volumenTotal} ${state.settings.unidad}.`);
+      }
       await finishWorkout(w.id);
+      state.activeWorkoutId = null;
+      state.activeExercise = null;
       restEnd = 0;
       go(`/history/${w.id}`);
     },
     discard: async () => {
       if (!confirm('¿Descartar este entrenamiento y todas sus series?')) return;
       await deleteWorkout(w.id);
+      state.activeWorkoutId = null;
+      state.activeExercise = null;
       restEnd = 0;
       await render(el);
     }
@@ -188,6 +203,9 @@ export async function render(el) {
   changes(el, {
     exercise: async (t) => {
       selectedEx = Number(t.value);
+      const curEx = exs.find((e) => e.id === selectedEx);
+      state.activeExercise = curEx ? { id: curEx.id, nombre: curEx.nombre, grupo: curEx.grupo } : null;
+      getActiveAgent()?.sendContext(`Ejercicio seleccionado: ${curEx?.nombre} (${curEx?.grupo}).`);
       // Actualizar panel sin re-render completo
       const [p, prData] = await Promise.all([lastSessionSetsFor(selectedEx), prByExercise(selectedEx)]);
       const panel = el.querySelector('#prev-session-panel');
@@ -225,6 +243,11 @@ export async function render(el) {
         : state.settings.descanso;
       restEnd = Date.now() + restSecs * 1000;
 
+      const curEx = exs.find((e) => e.id === exerciseId);
+      getActiveAgent()?.sendContext(
+        `Serie registrada en ${curEx?.nombre}: ${fmtNum(peso)} ${state.settings.unidad} × ${reps} reps${rpe ? ` (RPE ${rpe})` : ''}. Descanso iniciado: ${restSecs}s.`
+      );
+
       if (peso > prevPR && prevPR > 0) {
         toast(`🏆 ¡Nuevo PR! ${fmtNum(peso)} ${state.settings.unidad}`);
       }
@@ -260,5 +283,14 @@ function startTicker(el, w) {
     elapsed.textContent = formatDuration(Date.now() - w.startedAt);
     const rest = el.querySelector('#rest');
     if (rest) rest.innerHTML = restMarkup();
+
+    // Check-in por voz cuando el temporizador de descanso llega a 0
+    if (restEnd > 0 && Math.ceil((restEnd - Date.now()) / 1000) <= 0) {
+      restEnd = 0;
+      const exName = state.activeExercise?.nombre || 'el ejercicio';
+      getActiveAgent()?.triggerCheckIn(
+        `El descanso de ${exName} acaba de terminar. Da un aviso corto de una sola oración indicando que el tiempo finalizó y pregunta si está listo para la siguiente serie. Luego escucha.`
+      );
+    }
   }, 1000);
 }

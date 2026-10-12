@@ -50,6 +50,28 @@ export async function finishWorkout(id) {
   await db.remove('meta', 'activeWorkoutId');
 }
 
+export async function finishWorkoutSummary(id) {
+  const [sets, exercises] = await Promise.all([
+    getSets(id),
+    listExercises()
+  ]);
+  const exMap = new Map(exercises.map((e) => [e.id, e]));
+  let volumen = 0;
+  const groups = {};
+  for (const s of sets) {
+    volumen += (s.peso || 0) * (s.reps || 0);
+    const exName = exMap.get(s.exerciseId)?.nombre || 'Ejercicio';
+    if (!groups[exName]) groups[exName] = [];
+    groups[exName].push(`${s.peso}kg×${s.reps}`);
+  }
+  const lines = Object.entries(groups).map(([name, sList]) => `${name} (${sList.join(', ')})`);
+  return {
+    totalSets: sets.length,
+    volumenTotal: Math.round(volumen),
+    detalles: lines.join('; ')
+  };
+}
+
 export async function deleteWorkout(id) {
   const sets = await getSets(id);
   await Promise.all(sets.map((s) => db.remove('sets', s.id)));

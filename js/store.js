@@ -5,7 +5,9 @@ export const DEFAULTS = { creatinaGramos: 5, descanso: 90, descansoMode: 'auto',
 
 export const state = {
   settings: { ...DEFAULTS },
-  installPrompt: null // evento beforeinstallprompt (Android/Chrome)
+  installPrompt: null, // evento beforeinstallprompt (Android/Chrome)
+  activeExercise: null, // { id, nombre, grupo }
+  activeWorkoutId: null,
 };
 
 export async function loadSettings() {

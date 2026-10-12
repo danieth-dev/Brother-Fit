@@ -9,12 +9,28 @@
  */
 
 import { db } from '../db.js';
+import { state } from '../store.js';
+import { getActiveWorkout, addSet, lastSetFor } from './workouts.js';
 
 const LIVE_MODEL = 'models/gemini-3.8-live';
 const WS_URL = (apiKey) =>
   `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key=${apiKey}`;
 
 const TOOL_DECLARATIONS = [
+  {
+    name: 'registrar_serie',
+    description:
+      'Registra una serie en el entrenamiento en curso. Llama a esta función cuando el atleta indique repeticiones, peso y/o RPE de la serie que acaba de hacer (ej: "anótame 8 reps", "hice 100 kg por 3 reps a RPE 9").',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        reps: { type: 'NUMBER', description: 'Número de repeticiones completadas.' },
+        peso: { type: 'NUMBER', description: 'Peso levantado en kg o lb. Si no se indica, usa el de la serie anterior.' },
+        rpe: { type: 'NUMBER', description: 'RPE opcional de 1 a 10 indicado por el atleta.' },
+      },
+      required: ['reps'],
+    },
+  },
   {
     name: 'guardar_recuerdo',
     description:
@@ -62,6 +78,34 @@ export async function deleteMemory(id) {
 }
 
 async function executeToolCall(name, args) {
+  if (name === 'registrar_serie') {
+    const active = await getActiveWorkout();
+    if (!active) return { error: 'No hay entrenamiento activo en este momento. Inicia una sesión primero.' };
+
+    const exId = state.activeExercise?.id;
+    if (!exId) return { error: 'No hay un ejercicio seleccionado en la pantalla de entrenamiento.' };
+
+    let peso = args.peso;
+    if (peso == null) {
+      const last = await lastSetFor(exId);
+      peso = last?.peso ?? 0;
+    }
+
+    const setObj = {
+      workoutId: active.id,
+      exerciseId: exId,
+      peso: Number(peso),
+      reps: Number(args.reps),
+    };
+    if (args.rpe != null) setObj.rpe = Number(args.rpe);
+
+    const setId = await addSet(setObj);
+    return {
+      ok: true,
+      setId,
+      mensaje: `Serie registrada: ${peso} ${state.settings.unidad} × ${args.reps} reps${args.rpe ? ` (RPE ${args.rpe})` : ''}.`,
+    };
+  }
   if (name === 'guardar_recuerdo') {
     const id = await saveMemory(args.contenido);
     return { ok: true, id, mensaje: `Recuerdo guardado con ID ${id}.` };
@@ -85,6 +129,11 @@ async function buildSystemInstruction() {
         memories.map((m) => `- [ID ${m.id}] ${m.contenido}`).join('\n')
       : '';
 
+  const activeEx = state.activeExercise;
+  const currentCtx = activeEx
+    ? `\n\nESTADO ACTUAL DEL ATLETA EN EL GYM:\n- Ejercicio actual en pantalla: ${activeEx.nombre} (${activeEx.grupo})\n`
+    : '';
+
   return (
     'Eres Fit, una compañera de entrenamiento y asesora técnica para un atleta adulto en Brother Fit. ' +
     'Estás conversando por voz en directo con él en el gimnasio. ' +
@@ -100,9 +149,11 @@ async function buildSystemInstruction() {
     '- Sin halago automático: celebra récords auténticos, pero no aplaudas cada respuesta.\n' +
     '- Si el atleta propone algo contraproducente, peligroso o basado en mitos, cuestiónalo con amabilidad y criterio científico.\n' +
     '- Una sola corrección o foco técnico (cue) por turno, para que pueda aplicarlo en su siguiente serie sin sobrecarga mental.\n' +
+    '- Tienes la herramienta registrar_serie: si el atleta pide registrar una serie (reps, peso, RPE), úsala inmediatamente.\n' +
     '- El atleta manda el tema: tus objetivos de registro jamás pisan lo que él decida consultar.\n' +
     '- Si menciona datos personales (peso, marcas, objetivos, molestias, suplementación), llama inmediatamente a guardar_recuerdo.\n' +
     '- Usa los recuerdos guardados de forma natural, sin recitarlos como un informe.' +
+    currentCtx +
     memBlock
   );
 }
@@ -125,6 +176,12 @@ function pcm16ToFloat32(bytes) {
   return float32;
 }
 
+let currentAgentInstance = null;
+
+export function getActiveAgent() {
+  return currentAgentInstance;
+}
+
 /* --- FitAgent Class (Gemini 3.8 Live Engine) --- */
 export class FitAgent {
   #apiKey = '';
@@ -139,6 +196,7 @@ export class FitAgent {
 
   constructor(apiKey) {
     this.#apiKey = apiKey.trim();
+    currentAgentInstance = this;
   }
 
   on(event, fn) { this.#handlers[event] = fn; return this; }
@@ -214,6 +272,7 @@ export class FitAgent {
     this.#ws?.close();
     this.#ws = null;
     this.#sessionReady = false;
+    if (currentAgentInstance === this) currentAgentInstance = null;
   }
 
   get connected() {
@@ -222,6 +281,35 @@ export class FitAgent {
 
   get isLiveMode() {
     return this.#isLiveMode;
+  }
+
+  /* --- Inyección de estado invisible (no se lee en voz alta) --- */
+  sendContext(note) {
+    if (!this.connected) return;
+    this.#send({
+      clientContent: {
+        turns: [{
+          role: 'user',
+          parts: [{ text: `[CONTEXTO DE ENTRENAMIENTO - NO LEER EN VOZ ALTA]: ${note}. Usa esto únicamente como contexto para tus próximas intervenciones.` }],
+        }],
+        turnComplete: true,
+      },
+    });
+  }
+
+  /* --- Evento del sistema para hablar (Check-in de temporizador) --- */
+  triggerCheckIn(instruction) {
+    if (!this.connected) return;
+    this.#stopCurrentAudio();
+    this.#send({
+      clientContent: {
+        turns: [{
+          role: 'user',
+          parts: [{ text: `[EVENTO DEL SISTEMA]: ${instruction}` }],
+        }],
+        turnComplete: true,
+      },
+    });
   }
 
   /* --- Text Turn in Live Session --- */
