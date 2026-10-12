@@ -130,7 +130,7 @@ export async function render(el) {
       <div class="grid-3">
         <label class="field"><span>Peso (${esc(unidad)})</span>
           <input name="peso" inputmode="decimal" autocomplete="off" required placeholder="0"></label>
-        <label class="field"><span>Repeticiones</span>
+        <label class="field"><span>Reps</span>
           <input name="reps" inputmode="numeric" pattern="[0-9]*" autocomplete="off" required placeholder="0"></label>
         <label class="field"><span>RPE</span>
           <input name="rpe" inputmode="decimal" autocomplete="off" placeholder="1–10"></label>
@@ -168,7 +168,7 @@ export async function render(el) {
       </form>
     </details>
 
-    <div class="grid-2" style="margin-top:26px;grid-template-columns:1fr 2fr">
+    <div class="grid-2 workout-actions">
       <button class="btn btn-danger" data-action="discard" type="button">
         ${icons.x({ size: 16 })} Descartar
       </button>

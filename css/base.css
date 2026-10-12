@@ -14,6 +14,7 @@ body {
   font: var(--fs-base)/1.5 var(--font);
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior-y: contain;
+  overflow-x: clip;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -45,8 +46,9 @@ body {
   margin: 0 auto;
   padding:
     calc(env(safe-area-inset-top, 0px) + 20px)
-    18px
-    calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px) + 28px);
+    max(18px, env(safe-area-inset-left, 0px))
+    calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px) + 28px)
+    max(18px, env(safe-area-inset-right, 0px));
   outline: none;
 }
 
