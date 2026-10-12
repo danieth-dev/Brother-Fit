@@ -2,7 +2,7 @@
  * Estrategia: precache del "app shell" + stale-while-revalidate.
  * Para publicar una versión nueva, sube VERSION (o solo cambia los archivos:
  * la copia en caché se refresca en segundo plano y se usa en la siguiente apertura). */
-const VERSION = 'v21';
+const VERSION = 'v22';
 const CACHE = `brother-ft-${VERSION}`;
 
 const ASSETS = [
