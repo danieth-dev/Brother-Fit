@@ -12,7 +12,7 @@ import { db } from '../db.js';
 import { state } from '../store.js';
 import { getActiveWorkout, addSet, lastSetFor } from './workouts.js';
 
-const LIVE_MODEL = 'models/gemini-2.5-flash-native-audio-preview-12-2025';
+const LIVE_MODEL = 'models/gemini-3.8-live';
 const WS_URL = (apiKey) =>
   `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key=${apiKey}`;
 
