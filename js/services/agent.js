@@ -77,6 +77,8 @@ export async function deleteMemory(id) {
   return db.remove('agentMemory', Number(id));
 }
 
+let lastRegisteredSetCall = { workoutId: null, exerciseId: null, reps: null, peso: null, time: 0, setId: null };
+
 async function executeToolCall(name, args) {
   if (name === 'registrar_serie') {
     const active = await getActiveWorkout();
@@ -85,33 +87,82 @@ async function executeToolCall(name, args) {
     const exId = state.activeExercise?.id;
     if (!exId) return { error: 'No hay un ejercicio seleccionado en la pantalla de entrenamiento.' };
 
-    let peso = args.peso;
-    if (peso == null) {
+    // Validar reps: número entero positivo entre 1 y 100 indicado por el atleta
+    const reps = Math.round(Number(args.reps));
+    if (!Number.isFinite(reps) || reps < 1 || reps > 100) {
+      return { error: 'Número de repeticiones no válido o no indicado por el atleta.' };
+    }
+
+    // Validar RPE si fue proporcionado: entre 1 y 10
+    let rpe = null;
+    if (args.rpe != null) {
+      const parsedRpe = Number(args.rpe);
+      if (Number.isFinite(parsedRpe) && parsedRpe >= 1 && parsedRpe <= 10) {
+        rpe = parsedRpe;
+      }
+    }
+
+    // Kilos: si la frase del atleta trajo carga válida, se usa esa; si no, la de la serie pendiente
+    let peso = null;
+    if (args.peso != null && Number.isFinite(Number(args.peso)) && Number(args.peso) >= 0 && Number(args.peso) <= 600) {
+      peso = Number(args.peso);
+    } else {
       const last = await lastSetFor(exId);
       peso = last?.peso ?? 0;
+    }
+
+    // Idempotencia: una segunda llamada sobre la misma serie abierta no escribe de nuevo
+    const now = Date.now();
+    if (
+      lastRegisteredSetCall.workoutId === active.id &&
+      lastRegisteredSetCall.exerciseId === exId &&
+      lastRegisteredSetCall.reps === reps &&
+      lastRegisteredSetCall.peso === peso &&
+      (now - lastRegisteredSetCall.time) < 8000
+    ) {
+      return {
+        ok: true,
+        setId: lastRegisteredSetCall.setId,
+        mensaje: `La serie de ${peso} ${state.settings.unidad} × ${reps} reps ya fue anotada previamente.`,
+      };
     }
 
     const setObj = {
       workoutId: active.id,
       exerciseId: exId,
-      peso: Number(peso),
-      reps: Number(args.reps),
+      peso,
+      reps,
     };
-    if (args.rpe != null) setObj.rpe = Number(args.rpe);
+    if (rpe != null) setObj.rpe = rpe;
 
     const setId = await addSet(setObj);
+    lastRegisteredSetCall = {
+      workoutId: active.id,
+      exerciseId: exId,
+      peso,
+      reps,
+      time: now,
+      setId,
+    };
+
     return {
       ok: true,
       setId,
-      mensaje: `Serie registrada: ${peso} ${state.settings.unidad} × ${args.reps} reps${args.rpe ? ` (RPE ${args.rpe})` : ''}.`,
+      mensaje: `Serie registrada: ${peso} ${state.settings.unidad} × ${reps} reps${rpe ? ` (RPE ${rpe})` : ''}.`,
     };
   }
   if (name === 'guardar_recuerdo') {
     const raw = (args.contenido || '').trim();
-    // Filtro de integridad: no persistir marcas de peso, series ni reps en agentMemory.
-    // Solo guardar molestias físicas, cues/técnica, preferencias y objetivos del atleta.
-    const isWorkoutLog = /\b(\d+\s*(kg|kilos?|lb|libras?|reps?|series?|rpe))\b/i.test(raw);
-    if (isWorkoutLog) {
+    if (!raw) return { error: 'Contenido vacío.' };
+
+    // Conservar siempre molestias físicas, lesiones, técnica/cues, agarre o metas
+    const isSubjectiveOrGoal = /\b(duele|dolor|molestia|lesi[oó]n|molestias|hombro|rodilla|espalda|codo|cuello|agarre|codos|postura|t[eé]cnica|cue|forma|meta|objetivo|aspiraci[oó]n|apunto|llegar a)\b/i.test(raw);
+
+    // Solo descartar si tiene forma explícita de serie de entrenamiento (kilos + repeticiones juntos como registro de carga)
+    const isSetLogPattern = /\b\d+\s*(?:kg|kilos?|lb|libras?)\s*(?:[x×y]|por|,)?\s*\d+\s*(?:reps?|repeticiones)?\b/i.test(raw) ||
+                            /\b(?:serie\s*\d+|hice|anot[aá]me?)\b.*?\b\d+\s*reps?\b/i.test(raw);
+
+    if (isSetLogPattern && !isSubjectiveOrGoal) {
       return { ok: true, mensaje: 'Las marcas de series y peso se gestionan automáticamente en el cuaderno local.' };
     }
     const id = await saveMemory(raw);
@@ -204,6 +255,7 @@ export class FitAgent {
   #isMuted = false;
   #isUserSpeaking = false;
   #pendingCheckIn = null;
+  #speakingTimeout = null;
 
   constructor(apiKey) {
     this.#apiKey = apiKey.trim();
@@ -298,10 +350,28 @@ export class FitAgent {
     return this.#isMuted;
   }
 
+  cancelPendingCheckIn() {
+    this.#pendingCheckIn = null;
+  }
+
   muteMic() {
     this.#isMuted = true;
+    if (this.#speakingTimeout) {
+      clearTimeout(this.#speakingTimeout);
+      this.#speakingTimeout = null;
+    }
     this.#speechRec?.abort?.();
     this.#speechRec = null;
+    this.#isUserSpeaking = false;
+
+    // Enviar audioStreamEnd para que Gemini Live cierre formalmente el stream de audio
+    if (this.connected) {
+      this.#send({
+        realtimeInput: {
+          audioStreamEnd: true,
+        },
+      });
+    }
     this.#emit('mic_muted');
   }
 
@@ -399,7 +469,6 @@ export class FitAgent {
     };
 
     this.#speechRec.onresult = (e) => {
-      this.#isUserSpeaking = true;
       let interim = '';
       for (let i = e.resultIndex; i < e.results.length; ++i) {
         if (e.results[i].isFinal) {
@@ -408,7 +477,25 @@ export class FitAgent {
           interim += e.results[i][0].transcript;
         }
       }
-      this.#emit('interim_speech', interim || finalTranscript);
+      const rawText = (interim || finalTranscript).trim();
+      // #isUserSpeaking debe ser transcripción real (palabras legibles), no nivel de ruido
+      const hasRealWords = /[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ]{3,}/.test(rawText);
+      if (hasRealWords) {
+        this.#isUserSpeaking = true;
+        if (this.#speakingTimeout) clearTimeout(this.#speakingTimeout);
+        // Timeout de seguridad: si tras 4s no se finaliza texto, tratar como ruido para no bloquear el check-in
+        this.#speakingTimeout = setTimeout(() => {
+          if (this.#isUserSpeaking) {
+            this.#isUserSpeaking = false;
+            if (this.#pendingCheckIn) {
+              const checkIn = this.#pendingCheckIn;
+              this.#pendingCheckIn = null;
+              this.triggerCheckIn(checkIn);
+            }
+          }
+        }, 4000);
+      }
+      this.#emit('interim_speech', rawText);
     };
 
     this.#speechRec.onerror = (e) => {
@@ -419,13 +506,18 @@ export class FitAgent {
     };
 
     this.#speechRec.onend = () => {
+      if (this.#speakingTimeout) clearTimeout(this.#speakingTimeout);
       this.#isUserSpeaking = false;
-      if (finalTranscript.trim()) {
-        const text = finalTranscript.trim();
-        this.#pendingCheckIn = null; // Si el atleta ya habló, descartamos el check-in automático
+      const text = finalTranscript.trim();
+      const hasRealWords = /[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ]{3,}/.test(text);
+
+      if (hasRealWords) {
+        // Frase real del atleta: cancela el aviso de descanso automático porque ya está dialogando
+        this.#pendingCheckIn = null;
         this.#emit('user_speaking_finished', text);
         this.sendText(text);
       } else {
+        // Ruido sin palabras o silencio: liberar aviso retenido inmediatamente si existía
         if (this.#pendingCheckIn) {
           const checkIn = this.#pendingCheckIn;
           this.#pendingCheckIn = null;

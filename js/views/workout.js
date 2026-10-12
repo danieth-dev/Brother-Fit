@@ -189,6 +189,7 @@ export async function render(el) {
     'skip-rest': () => {
       restEnd = 0;
       el.querySelector('#rest').innerHTML = '';
+      getActiveAgent()?.cancelPendingCheckIn();
       getActiveAgent()?.muteMic();
     },
     finish: async () => {
