@@ -211,7 +211,8 @@ async function buildSystemInstruction() {
     '- Tienes la herramienta registrar_serie: si el atleta pide registrar una serie (reps, peso, RPE), úsala inmediatamente.\n' +
     '- El atleta manda el tema: tus objetivos de registro jamás pisan lo que él decida consultar.\n' +
     '- Si menciona datos personales (peso, marcas, objetivos, molestias, suplementación), llama inmediatamente a guardar_recuerdo.\n' +
-    '- Usa los recuerdos guardados de forma natural, sin recitarlos como un informe.' +
+    '- Usa los recuerdos guardados de forma natural, sin recitarlos como un informe.\n' +
+    '- NUNCA muestres planificación, títulos, borradores ni razonamiento interno. Nada de inglés ni de markdown. Tu única salida es la frase hablada al atleta, en español, en 1 o 2 oraciones.' +
     currentCtx +
     memBlock
   );
@@ -286,6 +287,7 @@ export class FitAgent {
                 }
               },
               systemInstruction: { parts: [{ text: sysInstruction }] },
+              outputAudioTranscription: {},
               tools: [{ functionDeclarations: TOOL_DECLARATIONS }]
             }
           });
@@ -608,13 +610,10 @@ export class FitAgent {
           if (part.inlineData?.data) {
             this.#queueAudioChunk(part.inlineData.data);
           }
-          if (part.text) {
-            this.#emit('transcript_chunk', part.text);
-          }
+          // part.text en modo audio es pensamiento o una llamada escrita, no lo que Fit dice.
         }
       }
 
-      // 2. Transcripción de lo que habla Fit
       if (sc.outputTranscription?.text) {
         this.#emit('transcript_chunk', sc.outputTranscription.text);
       }
