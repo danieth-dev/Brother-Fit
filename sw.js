@@ -1,7 +1,6 @@
 /* Service worker de Brother ft.
- * Estrategia: precache del "app shell" + stale-while-revalidate.
- * Para publicar una versión nueva, sube VERSION (o solo cambia los archivos:
- * la copia en caché se refresca en segundo plano y se usa en la siguiente apertura). */
+ * Con red responde lo publicado y guarda una copia. Sin red usa esa copia.
+ * Sube VERSION al publicar para que el teléfono suelte la caché anterior. */
 const VERSION = 'v30';
 const CACHE = `brother-ft-${VERSION}`;
 
