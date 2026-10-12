@@ -1,0 +1,7 @@
+.gemini/
+.dsh/
+.agent/
+.vscode/
+node_modules/
+*.log
+test_live_tools.mjs

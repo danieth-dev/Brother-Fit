@@ -1,0 +1,105 @@
+/* ==========================================================================
+   Brother Fit - Design Tokens: High-Tech Athletic Core
+   Estética de Alto Rendimiento (Negro OLED Carbón & Amarillo Eléctrico)
+   Conforme a la especificación Impeccable (Craft Floor v4.5.2)
+   ========================================================================== */
+:root {
+  /* Canvas y Superficies OLED */
+  --bg: #07080a;
+  --surface: #101217;
+  --surface-2: #171b22;
+  --surface-elevated: #202530;
+  --line: #252b36;
+  --line-strong: #384152;
+  --line-accent: rgba(255, 230, 0, 0.28);
+
+  /* Jerarquía de Texto Técnico */
+  --text: #f8fafc;
+  --muted: #94a3b8;
+  --text-dim: #64748b;
+
+  /* Escala Tipográfica Sistemática */
+  --fs-2xs: 0.6875rem; /* 11px */
+  --fs-xs: 0.75rem;    /* 12px */
+  --fs-sm: 0.875rem;   /* 14px */
+  --fs-base: 1rem;     /* 16px */
+  --fs-md: 1.125rem;   /* 18px */
+  --fs-lg: 1.25rem;    /* 20px */
+  --fs-xl: 1.5rem;     /* 24px */
+  --fs-2xl: 1.875rem;  /* 30px */
+  --fs-3xl: 2.25rem;   /* 36px */
+  --fs-hero: 2.75rem;  /* 44px */
+
+  /* Identidad & Acción (Amarillo Láser Eléctrico) */
+  --primary: #ffe600;
+  --primary-hover: #f5dc00;
+  --primary-active: #d6c000;
+  --primary-ink: #07080a;
+  --primary-glow: 0 0 24px rgba(255, 230, 0, 0.22);
+  --yellow: #ffe600;
+  --yellow-dim: rgba(255, 230, 0, 0.12);
+  --yellow-ink: #07080a;
+
+  /* Semántica y Grupos Musculares */
+  --green: #10b981;
+  --green-hover: #059669;
+  --green-ink: #022c22;
+  --green-dim: rgba(16, 185, 129, 0.14);
+
+  --red: #f43f5e;
+  --red-ink: #4c0519;
+  --red-dim: rgba(244, 63, 94, 0.14);
+
+  --blue: #38bdf8;
+  --blue-dim: rgba(56, 189, 248, 0.14);
+
+  --orange: #fb923c;
+  --orange-dim: rgba(251, 146, 60, 0.14);
+
+  --purple: #c084fc;
+  --purple-dim: rgba(192, 132, 252, 0.14);
+
+  --white: #f8fafc;
+
+  /* Radios de Precisión */
+  --r-xs: 4px;
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-xl: 20px;
+  --r-full: 9999px;
+
+  /* Dimensiones y Tipografías */
+  --tabbar-h: 66px;
+  --font-display: ui-rounded, "SF Pro Rounded", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "Roboto Mono", monospace;
+
+  /* Sombras tonales de contacto neutras (sin halos artificiales) */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 16px -2px rgba(0, 0, 0, 0.65);
+  --shadow-lg: 0 10px 30px -4px rgba(0, 0, 0, 0.75);
+  --shadow-primary: 0 2px 8px rgba(0, 0, 0, 0.5);
+
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #07080a;
+    --surface: #101217;
+    --surface-2: #171b22;
+    --surface-elevated: #202530;
+    --line: #252b36;
+    --line-strong: #384152;
+    --line-accent: rgba(255, 230, 0, 0.28);
+    --text: #f8fafc;
+    --muted: #94a3b8;
+    --text-dim: #64748b;
+    --primary: #ffe600;
+    --primary-hover: #f5dc00;
+    --primary-active: #d6c000;
+    --primary-ink: #07080a;
+    color-scheme: dark;
+  }
+}

@@ -1,0 +1,125 @@
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+  height: 100%;
+  -webkit-text-size-adjust: 100%;
+  background-color: var(--bg);
+}
+
+body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font: var(--fs-base)/1.5 var(--font);
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: contain;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Selección temática: amarillo eléctrico sobre carbón */
+::selection {
+  background: var(--primary);
+  color: var(--primary-ink);
+}
+
+/* Scrollbars técnicas sutiles */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: var(--r-full);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--line-strong);
+}
+
+#app {
+  max-width: 560px;
+  margin: 0 auto;
+  padding:
+    calc(env(safe-area-inset-top, 0px) + 20px)
+    18px
+    calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px) + 28px);
+  outline: none;
+}
+
+h1, h2, h3, p { margin: 0; }
+h1 {
+  font-family: var(--font-display);
+  font-size: var(--fs-3xl);
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1.1;
+  color: var(--text);
+}
+h2 {
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+h3 {
+  font-family: var(--font-display);
+  font-size: var(--fs-md);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+a { color: inherit; text-decoration: none; }
+button, input, select {
+  font: inherit;
+  color: inherit;
+}
+
+.muted { color: var(--muted); }
+.num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+.stack > * + * { margin-top: 16px; }
+.hint { color: var(--muted); font-size: var(--fs-sm); min-height: 1.2em; }
+.error { color: var(--red); font-weight: 600; }
+
+/* Iconografía SVG estándar del sistema */
+.icon {
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.view {
+  animation: enter 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .view,
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
