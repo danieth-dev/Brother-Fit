@@ -2,7 +2,7 @@
  * Estrategia: precache del "app shell" + stale-while-revalidate.
  * Para publicar una versión nueva, sube VERSION (o solo cambia los archivos:
  * la copia en caché se refresca en segundo plano y se usa en la siguiente apertura). */
-const VERSION = 'v29';
+const VERSION = 'v30';
 const CACHE = `brother-ft-${VERSION}`;
 
 const ASSETS = [
@@ -39,9 +39,15 @@ const ASSETS = [
 ];
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE).then((c) => c.addAll(ASSETS)).then(() => self.skipWaiting())
-  );
+  event.waitUntil((async () => {
+    const cache = await caches.open(CACHE);
+    await Promise.all(ASSETS.map(async (url) => {
+      const res = await fetch(new Request(url, { cache: 'reload' }));
+      if (!res.ok) throw new Error(url);
+      await cache.put(url, res);
+    }));
+    await self.skipWaiting();
+  })());
 });
 
 self.addEventListener('activate', (event) => {
@@ -57,27 +63,20 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
-  event.respondWith(staleWhileRevalidate(event));
+  event.respondWith(networkFirst(req));
 });
 
-async function staleWhileRevalidate(event) {
-  const req = event.request;
+/* Con red se usa lo publicado. La copia local solo entra si no hay conexión. */
+async function networkFirst(req) {
   const cache = await caches.open(CACHE);
-  const cached = await cache.match(req, { ignoreSearch: true });
-
-  const network = fetch(req)
-    .then((res) => {
-      if (res.ok) cache.put(req, res.clone());
-      return res;
-    })
-    .catch(() => null);
-
-  if (cached) {
-    event.waitUntil(network);
-    return cached;
+  try {
+    const res = await fetch(req);
+    if (res.ok) cache.put(req, res.clone());
+    return res;
+  } catch {
+    const cached = await cache.match(req, { ignoreSearch: true });
+    if (cached) return cached;
+    if (req.mode === 'navigate') return (await cache.match('./index.html')) || Response.error();
+    return new Response('Sin conexión', { status: 503, statusText: 'Offline' });
   }
-  const res = await network;
-  if (res) return res;
-  if (req.mode === 'navigate') return (await cache.match('./index.html')) || Response.error();
-  return new Response('Sin conexión', { status: 503, statusText: 'Offline' });
 }
