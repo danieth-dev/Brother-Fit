@@ -32,6 +32,26 @@ export async function getActiveWorkout() {
   return w;
 }
 
+const REST_KEY = 'activeRest';
+
+export async function loadActiveRest() {
+  const row = await db.get('meta', REST_KEY);
+  const value = row?.value;
+  if (!value?.restEnd || value.restEnd <= Date.now()) {
+    if (row) await db.remove('meta', REST_KEY);
+    return null;
+  }
+  return value;
+}
+
+export async function saveActiveRest(restEnd, lastReps) {
+  await db.put('meta', { key: REST_KEY, value: { restEnd, lastReps } });
+}
+
+export async function clearActiveRest() {
+  await db.remove('meta', REST_KEY);
+}
+
 export async function startWorkout() {
   const existing = await getActiveWorkout();
   if (existing) return existing;

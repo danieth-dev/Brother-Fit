@@ -4,6 +4,7 @@ html {
   height: 100%;
   -webkit-text-size-adjust: 100%;
   background-color: var(--bg);
+  overscroll-behavior: none;
 }
 
 body {
@@ -13,7 +14,7 @@ body {
   color: var(--text);
   font: var(--fs-base)/1.5 var(--font);
   -webkit-tap-highlight-color: transparent;
-  overscroll-behavior-y: contain;
+  overscroll-behavior: none;
   overflow-x: clip;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

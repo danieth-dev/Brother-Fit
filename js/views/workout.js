@@ -1,6 +1,7 @@
 import {
   getActiveWorkout, startWorkout, finishWorkout, finishWorkoutSummary, deleteWorkout, listExercises, addExercise,
-  addSet, deleteSet, getWorkoutDetail, lastSessionSetsFor, prByExercise, GRUPOS
+  addSet, deleteSet, getWorkoutDetail, lastSessionSetsFor, prByExercise, GRUPOS,
+  loadActiveRest, saveActiveRest, clearActiveRest
 } from '../services/workouts.js';
 import { getActiveAgent, saveMemory } from '../services/agent.js';
 import { state } from '../store.js';
@@ -65,6 +66,8 @@ export async function render(el) {
   const w = await getActiveWorkout();
 
   if (!w) {
+    restEnd = 0;
+    clearActiveRest();
     el.innerHTML = `
       <header class="page-head"><h1>Entreno</h1></header>
       <div class="empty">
@@ -79,6 +82,15 @@ export async function render(el) {
   }
 
   const [exs, detail] = await Promise.all([listExercises(), getWorkoutDetail(w.id)]);
+  if (restEnd <= Date.now()) {
+    const saved = await loadActiveRest();
+    if (saved) {
+      restEnd = saved.restEnd;
+      lastReps = saved.lastReps || 0;
+    } else {
+      restEnd = 0;
+    }
+  }
   if (!exs.some((e) => e.id === selectedEx)) selectedEx = exs[0]?.id ?? null;
   const unidad = state.settings.unidad;
 
@@ -188,6 +200,7 @@ export async function render(el) {
     },
     'skip-rest': () => {
       restEnd = 0;
+      clearActiveRest();
       el.querySelector('#rest').innerHTML = '';
       getActiveAgent()?.cancelPendingCheckIn();
       getActiveAgent()?.muteMic();
@@ -204,6 +217,7 @@ export async function render(el) {
       state.activeWorkoutId = null;
       state.activeExercise = null;
       restEnd = 0;
+      clearActiveRest();
       go(`/history/${w.id}`);
     },
     discard: async () => {
@@ -212,6 +226,7 @@ export async function render(el) {
       state.activeWorkoutId = null;
       state.activeExercise = null;
       restEnd = 0;
+      clearActiveRest();
       await render(el);
     }
   });
@@ -258,6 +273,7 @@ export async function render(el) {
         ? smartRest(reps)
         : state.settings.descanso;
       restEnd = Date.now() + restSecs * 1000;
+      await saveActiveRest(restEnd, lastReps);
 
       // El descanso comenzó: abrir micrófono para interacción durante la pausa
       getActiveAgent()?.unmuteMic();
@@ -291,22 +307,34 @@ async function prefill(el, prev) {
 
 function startTicker(el, w) {
   if (el._tickerId) clearInterval(el._tickerId);
-  el._tickerId = setInterval(() => {
+  const tick = () => {
     const elapsed = el.querySelector('#elapsed');
     if (!elapsed) { clearInterval(el._tickerId); el._tickerId = null; return; }
     elapsed.textContent = formatDuration(Date.now() - w.startedAt);
-    const rest = el.querySelector('#rest');
-    if (rest) rest.innerHTML = restMarkup();
 
-    // Check-in por voz cuando el temporizador de descanso llega a 0 (saltar no lo dispara)
-    if (restEnd > 0 && Math.ceil((restEnd - Date.now()) / 1000) <= 0) {
+    const left = restEnd > Date.now() ? Math.ceil((restEnd - Date.now()) / 1000) : 0;
+    const rest = el.querySelector('#rest');
+    if (rest) {
+      if (left > 0) {
+        const numEl = rest.querySelector('.num');
+        if (numEl) numEl.textContent = mmss(left);
+        else rest.innerHTML = restMarkup();
+      } else if (rest.innerHTML) {
+        rest.innerHTML = '';
+      }
+    }
+
+    if (restEnd > 0 && left <= 0) {
       restEnd = 0;
-      getActiveAgent()?.muteMic(); // El descanso finalizó: la serie física va a comenzar, muteamos el micro
+      clearActiveRest();
+      getActiveAgent()?.muteMic();
       const exName = state.activeExercise?.nombre || 'el ejercicio';
-      const curSets = el.querySelectorAll(`.group .sets li`).length;
+      const curSets = el.querySelectorAll('.group .sets li').length;
       getActiveAgent()?.triggerCheckIn(
         `El descanso terminó. Una frase: sigue ${exName}, serie ${curSets + 1}. Después escuchá.`
       );
     }
-  }, 1000);
+  };
+  tick();
+  el._tickerId = setInterval(tick, 1000);
 }
