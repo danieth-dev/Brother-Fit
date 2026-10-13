@@ -3,6 +3,16 @@
    Estética de Alto Rendimiento (Negro OLED Carbón & Amarillo Eléctrico)
    Conforme a la especificación Impeccable (Craft Floor v4.5.2)
    ========================================================================== */
+
+/* Un solo peso real. Los títulos no piden 700/800: el navegador no debe fingir negrita. */
+@font-face {
+  font-family: "Fugaz One";
+  src: url("../fonts/FugazOne-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   /* Canvas y Superficies OLED */
   --bg: #07080a;
@@ -71,7 +81,7 @@
 
   /* Dimensiones y Tipografías */
   --tabbar-h: 78px;
-  --font-display: ui-rounded, "SF Pro Rounded", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Fugaz One", ui-rounded, "SF Pro Rounded", system-ui, sans-serif;
   --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: ui-monospace, "SF Mono", "Roboto Mono", monospace;
 

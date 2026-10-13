@@ -2,6 +2,7 @@ import { openDB } from './db.js';
 import { ensureSeed } from './services/seed.js';
 import { loadSettings, state } from './store.js';
 import { startRouter } from './router.js';
+import { watchPickers } from './utils/picker.js';
 
 // El tirón hacia abajo en Chrome recarga la página y mata el descanso en curso.
 function blockPullToRefresh() {
@@ -25,6 +26,7 @@ async function boot() {
     await openDB();
     await ensureSeed();
     await loadSettings();
+    watchPickers(document.getElementById('app'));
   } catch (err) {
     console.error(err);
     document.getElementById('app').innerHTML =
