@@ -4,7 +4,7 @@ import { loadSettings, state } from './store.js';
 import { startRouter } from './router.js';
 import { watchPickers } from './utils/picker.js';
 
-// El tirón hacia abajo en Chrome recarga la página y mata el descanso en curso.
+// El tirón hacia abajo en Chrome recarga la página. No debe comerse el scroll de una lista.
 function blockPullToRefresh() {
   let startY = 0;
   document.addEventListener('touchstart', (e) => {
@@ -12,8 +12,23 @@ function blockPullToRefresh() {
   }, { passive: true });
   document.addEventListener('touchmove', (e) => {
     const y = e.touches[0]?.clientY ?? 0;
-    if (window.scrollY <= 0 && y > startY && e.cancelable) e.preventDefault();
+    if (y <= startY || window.scrollY > 0 || !e.cancelable) return;
+    if (canScroll(e.target, 'up')) return;
+    e.preventDefault();
   }, { passive: false });
+}
+
+function canScroll(node, dir) {
+  let el = node instanceof Element ? node : node?.parentElement;
+  while (el && el !== document.documentElement) {
+    const oy = getComputedStyle(el).overflowY;
+    if ((oy === 'auto' || oy === 'scroll' || oy === 'overlay') && el.scrollHeight > el.clientHeight + 1) {
+      if (dir === 'up' && el.scrollTop > 0) return true;
+      if (dir === 'down' && el.scrollTop + el.clientHeight < el.scrollHeight - 1) return true;
+    }
+    el = el.parentElement;
+  }
+  return false;
 }
 blockPullToRefresh();
 
