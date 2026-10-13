@@ -3,6 +3,15 @@ import { ensureSeed } from './services/seed.js';
 import { loadSettings, state } from './store.js';
 import { startRouter } from './router.js';
 import { watchPickers } from './utils/picker.js';
+import { watchCalendars } from './utils/calendar.js';
+
+function blockTabMenu() {
+  const bar = document.querySelector('.tabbar');
+  if (!bar) return;
+  bar.addEventListener('contextmenu', (e) => e.preventDefault());
+  bar.querySelectorAll('a').forEach((a) => { a.draggable = false; });
+}
+blockTabMenu();
 
 // El tirón hacia abajo en Chrome recarga la página. No debe comerse el scroll de una lista.
 function blockPullToRefresh() {
@@ -42,6 +51,7 @@ async function boot() {
     await ensureSeed();
     await loadSettings();
     watchPickers(document.getElementById('app'));
+    watchCalendars(document.getElementById('app'));
   } catch (err) {
     console.error(err);
     document.getElementById('app').innerHTML =

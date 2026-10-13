@@ -17,10 +17,12 @@ export const startOfWeekISO = (iso = todayISO()) => {
 
 const fLong = new Intl.DateTimeFormat('es', { weekday: 'long', day: 'numeric', month: 'long' });
 const fShort = new Intl.DateTimeFormat('es', { day: 'numeric', month: 'short' });
+const fDay = new Intl.DateTimeFormat('es', { day: 'numeric', month: 'short', year: 'numeric' });
 const fMonth = new Intl.DateTimeFormat('es', { month: 'long', year: 'numeric' });
 
 export const formatLong = (iso) => fLong.format(parseISO(iso));
 export const formatShort = (iso) => fShort.format(parseISO(iso));
+export const formatDay = (iso) => fDay.format(parseISO(iso));
 export const formatMonth = (y, m) => fMonth.format(new Date(y, m, 1));
 
 export function formatDuration(ms) {
