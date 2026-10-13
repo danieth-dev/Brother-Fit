@@ -30,6 +30,22 @@ function ensureSheet() {
   sheet.addEventListener('keydown', onKey);
 }
 
+function muscleOf(opt) {
+  const g = opt?.dataset?.grupo?.trim() || '';
+  return g && g !== 'Otro' ? g : '';
+}
+
+function muscleNode(grupo) {
+  const meta = document.createElement('span');
+  meta.className = 'muscle';
+  const dot = document.createElement('i');
+  dot.className = 'muscle-dot';
+  dot.dataset.g = grupo;
+  dot.setAttribute('aria-hidden', 'true');
+  meta.append(dot, document.createTextNode(grupo));
+  return meta;
+}
+
 function onKey(e) {
   const options = [...list.querySelectorAll('.picker-option')];
   const i = options.indexOf(document.activeElement);
@@ -88,13 +104,21 @@ function openPicker(select, label, trigger) {
     btn.className = 'picker-option';
     btn.setAttribute('role', 'option');
     btn.setAttribute('aria-selected', selected ? 'true' : 'false');
-    const name = document.createElement('span');
-    name.textContent = opt.textContent.trim();
+    const name = opt.textContent.trim();
+    const grupo = muscleOf(opt);
+    const copy = document.createElement('span');
+    copy.className = 'picker-copy';
+    const title = document.createElement('span');
+    title.className = 'picker-name';
+    title.textContent = name;
+    copy.append(title);
+    if (grupo) copy.append(muscleNode(grupo));
     const mark = document.createElement('span');
     mark.className = 'picker-mark';
     mark.setAttribute('aria-hidden', 'true');
     if (selected) mark.innerHTML = icons.check({ size: 14 });
-    btn.append(name, mark);
+    btn.append(copy, mark);
+    if (grupo) btn.setAttribute('aria-label', `${name}, ${grupo}`);
     btn.addEventListener('click', () => choose(select, opt.value));
     list.append(btn);
   });
@@ -128,11 +152,27 @@ function enhance(select) {
   chev.className = 'picker-chev';
   chev.innerHTML = icons.chevronDown({ size: 18 });
   trigger.append(value, chev);
+  select.after(trigger);
 
   const sync = () => {
-    const text = select.selectedOptions[0]?.textContent.trim() || 'Elegir';
+    const opt = select.selectedOptions[0];
+    const text = opt?.textContent.trim() || 'Elegir';
+    const grupo = muscleOf(opt);
     value.textContent = text;
-    trigger.setAttribute('aria-label', `${labelOf(select)}: ${text}`);
+    trigger.setAttribute('aria-label', `${labelOf(select)}: ${text}${grupo ? `, ${grupo}` : ''}`);
+    const field = select.closest('label.field');
+    let hint = field?.querySelector(':scope > .muscle-hint');
+    if (grupo && field) {
+      if (!hint) {
+        hint = document.createElement('p');
+        hint.className = 'muscle-hint';
+        hint.setAttribute('aria-hidden', 'true');
+        trigger.after(hint);
+      }
+      hint.replaceChildren(muscleNode(grupo));
+    } else {
+      hint?.remove();
+    }
   };
   sync();
   select.addEventListener('change', sync);
@@ -148,8 +188,6 @@ function enhance(select) {
     e.preventDefault();
     trigger.click();
   });
-
-  select.after(trigger);
 }
 
 export function mountPickers(root) {

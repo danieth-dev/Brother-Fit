@@ -348,6 +348,17 @@ body.picker-open {
   margin: 0 -4px;
   padding: 4px;
 }
+.picker-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+.picker-name {
+  min-width: 0;
+}
 .picker-option {
   display: flex;
   align-items: center;
@@ -658,13 +669,42 @@ body.picker-open {
   background: var(--white);
   box-shadow: 0 0 6px currentColor;
 }
-.dot[data-g="Pecho"] { background: var(--red); color: var(--red); }
-.dot[data-g="Espalda"] { background: var(--primary); color: var(--primary); }
-.dot[data-g="Piernas"] { background: var(--blue); color: var(--blue); }
-.dot[data-g="Hombros"] { background: var(--green); color: var(--green); }
-.dot[data-g="Brazos"] { background: var(--orange); color: var(--orange); }
-.dot[data-g="Bíceps"], .dot[data-g="Tríceps"] { background: var(--orange); color: var(--orange); }
-.dot[data-g="Core"] { background: var(--purple); color: var(--purple); }
+.dot[data-g="Pecho"],
+.muscle-dot[data-g="Pecho"] { background: var(--red); color: var(--red); }
+.dot[data-g="Espalda"],
+.muscle-dot[data-g="Espalda"] { background: var(--primary); color: var(--primary); }
+.dot[data-g="Piernas"],
+.muscle-dot[data-g="Piernas"] { background: var(--blue); color: var(--blue); }
+.dot[data-g="Hombros"],
+.muscle-dot[data-g="Hombros"] { background: var(--green); color: var(--green); }
+.dot[data-g="Brazos"],
+.muscle-dot[data-g="Brazos"] { background: var(--orange); color: var(--orange); }
+.dot[data-g="Bíceps"], .dot[data-g="Tríceps"],
+.muscle-dot[data-g="Bíceps"], .muscle-dot[data-g="Tríceps"] { background: var(--orange); color: var(--orange); }
+.dot[data-g="Core"],
+.muscle-dot[data-g="Core"] { background: var(--purple); color: var(--purple); }
+.muscle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-family: var(--font);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1.2;
+}
+.muscle-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--line-strong);
+  flex-shrink: 0;
+}
+.muscle-hint {
+  margin: 8px 0 0;
+}
 
 /* ---------- Grupos de Series del Entrenamiento ---------- */
 .group {
@@ -1203,6 +1243,15 @@ body.picker-open {
   max-width: 340px;
   font-size: var(--fs-sm);
   line-height: 1.5;
+}
+/* El control y su resultado son grupos distintos: no deben compartir el borde. */
+.field + .empty,
+.field + .pr-badges {
+  margin-top: 24px;
+}
+.muted + .form-card,
+.chart + .form-card {
+  margin-top: 24px;
 }
 
 /* ==========================================================================

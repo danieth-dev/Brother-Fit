@@ -90,7 +90,7 @@ export async function render(el, [idParam] = []) {
     <label class="field">
       <span>Ejercicio seleccionado</span>
       <select data-change="exercise">
-        ${exs.map((e) => `<option value="${e.id}" ${e.id === exId ? 'selected' : ''}>${esc(e.nombre)}</option>`).join('')}
+        ${exs.map((e) => `<option value="${e.id}" data-grupo="${esc(e.grupo)}" ${e.id === exId ? 'selected' : ''}>${esc(e.nombre)}</option>`).join('')}
       </select>
     </label>
 
@@ -141,7 +141,7 @@ export async function render(el, [idParam] = []) {
 
     <h2 class="section-title">Peso corporal</h2>
     ${lineChart(bodyPoints, { desc: 'Peso corporal en el tiempo' })}
-    <form class="form-card stack" data-form="body" style="margin-top:14px">
+    <form class="form-card stack" data-form="body">
       <div class="grid-2">
         <label class="field"><span>Día</span><input type="date" name="fecha" value="${todayISO()}" max="${todayISO()}" required></label>
         <label class="field"><span>Peso (${esc(unidad)})</span><input name="peso" inputmode="decimal" autocomplete="off" required placeholder="0"></label>

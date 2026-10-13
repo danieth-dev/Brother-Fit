@@ -1,5 +1,5 @@
 import {
-  getActiveWorkout, startWorkout, finishWorkout, finishWorkoutSummary, deleteWorkout, listExercises, addExercise,
+  getActiveWorkout, startWorkout, finishWorkout, finishWorkoutSummary, deleteWorkout, listExercises, addExercise, muscleName,
   addSet, deleteSet, getWorkoutDetail, lastSessionSetsFor, prByExercise, GRUPOS,
   loadActiveRest, saveActiveRest, clearActiveRest
 } from '../services/workouts.js';
@@ -126,7 +126,7 @@ export async function render(el) {
       <label class="field">
         <span>Ejercicio</span>
         <select name="exerciseId" data-change="exercise">
-          ${exs.map((e) => `<option value="${e.id}" ${e.id === selectedEx ? 'selected' : ''}>${esc(e.nombre)}</option>`).join('')}
+          ${exs.map((e) => `<option value="${e.id}" data-grupo="${esc(e.grupo)}" ${e.id === selectedEx ? 'selected' : ''}>${esc(e.nombre)}</option>`).join('')}
         </select>
       </label>
 
@@ -154,7 +154,7 @@ export async function render(el) {
 
     ${detail.groups.map((g) => `
       <div class="group">
-        <h3><i class="dot" data-g="${esc(g.exercise.grupo)}"></i>${esc(g.exercise.nombre)}</h3>
+        <h3><i class="dot" data-g="${esc(g.exercise.grupo)}"></i>${esc(g.exercise.nombre)}${muscleName(g.exercise.grupo) ? `<span class="muscle">${esc(muscleName(g.exercise.grupo))}</span>` : ''}</h3>
         <ul class="sets">
           ${g.sets.map((s, i) => `
             <li>

@@ -4,6 +4,12 @@ import { todayISO, startOfWeekISO } from '../utils/dates.js';
 
 export const GRUPOS = ['Pecho', 'Espalda', 'Piernas', 'Hombros', 'Bíceps', 'Tríceps', 'Core', 'Cardio', 'Otro'];
 
+/* "Otro" no nombra un músculo: no se muestra. */
+export function muscleName(grupo) {
+  const g = String(grupo || '').trim();
+  return g && g !== 'Otro' ? g : '';
+}
+
 export const estimate1RM = (peso, reps) => (reps <= 1 ? peso : peso * (1 + reps / 30)); // Epley
 export const volume = (sets) => sets.reduce((a, s) => a + s.peso * s.reps, 0);
 

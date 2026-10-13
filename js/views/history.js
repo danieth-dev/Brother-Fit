@@ -1,4 +1,4 @@
-import { listWorkoutSummaries, getWorkoutDetail, deleteWorkout } from '../services/workouts.js';
+import { listWorkoutSummaries, getWorkoutDetail, deleteWorkout, muscleName } from '../services/workouts.js';
 import { state } from '../store.js';
 import { delegate, esc, fmtNum, go } from '../utils/dom.js';
 import { formatLong, formatDuration } from '../utils/dates.js';
@@ -64,6 +64,7 @@ async function detail(el, id) {
         <h3>
           <i class="dot" data-g="${esc(g.exercise.grupo)}"></i>
           ${esc(g.exercise.nombre)}
+          ${muscleName(g.exercise.grupo) ? `<span class="muscle">${esc(muscleName(g.exercise.grupo))}</span>` : ''}
           <a href="#/progress/${g.exercise.id}" class="btn-link-sm" title="Ver progreso de ${esc(g.exercise.nombre)}">Ver progreso →</a>
         </h3>
         <ul class="sets">
