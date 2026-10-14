@@ -24,6 +24,29 @@ export function muscleFocus(nombre) {
   return FOCO[String(nombre || '').trim()] || '';
 }
 
+function foldName(value) {
+  return String(value || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+function sameStem(a, b) {
+  return a === b || a + 's' === b || b + 's' === a || a + 'es' === b || b + 'es' === a;
+}
+
+/* El modelo dice el texto. La app elige la fila. Vacío: no nombró ninguno. */
+export function matchExercise(spoken, exercises) {
+  const q = foldName(spoken);
+  if (!q) return { status: 'absent' };
+  const list = Array.isArray(exercises) ? exercises : [];
+  const exact = list.filter((e) => sameStem(foldName(e.nombre), q));
+  if (exact.length === 1) return { status: 'one', exercise: exact[0] };
+  if (exact.length > 1) return { status: 'many', exercises: exact };
+  if (q.length < 4) return { status: 'none' };
+  const partial = list.filter((e) => foldName(e.nombre).includes(q));
+  if (partial.length === 1) return { status: 'one', exercise: partial[0] };
+  if (partial.length > 1) return { status: 'many', exercises: partial };
+  return { status: 'none' };
+}
+
 export const estimate1RM = (peso, reps) => (reps <= 1 ? peso : peso * (1 + reps / 30)); // Epley
 export const volume = (sets) => sets.reduce((a, s) => a + s.peso * s.reps, 0);
 

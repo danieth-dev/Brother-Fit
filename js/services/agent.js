@@ -11,8 +11,8 @@
 import { db } from '../db.js';
 import { state } from '../store.js';
 import { now } from '../utils/clock.js';
-import { getActiveWorkout, lastSetFor, saveActiveRest } from './workouts.js';
-import { registerSet, anotarRpe } from './effort.js';
+import { getActiveWorkout, lastSetFor, saveActiveRest, listExercises, matchExercise } from './workouts.js';
+import { registerSet, anotarRpe, captureSpokenEffort } from './effort.js';
 
 const LIVE_MODEL = 'models/gemini-3.8-live';
 const WS_URL = (apiKey) =>
@@ -27,11 +27,25 @@ const TOOL_DECLARATIONS = [
       type: 'OBJECT',
       properties: {
         reps: { type: 'NUMBER', description: 'Número de repeticiones completadas.' },
-        peso: { type: 'NUMBER', description: 'Peso levantado. Si no se indica, usa el de la serie anterior.' },
+        ejercicio: { type: 'STRING', description: 'Nombre del ejercicio si el atleta lo dice, con sus palabras. Si no lo dice, no lo envíes: se usa el de la pantalla. No inventes ni elijas un id.' },
+        peso: { type: 'NUMBER', description: 'Peso añadido. Si no se indica, usa el de la serie anterior de ese ejercicio. Nunca el peso de la báscula.' },
+        corporal: { type: 'BOOLEAN', description: 'True si dice peso corporal o sin peso extra. El peso añadido queda en 0, salvo que también diga un disco o unos kilos: entonces peso es solo ese número.' },
         tipo: { type: 'STRING', description: 'trabajo o calentamiento. Si no lo dice, es trabajo.' },
         rir: { type: 'NUMBER', description: 'Respuesta a «¿Cuántas repeticiones más podrías haber hecho?»: 0 es no salía otra, 1, 2, 3, o 4 o más. No conviertas un RPE a este número.' },
       },
       required: ['reps'],
+    },
+  },
+  {
+    name: 'usar_ejercicio',
+    description:
+      'Deja Entreno en el ejercicio que el atleta nombra, sin anotar una serie. Úsala en cuanto diga cuál va a hacer, antes de las repeticiones. No confirma el de la pantalla.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        ejercicio: { type: 'STRING', description: 'Nombre dicho por el atleta, con sus palabras. No inventes otro.' },
+      },
+      required: ['ejercicio'],
     },
   },
   {
@@ -102,42 +116,101 @@ function restSeconds(reps) {
   return 60;
 }
 
-async function executeToolCall(name, args) {
+async function resolveSpokenExercise(spoken) {
+  const found = matchExercise(spoken, await listExercises());
+  if (found.status === 'none') {
+    return { ok: false, preguntar: false, mensaje: 'Ese ejercicio no está en la lista. Dilo y no lo anotes en otro.' };
+  }
+  if (found.status === 'many') {
+    const nombres = found.exercises.map((e) => e.nombre).join(', ');
+    return { ok: false, preguntar: false, mensaje: `No anotado. Hay varios: ${nombres}. Pregunta cuál, una sola vez.` };
+  }
+  const ex = found.exercise;
+  state.activeExercise = { id: ex.id, nombre: ex.nombre, grupo: ex.grupo };
+  document.dispatchEvent(new CustomEvent('bf-exercise', { detail: { id: ex.id } }));
+  return { ok: true, exercise: ex };
+}
+
+/* Lo que Fit dice. Un comentario interno no se muestra. */
+export function visibleFitText(raw) {
+  const text = String(raw || '');
+  if (text.includes('<!--') && !text.includes('-->')) return '';
+  return text.replace(/<!--[\s\S]*?-->/g, '').replace(/\s+/g, ' ').trim();
+}
+
+export function isAthleteTurn(text) {
+  const t = String(text || '').trim();
+  if (!t) return false;
+  if (/[0-9]/.test(t)) return true;
+  if (/[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ]{3,}/.test(t)) return true;
+  return /^(si|sí|no|ok)$/i.test(t);
+}
+
+export async function executeToolCall(name, args) {
   if (name === 'registrar_serie') {
     const active = await getActiveWorkout();
     if (!active) return { error: 'No hay entrenamiento activo en este momento. Inicia una sesión primero.' };
-
-    const exId = state.activeExercise?.id;
-    if (!exId) return { error: 'No hay un ejercicio seleccionado en la pantalla de entrenamiento.' };
 
     const reps = Math.round(Number(args.reps));
     if (!Number.isFinite(reps) || reps < 1 || reps > 100) {
       return { error: 'Número de repeticiones no válido o no indicado por el atleta.' };
     }
 
-    let peso = null;
-    if (args.peso != null && Number.isFinite(Number(args.peso)) && Number(args.peso) >= 0 && Number(args.peso) <= 600) {
-      peso = Number(args.peso);
+    const spoken = String(args.ejercicio || '').trim();
+    let ex = null;
+    if (spoken) {
+      const resolved = await resolveSpokenExercise(spoken);
+      if (!resolved.ok) return resolved;
+      ex = resolved.exercise;
+    } else if (state.activeExercise?.id) {
+      ex = state.activeExercise;
     } else {
-      const last = await lastSetFor(exId);
+      return { error: 'No hay un ejercicio seleccionado en la pantalla de entrenamiento.' };
+    }
+
+    let peso = null;
+    const said = Number(args.peso);
+    const hasAdded = Number.isFinite(said) && said > 0 && said <= 600;
+    if (args.corporal === true) {
+      peso = hasAdded ? said : 0;
+    } else if (args.peso != null && Number.isFinite(said) && said >= 0 && said <= 600) {
+      peso = said;
+    } else {
+      const last = await lastSetFor(ex.id);
       peso = last?.peso ?? 0;
     }
+
+    state.activeExercise = { id: ex.id, nombre: ex.nombre, grupo: ex.grupo };
+    document.dispatchEvent(new CustomEvent('bf-exercise', { detail: { id: ex.id } }));
 
     const restEnd = now() + restSeconds(reps) * 1000;
     const res = await registerSet({
       workoutId: active.id,
-      exerciseId: exId,
+      exerciseId: ex.id,
       peso,
       reps,
       tipo: args.tipo,
       rir: args.rir,
       restEnd,
     }, { guard: true });
+    if (res) res.ejercicio = ex.nombre;
     if (!res?.duplicada) {
       await saveActiveRest(restEnd, reps);
       document.dispatchEvent(new CustomEvent('bf-set', { detail: { restEnd, lastReps: reps } }));
     }
     return res;
+  }
+  if (name === 'usar_ejercicio') {
+    const spoken = String(args.ejercicio || '').trim();
+    if (!spoken) return { ok: false, preguntar: false, mensaje: 'Falta el nombre. Pregunta cuál, una sola vez.' };
+    const resolved = await resolveSpokenExercise(spoken);
+    if (!resolved.ok) return resolved;
+    return {
+      ok: true,
+      preguntar: false,
+      ejercicio: resolved.exercise.nombre,
+      mensaje: `Entreno quedó en ${resolved.exercise.nombre}. No lo confirmes otra vez. Espera la serie.`,
+    };
   }
   if (name === 'anotar_rpe') {
     return anotarRpe({ rir: args.rir, mark: args.marca, omitir: args.omitir === true });
@@ -180,7 +253,7 @@ async function buildSystemInstruction() {
 
   const activeEx = state.activeExercise;
   const currentCtx = activeEx
-    ? `\n\nESTADO ACTUAL DEL ATLETA EN EL GYM:\n- Ejercicio actual en pantalla: ${activeEx.nombre} (${activeEx.grupo})\n`
+    ? `\n\nSI NO NOMBRA EJERCICIO, EL DE ENTRENO ES: ${activeEx.nombre} (${activeEx.grupo}). No lo recites ni pidas confirmarlo.\n`
     : '';
 
   return (
@@ -197,16 +270,19 @@ async function buildSystemInstruction() {
     'CÓMO ASESORAS:\n' +
     '- Sin halago automático: celebra récords auténticos, pero no aplaudas cada respuesta.\n' +
     '- Si el atleta propone algo contraproducente, peligroso o basado en mitos, cuestiónalo con amabilidad y criterio científico.\n' +
-    '- REGLA DE DESCANSOS: Prohibido hablar por iniciativa propia durante los descansos entre series. Respirar no es un silencio que tengas que llenar. Solo hablas si el atleta te hace una pregunta o si la app te inyecta una orden explícita.\n' +
+    '- REGLA DE DESCANSOS: No hables por iniciativa propia durante el descanso. Si acabas de preguntar cuántas repeticiones más podía hacer, su respuesta sí se atiende: llama a anotar_rpe, también si dice 0, cero o ninguna, y también si está descansando.\n' +
     '- Una sola corrección o foco técnico (cue) por turno, para que pueda aplicarlo en su siguiente serie sin sobrecarga mental.\n' +
-    '- Si pide anotar una serie, llama a registrar_serie enseguida. tipo es trabajo si no dice que es calentamiento. El esfuerzo responde a «¿Cuántas repeticiones más podrías haber hecho?». Si habla en RPE, no lo conviertas: haz esa misma pregunta. 0 es que no salía otra.\n' +
-    '- Si la herramienta responde preguntar true, haz esa pregunta con la marca que viene y espera. Si preguntar es false, no vuelvas a preguntar el esfuerzo.\n' +
-    '- La respuesta del atleta se anota con anotar_rpe: la marca vigente y el rir. Si dice que no sabe, omitir true. Una marca vieja no sirve: pregunta de nuevo y no reutilices la respuesta anterior.\n' +
+    '- Si nombra un ejercicio, llama a usar_ejercicio enseguida con sus palabras, aunque todavía no haya serie. No preguntes si confirmamos el de Entreno y no digas «en pantalla tengo». Si ya lo dijo, no vuelvas a preguntar cuál.\n' +
+    '- Si pide anotar una serie, llama a registrar_serie enseguida. Si nombra el ejercicio, envía ese texto en ejercicio. Si no lo nombra, no envíes ejercicio. tipo es trabajo si no dice que es calentamiento. El esfuerzo responde a «¿Cuántas repeticiones más podrías haber hecho?». Si habla en RPE, no lo conviertas: haz esa misma pregunta. 0 es que no salía otra.\n' +
+    '- No preguntes el peso antes de la serie y no digas «lastre». Peso corporal es corporal true y 0 kg añadidos. Si dice un disco o unos kilos, peso es solo ese número.\n' +
+    '- Si la herramienta dice que el ejercicio no está o que hay varios, obedécela: no anotes en otro y, si hay varios, pregunta cuál una sola vez.\n' +
+    '- Si la herramienta responde preguntar true, haz la pregunta del esfuerzo con la marca que viene y espera. Si preguntar es false, no vuelvas a preguntar el esfuerzo.\n' +
+    '- La respuesta del atleta se anota con anotar_rpe: la marca vigente y el rir. 0 y cero son rir 0. Si dice que no sabe, omitir true. Una marca vieja no sirve: pregunta de nuevo y no reutilices la respuesta anterior.\n' +
     '- No sugieras pesos, no cambies el descanso y no inventes el esfuerzo.\n' +
     '- El atleta manda el tema: tus objetivos de registro jamás pisan lo que él decida consultar.\n' +
     '- Si menciona datos personales (peso, marcas, objetivos, molestias, suplementación), llama inmediatamente a guardar_recuerdo.\n' +
     '- Usa los recuerdos guardados de forma natural, sin recitarlos como un informe.\n' +
-    '- NUNCA muestres planificación, títulos, borradores ni razonamiento interno. Nada de inglés ni de markdown. Tu única salida es la frase hablada al atleta, en español, en 1 o 2 oraciones.' +
+    '- Nunca escribas HTML, comentarios, inglés ni instrucciones internas. Si no hay nada que decir, no generes texto. Tu única salida es la frase hablada al atleta, en español, en 1 o 2 oraciones.' +
     currentCtx +
     memBlock
   );
@@ -417,13 +493,23 @@ export class FitAgent {
   sendText(text) {
     if (!this.connected) throw new Error('Fit no está conectado');
     this.#stopCurrentAudio();
+    this.#emit('user_message', text);
+    this.#deliverText(text);
+  }
+
+  async #deliverText(text) {
+    const saved = await captureSpokenEffort(text);
+    if (saved) {
+      this.#emit('effort_saved', saved);
+      this.sendContext('El esfuerzo ya quedó anotado. No hables, no preguntes y no escribas comentarios.');
+      return;
+    }
     this.#send({
       clientContent: {
         turns: [{ role: 'user', parts: [{ text }] }],
         turnComplete: true,
       },
     });
-    this.#emit('user_message', text);
   }
 
   /* --- High-Accuracy Real-Time Voice Conversation Loop --- */
@@ -474,9 +560,7 @@ export class FitAgent {
         }
       }
       const rawText = (interim || finalTranscript).trim();
-      // #isUserSpeaking debe ser transcripción real (palabras legibles), no nivel de ruido
-      const hasRealWords = /[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ]{3,}/.test(rawText);
-      if (hasRealWords) {
+      if (isAthleteTurn(rawText)) {
         this.#isUserSpeaking = true;
         if (this.#speakingTimeout) clearTimeout(this.#speakingTimeout);
         // Timeout de seguridad: si tras 4s no se finaliza texto, tratar como ruido para no bloquear el check-in
@@ -505,9 +589,8 @@ export class FitAgent {
       if (this.#speakingTimeout) clearTimeout(this.#speakingTimeout);
       this.#isUserSpeaking = false;
       const text = finalTranscript.trim();
-      const hasRealWords = /[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ]{3,}/.test(text);
 
-      if (hasRealWords) {
+      if (isAthleteTurn(text)) {
         // Frase real del atleta: cancela el aviso de descanso automático porque ya está dialogando
         this.#pendingCheckIn = null;
         this.#emit('user_speaking_finished', text);

@@ -3,7 +3,7 @@
  * Real-time voice conversation with precision transcription + live voice playback + long-term memory.
  */
 
-import { FitAgent, getActiveAgent, loadAllMemories, deleteMemory } from '../services/agent.js';
+import { FitAgent, getActiveAgent, loadAllMemories, deleteMemory, visibleFitText } from '../services/agent.js';
 import { state } from '../store.js';
 import { db } from '../db.js';
 import { icons } from '../utils/icons.js';
@@ -183,6 +183,12 @@ function renderLiveChat(el, apiKey) {
       currentBotText = '';
       botBubble = null;
     })
+    .on('effort_saved', (res) => {
+      const line = String(res?.mensaje || '').includes('sin esfuerzo') ? 'Quedó sin esfuerzo.' : 'Anotado.';
+      appendMsg('bot', line);
+      currentBotText = '';
+      botBubble = null;
+    })
     .on('live_mode_started', () => {
       liveBanner.classList.add('active');
       toggleLiveBtn.textContent = 'Detener';
@@ -223,10 +229,16 @@ function renderLiveChat(el, apiKey) {
     })
     .on('transcript_chunk', (chunk) => {
       currentBotText += chunk;
+      const shown = visibleFitText(currentBotText);
+      if (!shown) {
+        botBubble?.remove();
+        botBubble = null;
+        return;
+      }
       if (!botBubble) {
-        botBubble = appendMsg('bot', currentBotText, 'agent-bot-live');
+        botBubble = appendMsg('bot', shown, 'agent-bot-live');
       } else {
-        botBubble.textContent = currentBotText;
+        botBubble.textContent = shown;
         msgsEl.scrollTop = msgsEl.scrollHeight;
       }
     })

@@ -2,7 +2,7 @@
 
 Documento vivo del producto. Describe cómo está armado, dónde vive cada dato y qué no se puede romper. Cuando cambie el comportamiento, el esquema, una pantalla o la forma de publicar, este archivo se actualiza en el mismo cambio.
 
-Última revisión: 14 de octubre de 2026. Base de datos versión 2. Caché de la app `v42`.
+Última revisión: 14 de octubre de 2026. Base de datos versión 2. Caché de la app `v43`.
 
 ## Qué es
 
@@ -195,13 +195,14 @@ Herramientas que el modelo puede llamar:
 
 | Herramienta | Efecto |
 | --- | --- |
-| `registrar_serie` | Anota la serie en la sesión abierta y en el ejercicio de pantalla. Reps de 1 a 100. Peso de 0 a 600; si no viene, usa el de la serie anterior. `tipo` es trabajo si no dicen calentamiento. `rir` son las repeticiones que sobraban. Si faltan o no son un entero de 0 para arriba, guarda la serie y abre la pregunta. |
+| `usar_ejercicio` | Deja Entreno en el ejercicio nombrado, sin anotar una serie. Si no está, o hay varios, no cambia el de la pantalla. |
+| `registrar_serie` | Anota la serie en la sesión abierta. Si el atleta nombra el ejercicio, la app lo busca en su lista y Entreno pasa a ese. Si no lo nombra, usa el de la pantalla. Si no está, o hay varios, no anota en otro. Reps de 1 a 100. Peso de 0 a 600; si no viene, usa el de la serie anterior de ese ejercicio. Peso corporal es 0 kg añadidos, no el de la báscula. `tipo` es trabajo si no dicen calentamiento. `rir` responde a cuántas repeticiones más podría haber hecho. Si faltan o no son un entero de 0 para arriba, guarda la serie y abre la pregunta. |
 | `anotar_rpe` | No crea filas. Recibe la marca y el `rir`, u `omitir` si el atleta no sabe. La serie la elige `pendingRpe`, no el modelo. |
 | `guardar_recuerdo` | Guarda una nota en `agentMemory`. Una serie dicha como carga no se duplica ahí, salvo que hable de dolor, técnica o una meta. |
 | `listar_recuerdos` | Devuelve lo guardado. |
 | `borrar_recuerdo` | Borra uno por id. |
 
-Una segunda llamada igual, de Fit o de la pantalla, sobre la misma serie y dentro de 8 segundos, no escribe otra fila ni abre otra marca. La pantalla lo dice en un aviso. Fit no habla por su cuenta durante el descanso: solo si el atleta pregunta o si la app le inyecta una orden. Pregunta el esfuerzo con las mismas palabras que la pantalla. No sugiere pesos ni cambia el descanso. Los turnos van en español, cortos, sin markdown y sin el razonamiento en inglés. El resumen de la sesión incluye el esfuerzo de cada serie.
+El nombre lo resuelve la app: ignora mayúsculas y acentos, y acepta el singular si solo hay un ejercicio. Nombrarlo, aunque todavía no haya serie, deja Entreno en ese ejercicio. Un acierto al anotar también lo cambia, aunque el atleta esté en Fit. Cero aciertos o varios no escriben nada y no crean el ejercicio. El peso, si no lo dice, sale de la última serie de ese ejercicio. Fit no pregunta el peso antes de la serie ni dice «lastre». Una segunda llamada igual, de Fit o de la pantalla, sobre la misma serie y el mismo ejercicio dentro de 8 segundos, no escribe otra fila ni abre otra marca. La pantalla lo dice en un aviso. Durante el descanso Fit no habla por su cuenta. Si la pregunta está abierta y el atleta dice 0, cero o ninguna, la app lo anota y ese turno no se lo manda a Fit, para que no lea una nota interna. Pregunta el esfuerzo con las mismas palabras que la pantalla. No sugiere pesos ni cambia el descanso. Los turnos van en español, cortos, sin markdown y sin el razonamiento en inglés. El resumen de la sesión incluye el esfuerzo de cada serie.
 
 La clave se escribe en Ajustes de Fit y queda en `meta.geminiApiKey`. Sin clave no hay sesión de voz.
 

@@ -26,6 +26,11 @@ document.addEventListener('bf-set', (e) => {
   if (e.detail.lastReps) lastReps = e.detail.lastReps;
 });
 
+document.addEventListener('bf-exercise', (e) => {
+  const id = Number(e.detail?.id);
+  if (id) selectedEx = id;
+});
+
 const mmss = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 
 function smartRest(reps) {
@@ -104,7 +109,11 @@ export async function render(el) {
       restEnd = 0;
     }
   }
-  if (!exs.some((e) => e.id === selectedEx)) selectedEx = exs[0]?.id ?? null;
+  if (state.activeExercise && exs.some((e) => e.id === state.activeExercise.id)) {
+    selectedEx = state.activeExercise.id;
+  } else if (!exs.some((e) => e.id === selectedEx)) {
+    selectedEx = exs[0]?.id ?? null;
+  }
   const unidad = state.settings.unidad;
 
   state.activeWorkoutId = w.id;
@@ -118,13 +127,9 @@ export async function render(el) {
 
   const curExSets = detail?.groups?.find((g) => g.exercise.id === selectedEx)?.sets || [];
   const nextSetNum = curExSets.length + 1;
-  const lastSet = curExSets[curExSets.length - 1];
-  const expectedPeso = lastSet?.peso ?? prev?.sets?.[0]?.peso ?? 0;
-  const prevMark = prev?.sets?.[0] ? `${fmtNum(prev.sets[0].peso)} ${unidad} × ${prev.sets[0].reps}` : 'ninguna';
 
-  // Inyección 2: Hueco explícito de la serie abierta y pendiente
   getActiveAgent()?.sendContext(
-    `No lo digas en voz alta. ${currentExObj?.nombre}: serie ${nextSetNum} abierta y pendiente. Carga esperada: ${fmtNum(expectedPeso)} ${unidad}. Marca anterior: ${prevMark}. Si el atleta pide registrar serie, usa registrar_serie sobre esta serie ${nextSetNum}.`
+    `Si no nombra otro, la serie abierta es ${currentExObj?.nombre}, número ${nextSetNum}. No lo digas. Si nombra un ejercicio, usa ese.`
   );
 
   el.innerHTML = `

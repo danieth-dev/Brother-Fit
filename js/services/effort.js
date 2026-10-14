@@ -54,6 +54,47 @@ export async function loadPending() {
   return row.value;
 }
 
+function foldAnswer(value) {
+  return String(value || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[¿?¡!.,]+/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+/* La app lee el 0. Fit no elige la serie ni tiene que llamar la herramienta. */
+export function effortAnswerFromText(text) {
+  const t = foldAnswer(text);
+  if (!t) return null;
+  if (/\b(repetici|reps?|kilos?|kg|lastre)\b/.test(t)) return null;
+  if (/\b(hice|hcie|hecho)\s+[1-9]\d*\b/.test(t)) return null;
+  if (/\b(no se|ni idea)\b/.test(t)) return { omitir: true };
+  const bare = {
+    '0': 0, cero: 0, ninguna: 0, nada: 0,
+    '1': 1, una: 1, uno: 1,
+    '2': 2, dos: 2,
+    '3': 3, tres: 3,
+    '4': 4, cuatro: 4,
+  };
+  if (Object.prototype.hasOwnProperty.call(bare, t)) return { rir: bare[t] };
+  if (/^(4|cuatro)( o)? mas$/.test(t) || t === 'o mas') return { rir: 4 };
+  const words = t.split(' ');
+  if (words.length > 4) return null;
+  if (words.includes('cero') || words.includes('ninguna') || words.includes('0')) return { rir: 0 };
+  for (const word of words) {
+    if (Object.prototype.hasOwnProperty.call(bare, word) && words.some((w) => w === 'hice' || w === 'hcie' || w === 'fueron' || w === 'sobraba' || w === 'sobraban')) {
+      return { rir: bare[word] };
+    }
+  }
+  return null;
+}
+
+export async function captureSpokenEffort(text) {
+  const answer = effortAnswerFromText(text);
+  if (!answer) return null;
+  const pending = await loadPending();
+  if (!pending) return null;
+  const res = await anotarRpe({ mark: pending.mark, rir: answer.rir, omitir: answer.omitir === true });
+  if (!res?.ok || res.preguntar) return null;
+  return res;
+}
+
 export function releasePending() {
   return db.remove('meta', PENDING_KEY);
 }
@@ -149,7 +190,7 @@ export async function registerSet(input, { guard = false, abrirPregunta = true }
         });
         box.preguntar = true;
         box.marca = seq;
-        box.mensaje = `Pregunta exactamente: ¿Cuántas repeticiones más podrías haber hecho? Marca ${seq}. 0 es no salía otra. 4 es cuatro o más.`;
+        box.mensaje = `Pregunta exactamente: ¿Cuántas repeticiones más podrías haber hecho? Marca ${seq}. 0 es no salía otra. 4 es cuatro o más. Cuando responda, llama anotar_rpe con esa marca, también si es 0 o si está descansando. No escribas comentarios.`;
       };
     };
     return box;

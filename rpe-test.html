@@ -36,6 +36,8 @@
 
     const effort = await import('./js/services/effort.js');
     const workouts = await import('./js/services/workouts.js');
+    const agent = await import('./js/services/agent.js');
+    const { state } = await import('./js/store.js');
     const results = [];
 
     function assert(cond, msg) {
@@ -385,6 +387,131 @@
         const day = prog.sessions[prog.sessions.length - 1];
         assert(day.adj == null, 'el RPE fuera de rango no entra en el 1RM ajustado');
         assert(suelta, 'la serie sin tipo sigue guardada');
+        await workouts.finishWorkout(w.id);
+      });
+
+      await check('Fit anota el ejercicio que nombras', async () => {
+        const ap = await workouts.addExercise('Aperturas', 'Pecho');
+        const dom = await workouts.addExercise('Dominadas', 'Espalda');
+        await workouts.addExercise('Press banca', 'Pecho');
+        await workouts.addExercise('Press militar', 'Hombros');
+        await workouts.addExercise('Extensión de tríceps', 'Tríceps');
+        await closeOpen();
+        const w = await workouts.startWorkout();
+        state.activeExercise = { id: ap, nombre: 'Aperturas', grupo: 'Pecho' };
+        let picked = null;
+        document.addEventListener('bf-exercise', (e) => { picked = e.detail.id; });
+
+        const saved = await agent.executeToolCall('registrar_serie', {
+          reps: 6, ejercicio: 'dominadas', corporal: true, rir: 0,
+        });
+        assert(saved.ejercicio === 'Dominadas', 'confirmó Dominadas');
+        assert(saved.preguntar === false, 'el 0 ya era el esfuerzo');
+        assert(state.activeExercise.id === dom, 'la pantalla pasa a Dominadas');
+        assert(picked === dom, 'Entreno recibe el ejercicio');
+        let detail = await workouts.getWorkoutDetail(w.id);
+        const of = (id) => detail.groups.find((g) => g.exercise.id === id)?.sets || [];
+        assert(of(dom).length === 1 && of(dom)[0].peso === 0, '0 kg añadidos');
+        assert(of(ap).length === 0, 'Aperturas no recibe la serie');
+
+        const many = await agent.executeToolCall('registrar_serie', { reps: 6, ejercicio: 'press' });
+        assert(many.ok === false && many.mensaje.includes('Press banca') && many.mensaje.includes('Press militar'), 'pregunta cuál');
+        detail = await workouts.getWorkoutDetail(w.id);
+        assert(detail.totalSets === 1, 'varios nombres no escriben');
+
+        const missing = await agent.executeToolCall('registrar_serie', { reps: 6, ejercicio: 'sentadilla búlgara' });
+        assert(missing.ok === false && missing.mensaje.includes('no está'), 'el nombre desconocido no se anota');
+        assert(state.activeExercise.id === dom, 'un fallo no cambia el ejercicio');
+
+        const accent = workouts.matchExercise('extension de triceps', await workouts.listExercises());
+        assert(accent.status === 'one' && accent.exercise.nombre === 'Extensión de tríceps', 'ignora acentos');
+        const singular = workouts.matchExercise('dominada', await workouts.listExercises());
+        assert(singular.status === 'one' && singular.exercise.id === dom, 'el singular único también vale');
+
+        state.activeExercise = { id: ap, nombre: 'Aperturas', grupo: 'Pecho' };
+        clock.t += 9000;
+        const screen = await agent.executeToolCall('registrar_serie', { reps: 8, rir: 2 });
+        assert(screen.ejercicio === 'Aperturas', 'sin nombre sigue la pantalla');
+        detail = await workouts.getWorkoutDetail(w.id);
+        assert((detail.groups.find((g) => g.exercise.id === ap)?.sets || []).length === 1, 'la serie queda en Aperturas');
+
+        clock.t += 9000;
+        const plus = await agent.executeToolCall('registrar_serie', {
+          reps: 5, ejercicio: 'dominadas', corporal: true, peso: 10, rir: 1,
+        });
+        assert(plus.ejercicio === 'Dominadas');
+        detail = await workouts.getWorkoutDetail(w.id);
+        const domSets = detail.groups.find((g) => g.exercise.id === dom).sets;
+        assert(domSets[domSets.length - 1].peso === 10, 'el lastre manda sobre el peso corporal');
+
+        clock.t += 9000;
+        const again = await agent.executeToolCall('registrar_serie', { reps: 5, ejercicio: 'dominadas', rir: 1 });
+        assert(again.duplicada !== true);
+        detail = await workouts.getWorkoutDetail(w.id);
+        const afterLast = detail.groups.find((g) => g.exercise.id === dom).sets;
+        assert(afterLast[afterLast.length - 1].peso === 10, 'el peso sale de Dominadas, no de Aperturas');
+
+        clock.t += 9000;
+        const open = await agent.executeToolCall('registrar_serie', { reps: 4, ejercicio: 'dominadas' });
+        assert(open.preguntar === true, 'sin esfuerzo abre la pregunta');
+        const other = await agent.executeToolCall('registrar_serie', { reps: 4, ejercicio: 'aperturas', rir: 2 });
+        assert(other.ejercicio === 'Aperturas');
+        assert(await effort.loadPending() === null, 'la serie nueva suelta la pregunta anterior');
+
+        clock.t += 9000;
+        const first = await agent.executeToolCall('registrar_serie', { reps: 3, ejercicio: 'dominadas', peso: 20, rir: 2 });
+        const dup = await agent.executeToolCall('registrar_serie', { reps: 3, ejercicio: 'dominadas', peso: 20, rir: 1 });
+        assert(dup.duplicada === true, 'la misma serie dentro de 8 s no se duplica');
+        assert(dup.ejercicio === 'Dominadas');
+        const otherEx = await agent.executeToolCall('registrar_serie', { reps: 3, ejercicio: 'aperturas', peso: 20, rir: 2 });
+        assert(otherEx.duplicada !== true && otherEx.ejercicio === 'Aperturas', 'otro ejercicio sí es otra serie');
+        detail = await workouts.getWorkoutDetail(w.id);
+        const domFinal = detail.groups.find((g) => g.exercise.id === dom).sets.filter((s) => s.reps === 3);
+        assert(domFinal.length === 1 && domFinal[0].rpe === 8, 'el segundo intento no pisa el esfuerzo');
+        await workouts.finishWorkout(w.id);
+      });
+
+      await check('nombrar el ejercicio no anota, y un comentario no se muestra', async () => {
+        assert(agent.visibleFitText('<!-- No input required during the rest period -->') === '', 'el comentario no se ve');
+        assert(agent.visibleFitText('Hola <!-- nota --> ¿sigues?') === 'Hola ¿sigues?', 'queda la frase');
+        assert(agent.visibleFitText('<!-- abierto') === '', 'un comentario a medias tampoco');
+        assert(agent.isAthleteTurn('0') && agent.isAthleteTurn('cero'), 'el 0 cuenta como respuesta');
+        assert(agent.isAthleteTurn('a') === false, 'una letra suelta no');
+
+        await closeOpen();
+        const ap = await workouts.addExercise('Aperturas voz', 'Pecho');
+        const dom = await workouts.addExercise('Dominadas voz', 'Espalda');
+        await workouts.addExercise('Press banca voz', 'Pecho');
+        await workouts.addExercise('Press militar voz', 'Hombros');
+        const w = await workouts.startWorkout();
+        state.activeExercise = { id: ap, nombre: 'Aperturas voz', grupo: 'Pecho' };
+        const switched = await agent.executeToolCall('usar_ejercicio', { ejercicio: 'dominadas voz' });
+        assert(switched.ejercicio === 'Dominadas voz', 'quedó en Dominadas');
+        assert(state.activeExercise.id === dom);
+        const detail = await workouts.getWorkoutDetail(w.id);
+        assert(detail.totalSets === 0, 'cambiar de ejercicio no anota una serie');
+        const many = await agent.executeToolCall('usar_ejercicio', { ejercicio: 'press voz' });
+        assert(many.ok === false && state.activeExercise.id === dom, 'si hay varios no cambia');
+        await workouts.finishWorkout(w.id);
+      });
+
+      await check('un 0 dicho lo anota la app', async () => {
+        assert(effort.effortAnswerFromText('0').rir === 0, 'el número 0');
+        assert(effort.effortAnswerFromText('hice cero').rir === 0, 'hice cero');
+        assert(effort.effortAnswerFromText('usare mi peso corporal hcie 10 repeticiones') == null, 'una serie no es el esfuerzo');
+        assert(effort.effortAnswerFromText('voy a empezar a entrenar quiero hacer dominadas') == null, 'nombrar el ejercicio no es el esfuerzo');
+        await closeOpen();
+        const w = await workouts.startWorkout();
+        const ex = await workouts.addExercise('Dominadas captura', 'Espalda');
+        const opened = await effort.registerSet({ workoutId: w.id, exerciseId: ex, peso: 0, reps: 10, restEnd: clock.t + 120_000 });
+        assert(opened.preguntar === true, 'la serie quedó preguntando');
+        const got = await effort.captureSpokenEffort('0');
+        assert(got && got.preguntar === false, 'el 0 se guardó');
+        const detail = await workouts.getWorkoutDetail(w.id);
+        const set = detail.groups[0].sets[0];
+        assert(set.rpe === 10, 'ninguna repetición más');
+        assert(await effort.loadPending() === null, 'la pregunta se cerró');
+        assert(await effort.captureSpokenEffort('hice cero') == null, 'un segundo cero ya no escribe');
         await workouts.finishWorkout(w.id);
       });
 
