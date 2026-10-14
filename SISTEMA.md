@@ -2,7 +2,7 @@
 
 Documento vivo del producto. Describe cómo está armado, dónde vive cada dato y qué no se puede romper. Cuando cambie el comportamiento, el esquema, una pantalla o la forma de publicar, este archivo se actualiza en el mismo cambio.
 
-Última revisión: 13 de octubre de 2026. Base de datos versión 2. Caché de la app `v38`.
+Última revisión: 14 de octubre de 2026. Base de datos versión 2. Caché de la app `v40`.
 
 ## Qué es
 
@@ -86,7 +86,7 @@ El día del peso corporal y el de una toma de creatina usan la misma hoja, con e
 | Ruta | Pantalla | Qué hace |
 | --- | --- | --- |
 | `#/` | Inicio | Resumen de la semana, creatina de hoy y últimos entrenos. Cada entreno abre `#/history/:id`. |
-| `#/workout` | Entreno | Una sesión abierta. Si no hay ninguna, el botón la crea. Peso, reps y RPE; descanso; series ya hechas; alta de ejercicio. |
+| `#/workout` | Entreno | Una sesión abierta. Si no hay ninguna, el botón la crea. Peso, reps y RPE; descanso; series ya hechas; alta de ejercicio. Los ejercicios del atleta se corrigen o se eliminan desde la lista. |
 | `#/history` y `#/history/:id` | Historial | Lista y detalle. Borrar un entreno borra también sus series. |
 | `#/progress` y `#/progress/:id` | Progreso | Un ejercicio: PR, comparativa, gráfica y tabla. Abajo, el peso corporal. |
 | `#/creatine` | Creatina | Tomas, racha, calendario y saturación. |
@@ -95,13 +95,15 @@ El día del peso corporal y el de una toma de creatina usan la misma hoja, con e
 
 Si el ejercicio tiene grupo muscular, el nombre lo lleva debajo, en letra pequeña y con un punto de color. También queda bajo el campo ya elegido y junto al nombre en las series registradas. El grupo `Otro` no se muestra: no nombra un músculo.
 
+Un ejercicio es del atleta cuando su nombre no está en el catálogo. En la lista, esa fila lleva un lápiz justo antes del círculo y fuera de la cápsula amarilla. El nombre sigue eligiendo. El lápiz abre la ficha «Editar ejercicio» (nombre y grupo). Eliminar está en esa ficha, no en la fila: si hay series, la confirmación dice cuántas y se borran con el ejercicio en la misma operación. El catálogo no lleva lápiz. La ficha vive en `document.body`, como las otras hojas.
+
 ## Datos
 
 Base `brother-fit`, versión 2. Para una tabla o un índice nuevo se sube `DB_VERSION` y se añade un bloque `if (old < N)` en `migrate()`. No se sube la versión por un cambio de pantalla.
 
 | Tabla | Qué guarda |
 | --- | --- |
-| `exercises` | `{ id, nombre, grupo }`. El nombre es único. |
+| `exercises` | `{ id, nombre, grupo }`. El nombre es único. No hay campo de dueño: es del atleta si el nombre no está en el catálogo. |
 | `workouts` | `{ id, fecha, startedAt, finishedAt, duracion, notas }`. `fecha` es índice. |
 | `sets` | `{ id, workoutId, exerciseId, peso, reps, rpe?, ts }`. Índices por entreno y por ejercicio. |
 | `supplements` | `{ id, tipo, fecha, hora, cantidad, ts }`. Hoy `tipo` es `creatina`. |
@@ -156,6 +158,8 @@ El catálogo inicial, por grupo:
 Grupos que el atleta puede elegir al crear uno: Pecho, Espalda, Piernas, Hombros, Bíceps, Tríceps, Core, Cardio, Otro.
 
 La semilla corre en cada arranque. Si el nombre ya existe, se ignora solo el error «Ese ejercicio ya existe.» La comparación distingue mayúsculas. Un nombre distinto crea otro ejercicio y el historial se queda en el id viejo. No se renombra ni se fusiona desde aquí.
+
+Corregir un ejercicio del atleta cambia el nombre y el grupo del mismo id: el historial sigue ahí. No se puede usar un nombre del catálogo ni uno que ya exista. Eliminarlo borra también sus series. Un entreno que se queda sin series sigue en el historial, vacío.
 
 ## Creatina
 
@@ -231,6 +235,7 @@ Cada push a `main` dispara `.github/workflows/deploy.yml` y publica la carpeta e
 | `js/services/agent.js` | Voz, herramientas y recuerdos. |
 | `js/views/*.js` | Una pantalla por archivo. |
 | `js/utils/picker.js` | Hoja de las listas. |
+| `js/utils/exercise-editor.js` | Ficha para corregir o eliminar un ejercicio del atleta. |
 | `js/utils/calendar.js` | Hoja del día. |
 | `js/utils/chart.js` | Gráfica SVG. |
 | `fonts/FugazOne-Regular.ttf` | Títulos. Licencia en `fonts/OFL.txt`. |

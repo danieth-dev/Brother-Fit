@@ -1,6 +1,9 @@
 /* Lógica de entrenamientos, ejercicios y progreso. Las vistas solo llaman a estas funciones. */
 import { db } from '../db.js';
 import { todayISO, startOfWeekISO } from '../utils/dates.js';
+import { isCatalogExercise } from './seed.js';
+
+export { isCatalogExercise };
 
 export const GRUPOS = ['Pecho', 'Espalda', 'Piernas', 'Hombros', 'Bíceps', 'Tríceps', 'Core', 'Cardio', 'Otro'];
 
@@ -27,6 +30,55 @@ export async function addExercise(nombre, grupo = 'Otro') {
     if (e?.name === 'ConstraintError') throw new Error('Ese ejercicio ya existe.');
     throw e;
   }
+}
+
+export function isOwnExercise(ex) {
+  return !!ex && !isCatalogExercise(ex.nombre);
+}
+
+export async function getExercise(id) {
+  return db.get('exercises', Number(id));
+}
+
+export async function countSetsForExercise(exerciseId) {
+  const sets = await db.byIndex('sets', 'exerciseId', Number(exerciseId));
+  return sets.length;
+}
+
+export async function updateExercise(id, nombre, grupo = 'Otro') {
+  const ex = await db.get('exercises', Number(id));
+  if (!ex) throw new Error('Ese ejercicio ya no está.');
+  if (!isOwnExercise(ex)) throw new Error('El catálogo no se edita.');
+  nombre = String(nombre || '').trim();
+  if (!nombre) throw new Error('Escribe el nombre del ejercicio.');
+  if (isCatalogExercise(nombre)) throw new Error('Ese nombre es del catálogo.');
+  grupo = GRUPOS.includes(grupo) ? grupo : 'Otro';
+  try {
+    await db.put('exercises', { ...ex, nombre, grupo });
+  } catch (e) {
+    if (e?.name === 'ConstraintError') throw new Error('Ese ejercicio ya existe.');
+    throw e;
+  }
+  return ex.id;
+}
+
+/* Borra el ejercicio y sus series en una sola transacción. Devuelve cuántas series salieron. */
+export async function deleteExercise(id) {
+  const ex = await db.get('exercises', Number(id));
+  if (!ex) return 0;
+  if (!isOwnExercise(ex)) throw new Error('El catálogo no se elimina.');
+  const n = await countSetsForExercise(ex.id);
+  await db.mutate(['sets', 'exercises'], (tx) => {
+    const req = tx.objectStore('sets').index('exerciseId').openCursor(IDBKeyRange.only(ex.id));
+    req.onsuccess = () => {
+      const cursor = req.result;
+      if (!cursor) return;
+      cursor.delete();
+      cursor.continue();
+    };
+    tx.objectStore('exercises').delete(ex.id);
+  });
+  return n;
 }
 
 /* ---------- Entrenamiento activo ---------- */

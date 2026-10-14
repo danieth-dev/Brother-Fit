@@ -1,5 +1,5 @@
 import {
-  getActiveWorkout, startWorkout, finishWorkout, finishWorkoutSummary, deleteWorkout, listExercises, addExercise, muscleName,
+  getActiveWorkout, startWorkout, finishWorkout, finishWorkoutSummary, deleteWorkout, listExercises, addExercise, muscleName, isOwnExercise,
   addSet, deleteSet, getWorkoutDetail, lastSessionSetsFor, prByExercise, GRUPOS,
   loadActiveRest, saveActiveRest, clearActiveRest
 } from '../services/workouts.js';
@@ -8,6 +8,7 @@ import { state } from '../store.js';
 import { delegate, forms, changes, toast, esc, num, fmtNum, go } from '../utils/dom.js';
 import { formatDuration, formatShort } from '../utils/dates.js';
 import { icons } from '../utils/icons.js';
+import { bindExerciseEdit, openExerciseEditor } from '../utils/exercise-editor.js';
 
 let selectedEx = null;
 let restEnd = 0;
@@ -126,7 +127,7 @@ export async function render(el) {
       <label class="field">
         <span>Ejercicio</span>
         <select name="exerciseId" data-change="exercise">
-          ${exs.map((e) => `<option value="${e.id}" data-grupo="${esc(e.grupo)}" ${e.id === selectedEx ? 'selected' : ''}>${esc(e.nombre)}</option>`).join('')}
+          ${exs.map((e) => `<option value="${e.id}" data-grupo="${esc(e.grupo)}" ${isOwnExercise(e) ? 'data-propio="1"' : ''} ${e.id === selectedEx ? 'selected' : ''}>${esc(e.nombre)}</option>`).join('')}
         </select>
       </label>
 
@@ -291,6 +292,17 @@ export async function render(el) {
         toast('Ejercicio guardado');
       } catch (e) { toast(e.message); }
     }
+  });
+
+  bindExerciseEdit(el, async (e) => {
+    const id = Number(e.detail?.id);
+    await openExerciseEditor(id, async (result) => {
+      if (!result) return;
+      if (result.deleted && selectedEx === result.id) selectedEx = null;
+      else if (!result.deleted) selectedEx = result.id;
+      await render(el);
+      toast(result.deleted ? 'Ejercicio eliminado' : 'Ejercicio guardado');
+    });
   });
 }
 

@@ -67,13 +67,20 @@ function onKey(e) {
   }
 }
 
+function scrollStillLocked() {
+  return !!document.querySelector('.editor-sheet.open, .picker-sheet.open');
+}
+
 function closePicker({ immediate = false } = {}) {
   if (!sheet || sheet.hidden) return;
   openSelect = null;
   const trigger = lastTrigger;
   sheet.classList.remove('open');
-  document.body.classList.remove('picker-open');
-  const hide = () => { sheet.hidden = true; };
+  if (!scrollStillLocked()) document.body.classList.remove('picker-open');
+  const hide = () => {
+    sheet.hidden = true;
+    if (!scrollStillLocked()) document.body.classList.remove('picker-open');
+  };
   if (immediate || matchMedia('(prefers-reduced-motion: reduce)').matches) {
     hide();
   } else {
@@ -93,12 +100,14 @@ function choose(select, value) {
 
 function openPicker(select, label, trigger) {
   ensureSheet();
+  document.body.append(sheet);
   openSelect = select;
   lastTrigger = trigger;
   titleEl.textContent = label;
   list.replaceChildren();
   [...select.options].forEach((opt) => {
     const selected = opt.value === select.value;
+    const own = opt.dataset.propio === '1';
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'picker-option';
@@ -117,10 +126,29 @@ function openPicker(select, label, trigger) {
     mark.className = 'picker-mark';
     mark.setAttribute('aria-hidden', 'true');
     if (selected) mark.innerHTML = icons.check({ size: 14 });
-    btn.append(copy, mark);
+    btn.append(copy);
     if (grupo) btn.setAttribute('aria-label', `${name}, ${grupo}`);
     btn.addEventListener('click', () => choose(select, opt.value));
-    list.append(btn);
+    if (!own) {
+      btn.append(mark);
+      list.append(btn);
+      return;
+    }
+    const row = document.createElement('div');
+    row.className = 'picker-row';
+    const edit = document.createElement('button');
+    edit.type = 'button';
+    edit.className = 'picker-edit';
+    edit.setAttribute('aria-label', `Editar ${name}`);
+    edit.innerHTML = icons.pencil({ size: 18 });
+    edit.addEventListener('click', () => {
+      const id = Number(opt.value);
+      closePicker({ immediate: true });
+      if (!select.isConnected) return;
+      select.dispatchEvent(new CustomEvent('edit-exercise', { bubbles: true, detail: { id } }));
+    });
+    row.append(btn, edit, mark);
+    list.append(row);
   });
   sheet.hidden = false;
   document.body.classList.add('picker-open');
@@ -188,6 +216,10 @@ function enhance(select) {
     e.preventDefault();
     trigger.click();
   });
+}
+
+export function dismissPicker() {
+  closePicker({ immediate: true });
 }
 
 export function mountPickers(root) {

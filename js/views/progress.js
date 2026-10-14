@@ -1,10 +1,11 @@
-import { listExercises, progressForExercise, lastTrainedExerciseId, prByExercise } from '../services/workouts.js';
+import { listExercises, progressForExercise, lastTrainedExerciseId, prByExercise, isOwnExercise } from '../services/workouts.js';
 import { addBodyWeight, listBodyWeights, deleteBodyMetric } from '../services/body.js';
 import { state } from '../store.js';
 import { delegate, forms, changes, toast, esc, num, fmtNum, go } from '../utils/dom.js';
 import { lineChart } from '../utils/chart.js';
 import { formatShort, todayISO } from '../utils/dates.js';
 import { icons } from '../utils/icons.js';
+import { bindExerciseEdit, openExerciseEditor } from '../utils/exercise-editor.js';
 
 const METRICS = { e1rm: '1RM est.', maxPeso: 'Peso máx.', volumen: 'Volumen' };
 let metric = 'e1rm';
@@ -90,7 +91,7 @@ export async function render(el, [idParam] = []) {
     <label class="field">
       <span>Ejercicio seleccionado</span>
       <select data-change="exercise">
-        ${exs.map((e) => `<option value="${e.id}" data-grupo="${esc(e.grupo)}" ${e.id === exId ? 'selected' : ''}>${esc(e.nombre)}</option>`).join('')}
+        ${exs.map((e) => `<option value="${e.id}" data-grupo="${esc(e.grupo)}" ${isOwnExercise(e) ? 'data-propio="1"' : ''} ${e.id === exId ? 'selected' : ''}>${esc(e.nombre)}</option>`).join('')}
       </select>
     </label>
 
@@ -183,5 +184,15 @@ export async function render(el, [idParam] = []) {
       await render(el, [exId]);
       toast('Peso corporal guardado');
     }
+  });
+
+  bindExerciseEdit(el, async (e) => {
+    const id = Number(e.detail?.id);
+    await openExerciseEditor(id, async (result) => {
+      if (!result) return;
+      if (result.deleted && result.id === exId) go('/progress');
+      else await render(el, [String(exId)]);
+      toast(result.deleted ? 'Ejercicio eliminado' : 'Ejercicio guardado');
+    });
   });
 }

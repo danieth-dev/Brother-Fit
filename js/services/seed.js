@@ -13,6 +13,13 @@ const BASE = [
   ['Plancha', 'Core'], ['Crunch en polea', 'Core']
 ];
 
+const CATALOG = new Set(BASE.map(([nombre]) => nombre));
+
+/* El catálogo se reconoce por el nombre exacto. Lo demás lo creó el atleta. */
+export function isCatalogExercise(nombre) {
+  return CATALOG.has(String(nombre || '').trim());
+}
+
 export async function ensureSeed() {
   for (const [nombre, grupo] of BASE) {
     try {

@@ -402,6 +402,60 @@ body.picker-open {
   background: var(--primary);
   border-color: var(--primary);
 }
+.picker-row {
+  display: flex;
+  align-items: center;
+}
+.picker-row > .picker-option {
+  width: auto;
+  flex: 1;
+  min-width: 0;
+}
+.picker-edit {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  flex: none;
+  border: 0;
+  border-radius: var(--r-full);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+.picker-edit:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255, 230, 0, 0.2);
+}
+.picker-row > .picker-mark {
+  margin-right: 12px;
+}
+.picker-row:has(.picker-option[aria-selected="true"]) > .picker-mark {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+.editor-delete {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 48px;
+  border: 0;
+  background: transparent;
+  color: var(--red);
+  font-family: var(--font);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+.editor-delete:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255, 230, 0, 0.2);
+}
+.editor-delete:disabled,
+.editor-form button:disabled {
+  opacity: 0.5;
+}
 
 .cal-nav {
   display: flex;

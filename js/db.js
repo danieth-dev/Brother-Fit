@@ -72,6 +72,18 @@ export const db = {
   remove: (store, key) => run(store, 'readwrite', (s) => s.delete(key)),
   byIndex: (store, index, value) => run(store, 'readonly', (s) => s.index(index).getAll(value)),
 
+  /* Varias tablas en una sola transacción. fn debe lanzar las peticiones sin esperar. */
+  mutate(stores, fn) {
+    return openDB().then((conn) => new Promise((resolve, reject) => {
+      const tx = conn.transaction(stores, 'readwrite');
+      try { fn(tx); }
+      catch (e) { try { tx.abort(); } catch { /* ya abortada */ } reject(e); return; }
+      tx.oncomplete = () => resolve();
+      tx.onerror = (e) => reject(e.target.error || tx.error);
+      tx.onabort = () => reject(tx.error || new Error('No se pudo guardar.'));
+    }));
+  },
+
   /* Respaldo: todo el contenido en una sola transacción de lectura. */
   async dumpAll() {
     const conn = await openDB();
