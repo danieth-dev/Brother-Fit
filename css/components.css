@@ -821,6 +821,7 @@ body.picker-open {
 .muscle {
   display: inline-flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 6px;
   color: var(--muted);
   font-family: var(--font);
@@ -829,6 +830,15 @@ body.picker-open {
   letter-spacing: 0.04em;
   text-transform: uppercase;
   line-height: 1.2;
+}
+.muscle-focus {
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 500;
+}
+.muscle-focus::before {
+  content: "·";
+  margin-right: 6px;
 }
 .muscle-dot {
   width: 6px;
@@ -868,6 +878,7 @@ body.picker-open {
 .sets li {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 12px;
   padding: 10px 4px;
   border-top: 1px solid var(--line);
@@ -900,6 +911,74 @@ body.picker-open {
   color: var(--muted);
   font-weight: 700;
   margin-left: 6px;
+}
+
+.set-extra {
+  flex: 1 0 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 2px 0 8px;
+}
+.effort-label,
+.effort-note,
+.week-effort {
+  color: var(--muted);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+.effort-label {
+  display: block;
+  line-height: 1.35;
+}
+.effort-hint {
+  display: block;
+  margin: 2px 0 8px;
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+}
+.rir-pick button:disabled {
+  opacity: 0.38;
+}
+.stats + .stats {
+  margin-top: 10px;
+}
+.week-effort {
+  margin: -6px 0 8px;
+}
+.effort-miss {
+  width: 100%;
+  border-color: rgba(255, 230, 0, 0.55);
+  color: var(--primary);
+}
+.effort-change {
+  width: 100%;
+}
+.rir-pick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.rir-pick button {
+  flex: 1 1 52px;
+  min-width: 52px;
+  min-height: 52px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  color: var(--text);
+  font-weight: 800;
+  font-size: var(--fs-sm);
+  cursor: pointer;
+}
+.rir-pick button[data-rir="4"] {
+  flex: 1.4 1 96px;
+}
+.rir-pick button[aria-pressed="true"] {
+  background: var(--primary);
+  border-color: rgba(255, 230, 0, 0.4);
+  color: var(--primary-ink);
 }
 
 /* ---------- HUD de Temporizador de Descanso ---------- */
@@ -984,6 +1063,12 @@ body.picker-open {
   background: var(--primary);
   color: var(--primary-ink);
   box-shadow: var(--shadow-sm);
+}
+.metric-seg {
+  flex-wrap: wrap;
+}
+.metric-seg button {
+  flex: 1 1 40%;
 }
 
 /* ---------- Gráfico SVG de Progresión ---------- */

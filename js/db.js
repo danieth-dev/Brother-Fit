@@ -1,16 +1,29 @@
 /* Capa de acceso a IndexedDB. Es el ÚNICO archivo que conoce el almacenamiento.
  * Para añadir tablas o índices: sube DB_VERSION y agrega un bloque `if (old < N)` en migrate(). */
-const DB_NAME = 'brother-fit';
+let dbName = 'brother-fit';
 const DB_VERSION = 2;
 
 export const STORES = ['exercises', 'workouts', 'sets', 'supplements', 'bodyMetrics', 'meta', 'agentMemory'];
 
 let dbPromise = null;
 
+/* Hay que llamarlo antes de abrir. La página de pruebas usa otro nombre para no tocar los entrenos. */
+export function setDbName(name) {
+  if (dbPromise) throw new Error('La base ya está abierta.');
+  dbName = String(name || 'brother-fit');
+}
+
+export async function closeDB() {
+  if (!dbPromise) return;
+  const conn = await dbPromise;
+  conn.close();
+  dbPromise = null;
+}
+
 export function openDB() {
   if (dbPromise) return dbPromise;
   dbPromise = new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    const req = indexedDB.open(dbName, DB_VERSION);
     req.onupgradeneeded = (e) => migrate(req.result, e.oldVersion);
     req.onsuccess = () => {
       const conn = req.result;
@@ -72,13 +85,15 @@ export const db = {
   remove: (store, key) => run(store, 'readwrite', (s) => s.delete(key)),
   byIndex: (store, index, value) => run(store, 'readonly', (s) => s.index(index).getAll(value)),
 
-  /* Varias tablas en una sola transacción. fn debe lanzar las peticiones sin esperar. */
+  /* Varias tablas en una sola transacción. fn lanza las peticiones sin esperar
+   * y puede devolver un objeto que esas peticiones rellenan antes de cerrar. */
   mutate(stores, fn) {
     return openDB().then((conn) => new Promise((resolve, reject) => {
       const tx = conn.transaction(stores, 'readwrite');
-      try { fn(tx); }
+      let box;
+      try { box = fn(tx); }
       catch (e) { try { tx.abort(); } catch { /* ya abortada */ } reject(e); return; }
-      tx.oncomplete = () => resolve();
+      tx.oncomplete = () => resolve(box);
       tx.onerror = (e) => reject(e.target.error || tx.error);
       tx.onabort = () => reject(tx.error || new Error('No se pudo guardar.'));
     }));

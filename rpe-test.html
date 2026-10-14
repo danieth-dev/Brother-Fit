@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pruebas de esfuerzo</title>
+  <style>
+    body { margin: 0; padding: 24px 20px 48px; background: #07080a; color: #f8fafc; font: 16px/1.45 system-ui, sans-serif; }
+    h1 { font-size: 22px; margin: 0 0 8px; }
+    p { color: #94a3b8; margin: 0 0 18px; }
+    ul { list-style: none; padding: 0; margin: 0; }
+    li { margin: 0 0 8px; }
+    .ok { color: #ffe600; }
+    .bad { color: #f43f5e; }
+  </style>
+</head>
+<body>
+  <h1>Pruebas de esfuerzo</h1>
+  <p>Usa la base temporal <code>brother-fit-rpe-test</code>. No toca los entrenos y no registra el service worker.</p>
+  <ul id="out"><li>Corriendo…</li></ul>
+  <script type="module">
+    import { setDbName, closeDB, db } from './js/db.js';
+    import { setNow } from './js/utils/clock.js';
+
+    const TEST_DB = 'brother-fit-rpe-test';
+    setDbName(TEST_DB);
+    const clock = { t: 1_800_000_000_000 };
+    setNow(() => clock.t);
+
+    await new Promise((resolve) => {
+      const req = indexedDB.deleteDatabase(TEST_DB);
+      req.onsuccess = () => resolve();
+      req.onerror = () => resolve();
+      req.onblocked = () => resolve();
+    });
+
+    const effort = await import('./js/services/effort.js');
+    const workouts = await import('./js/services/workouts.js');
+    const results = [];
+
+    function assert(cond, msg) {
+      if (!cond) throw new Error(msg || 'falló');
+    }
+
+    async function check(name, fn) {
+      effort.resetRegisterGuard();
+      clock.t += 10_000;
+      try {
+        await fn();
+        results.push({ name, ok: true });
+      } catch (e) {
+        results.push({ name, ok: false, err: e.message || String(e) });
+      }
+    }
+
+    const row = (id) => db.get('sets', id);
+    const seq = async () => (await db.get('meta', 'rpeSeq'))?.value ?? 0;
+
+    async function closeOpen() {
+      const w = await workouts.getActiveWorkout();
+      if (w) await workouts.finishWorkout(w.id);
+    }
+
+    try {
+      await check('A y después B suelta A', async () => {
+        const A = await effort.registerSet({ workoutId: 1, exerciseId: 1, peso: 80, reps: 6, restEnd: clock.t + 120_000 });
+        clock.t += 9_000;
+        const B = await effort.registerSet({ workoutId: 1, exerciseId: 1, peso: 82, reps: 6, restEnd: clock.t + 120_000 });
+        assert(A.preguntar && B.preguntar && A.marca !== B.marca, 'marcas');
+        const late = await effort.anotarRpe({ mark: A.marca, rir: 2 });
+        assert(late.preguntar === true && late.mensaje.includes('vigente'), late.mensaje);
+        assert((await row(A.setId)).rpe == null, 'A sin esfuerzo');
+        const pending = await effort.loadPending();
+        assert(pending?.setId === B.setId && pending.attempts === 0, 'B sigue y el intento no se gasta');
+      });
+
+      await check('recarga con pregunta viva y vencida', async () => {
+        const A = await effort.registerSet({ workoutId: 2, exerciseId: 1, peso: 50, reps: 8, restEnd: clock.t + 30_000 });
+        const first = await effort.loadPending();
+        const second = await effort.loadPending();
+        assert(first && second && first.mark === second.mark && first.setId === A.setId, 'sigue al releer');
+        clock.t = first.until + 1;
+        assert(await effort.loadPending() === null, 'vencida se borra al leer');
+      });
+
+      await check('el plazo gana a una marca vieja', async () => {
+        const A = await effort.registerSet({ workoutId: 3, exerciseId: 1, peso: 51, reps: 8, restEnd: clock.t + 20_000 });
+        const pending = await effort.loadPending();
+        clock.t = pending.until + 5;
+        const late = await effort.anotarRpe({ mark: pending.mark + 9, rir: 1 });
+        assert(late.mensaje.includes('plazo venció'), late.mensaje);
+        assert(await effort.loadPending() === null, 'se soltó');
+        assert((await row(A.setId)).rpe == null, 'no escribió');
+      });
+
+      await check('rir inválido gasta intento y al segundo suelta', async () => {
+        const A = await effort.registerSet({ workoutId: 4, exerciseId: 1, peso: 55, reps: 6, restEnd: clock.t + 90_000 });
+        const one = await effort.anotarRpe({ mark: A.marca, rir: -1 });
+        assert(one.preguntar === true, one.mensaje);
+        assert((await row(A.setId)).rpe == null, 'no escribió');
+        assert((await effort.loadPending()).attempts === 1, 'un intento');
+        const two = await effort.anotarRpe({ mark: A.marca, rir: 1.5 });
+        assert(two.preguntar === false && two.mensaje.includes('sin esfuerzo'), two.mensaje);
+        assert((await row(A.setId)).rpe == null, 'sigue vacía');
+        assert(await effort.loadPending() === null, 'se soltó');
+      });
+
+      await check('dos respuestas a la vez y solo escribe una', async () => {
+        const A = await effort.registerSet({ workoutId: 5, exerciseId: 1, peso: 77, reps: 5, restEnd: clock.t + 60_000 });
+        const [r1, r2] = await Promise.all([
+          effort.anotarRpe({ mark: A.marca, rir: 2 }),
+          effort.anotarRpe({ mark: A.marca, rir: 1 }),
+        ]);
+        const saved = [r1, r2].filter((r) => r.mensaje.startsWith('Esfuerzo guardado'));
+        assert(saved.length === 1, `${r1.mensaje} | ${r2.mensaje}`);
+        const set = await row(A.setId);
+        assert(set.rpe === 8 || set.rpe === 9, String(set.rpe));
+      });
+
+      await check('calentamiento ignora el rir', async () => {
+        const A = await effort.registerSet({ workoutId: 6, exerciseId: 1, peso: 20, reps: 10, tipo: 'calentamiento', rir: 1 });
+        assert(A.preguntar === false && A.mensaje.includes('Calentamiento'), A.mensaje);
+        const set = await row(A.setId);
+        assert(set.tipo === 'calentamiento' && set.rpe == null, 'sin esfuerzo');
+        assert(await effort.loadPending() === null, 'sin pregunta');
+      });
+
+      await check('terminar y descartar sueltan la pregunta', async () => {
+        await closeOpen();
+        const w = await workouts.startWorkout();
+        const A = await effort.registerSet({ workoutId: w.id, exerciseId: 1, peso: 60, reps: 5, restEnd: clock.t + 60_000 });
+        assert(await effort.loadPending(), 'había pregunta');
+        await workouts.finishWorkout(w.id);
+        assert(await effort.loadPending() === null, 'terminar la soltó');
+        const late = await effort.anotarRpe({ mark: A.marca, rir: 1 });
+        assert(late.mensaje.includes('No hay pregunta'), late.mensaje);
+        const w2 = await workouts.startWorkout();
+        const B = await effort.registerSet({ workoutId: w2.id, exerciseId: 1, peso: 61, reps: 5, restEnd: clock.t + 60_000 });
+        await workouts.deleteWorkout(w2.id);
+        assert(await effort.loadPending() === null, 'descartar la soltó');
+        assert((await row(B.setId)) == null, 'la serie salió con la sesión');
+      });
+
+      await check('Fit no pisa y los botones sí', async () => {
+        const A = await effort.registerSet({ workoutId: 8, exerciseId: 1, peso: 90, reps: 3, rir: 2 });
+        assert((await row(A.setId)).rpe === 8, 'rir 2 es rpe 8');
+        const late = await effort.anotarRpe({ mark: 1, rir: 0 });
+        assert(late.preguntar === false, late.mensaje);
+        assert((await row(A.setId)).rpe === 8, 'Fit no la cambió');
+        const edited = await effort.setEffort(A.setId, 0);
+        assert(edited.ok && edited.rpe === 10, 'el botón corrige');
+        assert((await row(A.setId)).rpe === 10, 'quedó en ninguna');
+      });
+
+      await check('botón sobre la pregunta abierta la cierra', async () => {
+        const A = await effort.registerSet({ workoutId: 9, exerciseId: 1, peso: 62, reps: 6, restEnd: clock.t + 60_000 });
+        const res = await effort.setEffort(A.setId, 1);
+        assert(res.ok && (await row(A.setId)).rpe === 9, 'escribió');
+        assert(await effort.loadPending() === null, 'soltó la pregunta');
+      });
+
+      await check('saltar el descanso deja un minuto', async () => {
+        await db.put('meta', { key: 'activeRest', value: { restEnd: clock.t + 180_000, lastReps: 5 } });
+        await effort.registerSet({ workoutId: 10, exerciseId: 1, peso: 44, reps: 5, restEnd: clock.t + 180_000 });
+        const before = (await effort.loadPending()).until;
+        await effort.skipRestClock();
+        const after = await effort.loadPending();
+        assert(after.until === clock.t + 60_000, String(after.until));
+        assert(after.until < before, 'se acortó');
+        assert(!(await db.get('meta', 'activeRest')), 'el reloj se apagó');
+      });
+
+      await check('rir 6 se guarda como piso y no pregunta', async () => {
+        const A = await effort.registerSet({ workoutId: 12, exerciseId: 1, peso: 80, reps: 6, rir: 6 });
+        assert(A.preguntar === false, A.mensaje);
+        assert((await row(A.setId)).rpe === 6, 'piso');
+        const B = await effort.registerSet({ workoutId: 12, exerciseId: 1, peso: 81, reps: 6, restEnd: clock.t + 60_000 });
+        const noted = await effort.anotarRpe({ mark: B.marca, rir: 6 });
+        assert(noted.mensaje.startsWith('Esfuerzo guardado'), noted.mensaje);
+        assert((await row(B.setId)).rpe === 6, 'anotar también es piso');
+      });
+
+      await check('rir inválido al anotar la serie igual abre la pregunta', async () => {
+        const A = await effort.registerSet({ workoutId: 13, exerciseId: 1, peso: 70, reps: 8, rir: -3, restEnd: clock.t + 50_000 });
+        assert(A.preguntar === true, A.mensaje);
+        const set = await row(A.setId);
+        assert(set.tipo === 'trabajo' && set.rpe == null && set.ts === clock.t, 'guardada sin esfuerzo');
+      });
+
+      await check('la repetición de 8 s no abre otra marca', async () => {
+        const A = await effort.registerSet({ workoutId: 14, exerciseId: 1, peso: 80, reps: 6, restEnd: clock.t + 60_000 }, { guard: true });
+        const dup = await effort.registerSet({ workoutId: 14, exerciseId: 1, peso: 80, reps: 6, restEnd: clock.t + 60_000 }, { guard: true });
+        assert(dup.duplicada && dup.preguntar && dup.marca === A.marca, dup.mensaje);
+        const twins = (await db.getAll('sets')).filter((s) => s.workoutId === 14 && s.peso === 80);
+        assert(twins.length === 1, String(twins.length));
+        clock.t += 9_000;
+        const B = await effort.registerSet({ workoutId: 14, exerciseId: 1, peso: 80, reps: 6 }, { guard: true });
+        assert(!B.duplicada && B.setId !== A.setId, 'pasados 8 s es otra serie');
+        assert((await row(A.setId)).rpe == null, 'no rellenó A');
+      });
+
+      await check('la marca no vuelve a empezar', async () => {
+        const A = await effort.registerSet({ workoutId: 15, exerciseId: 1, peso: 33, reps: 6, restEnd: clock.t + 60_000 });
+        await effort.anotarRpe({ mark: A.marca, rir: 1 });
+        clock.t += 9_000;
+        effort.resetRegisterGuard();
+        const B = await effort.registerSet({ workoutId: 15, exerciseId: 1, peso: 34, reps: 6 });
+        assert(B.marca === A.marca + 1, `${A.marca} → ${B.marca}`);
+      });
+
+      await check('borrar la serie o el ejercicio suelta la pregunta', async () => {
+        const A = await effort.registerSet({ workoutId: 16, exerciseId: 1, peso: 21, reps: 8, restEnd: clock.t + 60_000 });
+        await workouts.deleteSet(A.setId);
+        assert(await effort.loadPending() === null, 'borrar serie');
+        const ex = await workouts.addExercise('Esfuerzo prueba ' + clock.t, 'Pecho');
+        const B = await effort.registerSet({ workoutId: 16, exerciseId: ex, peso: 30, reps: 8, restEnd: clock.t + 60_000 });
+        await workouts.deleteExercise(ex);
+        assert(await effort.loadPending() === null, 'borrar ejercicio');
+        assert(!(await workouts.getExercise(ex)), 'el ejercicio salió');
+        assert(B.setId, 'hubo serie');
+      });
+
+      await check('serie ya borrada y pregunta colgada', async () => {
+        const A = await effort.registerSet({ workoutId: 17, exerciseId: 1, peso: 22, reps: 8, restEnd: clock.t + 60_000 });
+        await db.remove('sets', A.setId);
+        const late = await effort.anotarRpe({ mark: A.marca, rir: 1 });
+        assert(late.mensaje.includes('Esa serie no está'), late.mensaje);
+        assert(await effort.loadPending() === null, 'se soltó');
+      });
+
+      await check('pasarla a calentamiento suelta la pregunta', async () => {
+        const A = await effort.registerSet({ workoutId: 18, exerciseId: 1, peso: 23, reps: 8, restEnd: clock.t + 60_000 });
+        await effort.setTipo(A.setId, 'calentamiento');
+        const set = await row(A.setId);
+        assert(set.tipo === 'calentamiento' && set.rpe == null, 'sin esfuerzo');
+        assert(await effort.loadPending() === null, 'pregunta suelta');
+      });
+
+      await check('no sé no gasta el intento', async () => {
+        const A = await effort.registerSet({ workoutId: 19, exerciseId: 1, peso: 24, reps: 8, restEnd: clock.t + 60_000 });
+        const res = await effort.anotarRpe({ mark: A.marca, omitir: true, rir: -1 });
+        assert(res.mensaje.includes('no lo sabe'), res.mensaje);
+        assert((await row(A.setId)).rpe == null, 'no escribió');
+        assert(await effort.loadPending() === null, 'se soltó');
+      });
+
+      await check('si ya tiene esfuerzo no se modifica', async () => {
+        const A = await effort.registerSet({ workoutId: 21, exerciseId: 1, peso: 25, reps: 8, restEnd: clock.t + 60_000 });
+        const set = await row(A.setId);
+        set.rpe = 9;
+        await db.put('sets', set);
+        const res = await effort.anotarRpe({ mark: A.marca, rir: 0 });
+        assert(res.mensaje.includes('No se modificó'), res.mensaje);
+        assert((await row(A.setId)).rpe === 9, 'se quedó');
+      });
+
+      await check('sin pregunta abierta', async () => {
+        await effort.releasePending();
+        const res = await effort.anotarRpe({ mark: 3, rir: 1 });
+        assert(res.preguntar === false && res.mensaje.includes('No hay pregunta abierta'), res.mensaje);
+      });
+
+      await check('doble toque de la pantalla', async () => {
+        const A = await effort.registerSet(
+          { workoutId: 22, exerciseId: 1, peso: 15, reps: 15 },
+          { guard: true, abrirPregunta: false }
+        );
+        const dup = await effort.registerSet(
+          { workoutId: 22, exerciseId: 1, peso: 15, reps: 15, rir: 2 },
+          { guard: true, abrirPregunta: false }
+        );
+        assert(dup.duplicada && dup.aviso === effort.AVISO_DUPLICADA, dup.aviso);
+        assert(dup.aviso.includes('Falta esfuerzo'), dup.aviso);
+        const twins = (await db.getAll('sets')).filter((s) => s.workoutId === 22 && s.peso === 15);
+        assert(twins.length === 1 && twins[0].id === A.setId, String(twins.length));
+        assert(twins[0].rpe == null, 'el segundo toque no guardó el esfuerzo');
+      });
+
+      await check('reloj de descanso vencido se borra al leer', async () => {
+        await db.put('meta', { key: 'activeRest', value: { restEnd: clock.t + 5_000, lastReps: 6 } });
+        clock.t += 6_000;
+        assert(await workouts.loadActiveRest() === null, 'no queda reloj');
+        assert(!(await db.get('meta', 'activeRest')), 'se borró');
+      });
+
+      await check('1RM ajustado aparte de Epley', async () => {
+        const hi = workouts.adjusted1RM(80, 6, 8);
+        assert(Math.abs(hi.value - (80 * (1 + 8 / 30))) < 1e-9, String(hi.value));
+        assert(hi.reliable && !hi.floor, '80×6 a RPE 8');
+        assert(workouts.adjusted1RM(80, 6, 10).value === 96, 'a tope sigue Epley');
+        const floor = workouts.adjusted1RM(80, 6, 6);
+        assert(floor.floor && Math.abs(floor.value - (80 * (1 + 10 / 30))) < 1e-9, 'piso');
+        assert(workouts.adjusted1RM(80, 12, 6).reliable === false, 'más de 12');
+        assert(workouts.estimate1RM(80, 6) === 96, 'Epley no mira el esfuerzo');
+        assert(workouts.adjusted1RM(80, 6, 3) == null, 'un 3 libre no inventa reserva');
+        assert(workouts.adjusted1RM(80, 6, 12) == null, 'un 12 queda fuera');
+        assert(workouts.adjusted1RM(80, 6, 8.5) == null, 'un decimal queda fuera');
+      });
+
+      await check('la semana separa directas, sin esfuerzo y fáciles', async () => {
+        await closeOpen();
+        const before = await workouts.weekStats();
+        const w = await workouts.startWorkout();
+        const ex = await workouts.addExercise('Esfuerzo semana ' + clock.t, 'Espalda');
+        await effort.registerSet({ workoutId: w.id, exerciseId: ex, peso: 100, reps: 5, rir: 1, restEnd: clock.t + 60_000 });
+        clock.t += 9_000;
+        await effort.registerSet({ workoutId: w.id, exerciseId: ex, peso: 100, reps: 5, restEnd: clock.t + 60_000 });
+        clock.t += 9_000;
+        await effort.registerSet({ workoutId: w.id, exerciseId: ex, peso: 40, reps: 12, rir: 6, restEnd: clock.t + 60_000 });
+        await db.add('sets', { workoutId: w.id, exerciseId: ex, peso: 10, reps: 10, ts: clock.t });
+        const after = await workouts.weekStats();
+        assert(after.efectivas === before.efectivas + 1, 'efectivas ' + after.efectivas);
+        assert(after.sinEsfuerzo === before.sinEsfuerzo + 1, 'sin esfuerzo ' + after.sinEsfuerzo);
+        assert(after.faciles === before.faciles + 1, 'fáciles ' + after.faciles);
+        assert(after.volumen > before.volumen, 'el volumen sigue');
+        assert(after.porGrupo.some((g) => g.grupo === 'Espalda' && g.n >= 1), 'grupo');
+        await workouts.finishWorkout(w.id);
+      });
+
+      await check('Fit tiene la pregunta abierta y la pantalla guarda otra serie', async () => {
+        const antes = await seq();
+        const A = await effort.registerSet({ workoutId: 31, exerciseId: 1, peso: 70, reps: 6, restEnd: clock.t + 60_000 });
+        const abierta = await seq();
+        assert(abierta === antes + 1, 'Fit gastó una marca');
+        assert(await effort.loadPending(), 'hay pregunta');
+        const B = await effort.registerSet(
+          { workoutId: 31, exerciseId: 1, peso: 72, reps: 6 },
+          { guard: true, abrirPregunta: false }
+        );
+        assert(await seq() === abierta, 'soltar el pendiente no gasta marca');
+        assert(await effort.loadPending() === null, 'la pantalla soltó la pregunta');
+        assert(B.aviso === effort.AVISO_SIN_ESFUERZO, B.aviso);
+        const late = await effort.anotarRpe({ mark: A.marca, rir: 1 });
+        assert(late.mensaje.includes('No hay pregunta abierta para esa marca'), late.mensaje);
+        assert((await row(A.setId)).rpe == null, 'la respuesta tardía no escribió');
+        assert((await row(B.setId)).tipo === 'trabajo' && (await row(B.setId)).rpe == null, 'la nueva queda sin esfuerzo');
+      });
+
+      await check('guardar desde la pantalla sin número', async () => {
+        await closeOpen();
+        const antes = await seq();
+        const before = await workouts.weekStats();
+        const w = await workouts.startWorkout();
+        const saved = await effort.registerSet(
+          { workoutId: w.id, exerciseId: 1, peso: 55, reps: 8, restEnd: clock.t + 60_000 },
+          { guard: true, abrirPregunta: false }
+        );
+        const set = await row(saved.setId);
+        assert(set.tipo === 'trabajo' && set.rpe == null, 'tipo sin RPE');
+        assert(await effort.loadPending() === null, 'sin pregunta');
+        assert(await seq() === antes, 'no gasta marca');
+        assert(saved.aviso === effort.AVISO_SIN_ESFUERZO, saved.aviso);
+        const after = await workouts.weekStats();
+        assert(after.sinEsfuerzo === before.sinEsfuerzo + 1, 'cuenta en sin esfuerzo');
+        await workouts.finishWorkout(w.id);
+      });
+
+      await check('las tres cifras cuadran y el RPE viejo cae en un umbral', async () => {
+        await closeOpen();
+        const w = await workouts.startWorkout();
+        const ex = await workouts.addExercise('RPE viejo ' + clock.t, 'Pecho');
+        const suelta = await db.add('sets', { workoutId: w.id, exerciseId: ex, peso: 20, reps: 8, rpe: 9, ts: clock.t });
+        const alta = await db.add('sets', { workoutId: w.id, exerciseId: ex, peso: 50, reps: 5, rpe: 12, ts: clock.t });
+        const baja = await db.add('sets', { workoutId: w.id, exerciseId: ex, peso: 40, reps: 8, rpe: 5, ts: clock.t });
+        const decimal = await db.add('sets', { workoutId: w.id, exerciseId: ex, peso: 30, reps: 8, rpe: 8.5, ts: clock.t });
+        const before = await workouts.weekStats();
+        await effort.setTipo(alta, 'trabajo');
+        await effort.setTipo(baja, 'trabajo');
+        await effort.setTipo(decimal, 'trabajo');
+        const after = await workouts.weekStats();
+        assert(after.efectivas === before.efectivas + 2, '12 y 8.5 son efectivas');
+        assert(after.faciles === before.faciles + 1, 'un 5 es fácil');
+        assert(after.sinEsfuerzo === before.sinEsfuerzo, 'la serie sin tipo no entra');
+        const propias = (await db.byIndex('sets', 'workoutId', w.id)).filter((s) => s.exerciseId === ex && s.tipo === 'trabajo');
+        const cuenta = propias.reduce((a, s) => {
+          const r = Number(s.rpe);
+          const tiene = s.rpe != null && s.rpe !== '' && Number.isFinite(r);
+          if (!tiene) a.sin++;
+          else if (r < 7) a.faciles++;
+          else a.efectivas++;
+          return a;
+        }, { efectivas: 0, faciles: 0, sin: 0 });
+        assert(cuenta.efectivas + cuenta.faciles + cuenta.sin === propias.length, 'la suma cuadra');
+        const prog = await workouts.progressForExercise(ex);
+        const day = prog.sessions[prog.sessions.length - 1];
+        assert(day.adj == null, 'el RPE fuera de rango no entra en el 1RM ajustado');
+        assert(suelta, 'la serie sin tipo sigue guardada');
+        await workouts.finishWorkout(w.id);
+      });
+
+      await check('importar una pregunta vencida la borra y puede bajar la marca', async () => {
+        const A = await effort.registerSet({ workoutId: 40, exerciseId: 1, peso: 11, reps: 6, restEnd: clock.t + 60_000 });
+        assert(A.marca > 1, 'ya había marcas');
+        await db.restoreAll({
+          meta: [
+            { key: 'pendingRpe', value: { setId: 999, mark: 1, attempts: 0, until: clock.t - 1000 } },
+            { key: 'rpeSeq', value: 1 },
+          ],
+        });
+        assert(await effort.loadPending() === null, 'vencida al leer');
+        assert((await db.get('meta', 'rpeSeq')).value === 1, 'el respaldo puede bajar el contador');
+      });
+    } finally {
+      const failed = results.filter((r) => !r.ok).length;
+      document.getElementById('out').innerHTML = results.map((r) =>
+        `<li class="${r.ok ? 'ok' : 'bad'}">${r.ok ? 'Bien' : 'Mal'} · ${r.name}${r.err ? ' — ' + r.err : ''}</li>`
+      ).join('') || '<li class="bad">No corrió ningún caso.</li>';
+      document.body.dataset.done = '1';
+      document.body.dataset.failed = String(failed);
+      document.body.dataset.total = String(results.length);
+      await closeDB();
+      await new Promise((resolve) => {
+        const req = indexedDB.deleteDatabase(TEST_DB);
+        req.onsuccess = () => resolve();
+        req.onerror = () => resolve();
+        req.onblocked = () => resolve();
+      });
+    }
+  </script>
+</body>
+</html>

@@ -1,4 +1,4 @@
-import { listExercises, progressForExercise, lastTrainedExerciseId, prByExercise, isOwnExercise } from '../services/workouts.js';
+import { listExercises, progressForExercise, lastTrainedExerciseId, prByExercise, isOwnExercise, muscleFocus } from '../services/workouts.js';
 import { addBodyWeight, listBodyWeights, deleteBodyMetric } from '../services/body.js';
 import { state } from '../store.js';
 import { delegate, forms, changes, toast, esc, num, fmtNum, go } from '../utils/dom.js';
@@ -7,7 +7,7 @@ import { formatShort, todayISO } from '../utils/dates.js';
 import { icons } from '../utils/icons.js';
 import { bindExerciseEdit, openExerciseEditor } from '../utils/exercise-editor.js';
 
-const METRICS = { e1rm: '1RM est.', maxPeso: 'Peso máx.', volumen: 'Volumen' };
+const METRICS = { e1rm: '1RM est.', adj: '1RM aj.', maxPeso: 'Peso máx.', volumen: 'Volumen' };
 let metric = 'e1rm';
 
 function trendChip(curr, prev) {
@@ -18,16 +18,31 @@ function trendChip(curr, prev) {
   return `<span class="trend-down">${icons.arrowDown({ size: 11 })} ${Math.abs(pct).toFixed(1)}%</span>`;
 }
 
+function adjCaption(sessions) {
+  const days = sessions.filter((s) => s.adj != null);
+  if (!days.length) return 'Todavía no hay series de trabajo con esfuerzo. Esta escala no se mezcla con el 1RM estimado.';
+  const last = days[days.length - 1];
+  const bits = ['Escala aparte del 1RM estimado. «4 o más» es un piso.'];
+  if (last.adjFloor) bits.push('El último punto es un piso.');
+  if (last.adjReliable === false) bits.push('El último punto no es fiable: pasan de 12 repeticiones efectivas.');
+  return bits.join(' ');
+}
+
 function compareCard(sessions, unidad) {
   if (sessions.length < 2) return '';
   const last = sessions[sessions.length - 1];
   const prev = sessions[sessions.length - 2];
   const rows = [
     { label: '1RM est.', curr: last.e1rm, prev: prev.e1rm, unit: unidad },
+  ];
+  if (last.adj != null && prev.adj != null) {
+    rows.push({ label: '1RM aj.', curr: last.adj, prev: prev.adj, unit: unidad });
+  }
+  rows.push(
     { label: 'Volumen', curr: last.volumen, prev: prev.volumen, unit: unidad },
     { label: 'Series', curr: last.series, prev: prev.series, unit: '' },
     { label: 'Peso máx.', curr: last.maxPeso, prev: prev.maxPeso, unit: unidad },
-  ];
+  );
   return `
     <div class="compare-card">
       <div class="compare-card-head">
@@ -82,7 +97,13 @@ export async function render(el, [idParam] = []) {
   ]);
   const unidad = state.settings.unidad;
   const sessions = prog.sessions.slice(-20);
-  const points = sessions.map((s) => ({ label: formatShort(s.fecha), value: Math.round(s[metric] * 10) / 10 }));
+  const points = sessions
+    .filter((s) => metric !== 'adj' || s.adj != null)
+    .map((s) => ({
+      label: formatShort(s.fecha),
+      value: Math.round((metric === 'adj' ? s.adj : s[metric]) * 10) / 10,
+    }));
+  const adjNote = metric === 'adj' ? adjCaption(sessions) : '';
   const bodyPoints = body.slice(-30).map((b) => ({ label: formatShort(b.fecha), value: b.peso }));
 
   el.innerHTML = `
@@ -91,7 +112,7 @@ export async function render(el, [idParam] = []) {
     <label class="field">
       <span>Ejercicio seleccionado</span>
       <select data-change="exercise">
-        ${exs.map((e) => `<option value="${e.id}" data-grupo="${esc(e.grupo)}" ${isOwnExercise(e) ? 'data-propio="1"' : ''} ${e.id === exId ? 'selected' : ''}>${esc(e.nombre)}</option>`).join('')}
+        ${exs.map((e) => `<option value="${e.id}" data-grupo="${esc(e.grupo)}" ${muscleFocus(e.nombre) ? `data-foco="${esc(muscleFocus(e.nombre))}"` : ''} ${isOwnExercise(e) ? 'data-propio="1"' : ''} ${e.id === exId ? 'selected' : ''}>${esc(e.nombre)}</option>`).join('')}
       </select>
     </label>
 
@@ -125,11 +146,12 @@ export async function render(el, [idParam] = []) {
       ${compareCard(sessions, unidad)}
 
       <!-- GRÁFICO -->
-      <div class="seg" role="group" aria-label="Métrica del gráfico" style="margin:16px 0 10px">
+      <div class="seg metric-seg" role="group" aria-label="Métrica del gráfico" style="margin:16px 0 10px">
         ${Object.entries(METRICS).map(([k, label]) =>
           `<button type="button" data-action="metric" data-metric="${k}" aria-pressed="${k === metric}">${label}</button>`).join('')}
       </div>
       ${lineChart(points, { desc: `${METRICS[metric]} por sesión` })}
+      ${adjNote ? `<p class="muted effort-note">${esc(adjNote)}</p>` : ''}
 
       <!-- TABLA DE SESIONES CON TENDENCIAS -->
       ${sessionTable(sessions, unidad)}`

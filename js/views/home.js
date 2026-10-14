@@ -1,10 +1,18 @@
 import { creatineSummary, logIntake, deleteIntake } from '../services/creatine.js';
-import { getActiveWorkout, startWorkout, listWorkoutSummaries, weekStats } from '../services/workouts.js';
+import { getActiveWorkout, startWorkout, listWorkoutSummaries, weekStats, muscleName } from '../services/workouts.js';
 import { state } from '../store.js';
 import { delegate, toast, esc, fmtNum, go } from '../utils/dom.js';
 import { formatLong, todayISO } from '../utils/dates.js';
 import { icons } from '../utils/icons.js';
 import { creatinePlate } from '../utils/components.js';
+
+function weekGroupLine(week) {
+  const groups = (week.porGrupo || [])
+    .filter((g) => muscleName(g.grupo))
+    .map((g) => `${esc(muscleName(g.grupo))} ${g.n}`)
+    .join(' · ');
+  return groups ? `<p class="week-effort">${groups}</p>` : '';
+}
 
 export async function render(el) {
   const [cr, active, recent, week] = await Promise.all([
@@ -62,6 +70,13 @@ export async function render(el) {
       <div class="stat"><b>${fmtNum(Math.round(week.volumen))}</b><span>${esc(unidad)} de<br>volumen</span></div>
       <div class="stat"><b>${cr.dias7}/7</b><span>días con<br>creatina</span></div>
     </div>
+    ${week.entrenos ? `
+    <div class="stats">
+      <div class="stat"><b>${week.efectivas}</b><span>series<br>efectivas</span></div>
+      <div class="stat"><b>${week.faciles}</b><span>fáciles</span></div>
+      <div class="stat"><b>${week.sinEsfuerzo}</b><span>sin<br>esfuerzo</span></div>
+    </div>
+    ${weekGroupLine(week)}` : ''}
 
     <h2 class="section-title">
       <span>Últimos entrenamientos</span>

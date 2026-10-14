@@ -2,7 +2,7 @@
 
 Documento vivo del producto. Describe cómo está armado, dónde vive cada dato y qué no se puede romper. Cuando cambie el comportamiento, el esquema, una pantalla o la forma de publicar, este archivo se actualiza en el mismo cambio.
 
-Última revisión: 14 de octubre de 2026. Base de datos versión 2. Caché de la app `v40`.
+Última revisión: 14 de octubre de 2026. Base de datos versión 2. Caché de la app `v42`.
 
 ## Qué es
 
@@ -86,14 +86,14 @@ El día del peso corporal y el de una toma de creatina usan la misma hoja, con e
 | Ruta | Pantalla | Qué hace |
 | --- | --- | --- |
 | `#/` | Inicio | Resumen de la semana, creatina de hoy y últimos entrenos. Cada entreno abre `#/history/:id`. |
-| `#/workout` | Entreno | Una sesión abierta. Si no hay ninguna, el botón la crea. Peso, reps y RPE; descanso; series ya hechas; alta de ejercicio. Los ejercicios del atleta se corrigen o se eliminan desde la lista. |
+| `#/workout` | Entreno | Una sesión abierta. Si no hay ninguna, el botón la crea. Peso, reps, tipo de serie y cuántas repeticiones más podría haber hecho; descanso; series ya hechas; alta de ejercicio. Los ejercicios del atleta se corrigen o se eliminan desde la lista. |
 | `#/history` y `#/history/:id` | Historial | Lista y detalle. Borrar un entreno borra también sus series. |
 | `#/progress` y `#/progress/:id` | Progreso | Un ejercicio: PR, comparativa, gráfica y tabla. Abajo, el peso corporal. |
 | `#/creatine` | Creatina | Tomas, racha, calendario y saturación. |
 | `#/agent` | Fit AI | Voz en directo. Sin clave, solo pide la clave. |
 | `#/settings` | Ajustes | Gramos, descanso, unidad, respaldo, instalar y borrar todo. |
 
-Si el ejercicio tiene grupo muscular, el nombre lo lleva debajo, en letra pequeña y con un punto de color. También queda bajo el campo ya elegido y junto al nombre en las series registradas. El grupo `Otro` no se muestra: no nombra un músculo.
+Si el ejercicio tiene grupo muscular, el nombre lo lleva debajo, en letra pequeña y con un punto de color. También queda bajo el campo ya elegido y junto al nombre en las series registradas. El grupo `Otro` no se muestra: no nombra un músculo. Cuando el grupo se queda corto, la misma línea sigue con la parte concreta en minúscula, por ejemplo «PIERNAS · cuádriceps y glúteo». Eso se ve al elegir y bajo el campo. En las series ya registradas sigue solo el grupo.
 
 Un ejercicio es del atleta cuando su nombre no está en el catálogo. En la lista, esa fila lleva un lápiz justo antes del círculo y fuera de la cápsula amarilla. El nombre sigue eligiendo. El lápiz abre la ficha «Editar ejercicio» (nombre y grupo). Eliminar está en esa ficha, no en la fila: si hay series, la confirmación dice cuántas y se borran con el ejercicio en la misma operación. El catálogo no lleva lápiz. La ficha vive en `document.body`, como las otras hojas.
 
@@ -105,7 +105,7 @@ Base `brother-fit`, versión 2. Para una tabla o un índice nuevo se sube `DB_VE
 | --- | --- |
 | `exercises` | `{ id, nombre, grupo }`. El nombre es único. No hay campo de dueño: es del atleta si el nombre no está en el catálogo. |
 | `workouts` | `{ id, fecha, startedAt, finishedAt, duracion, notas }`. `fecha` es índice. |
-| `sets` | `{ id, workoutId, exerciseId, peso, reps, rpe?, ts }`. Índices por entreno y por ejercicio. |
+| `sets` | `{ id, workoutId, exerciseId, peso, reps, tipo?, rpe?, ts }`. `tipo` es `trabajo` o `calentamiento`. Índices por entreno y por ejercicio. Una serie vieja sin `tipo` sigue contando en el volumen y en el 1RM estimado, y no pide esfuerzo. |
 | `supplements` | `{ id, tipo, fecha, hora, cantidad, ts }`. Hoy `tipo` es `creatina`. |
 | `bodyMetrics` | `{ id, fecha, peso, ts }`. |
 | `agentMemory` | `{ id, contenido, ts }`. Recuerdos de Fit, no las series. |
@@ -118,6 +118,8 @@ Claves de `meta`:
 | `settings` | `{ creatinaGramos, descanso, descansoMode, unidad }`. |
 | `activeWorkoutId` | Id de la sesión abierta. Se borra al terminar o si esa sesión ya está cerrada. |
 | `activeRest` | `{ restEnd, lastReps }` del descanso en curso. Si ya venció, se borra al leerlo. |
+| `pendingRpe` | Pregunta abierta: `{ setId, mark, attempts, until }`. Se suelta al anotar, al vencer, al crear otra serie, al terminar o descartar, al borrar esa serie, al pasarla a calentamiento o al usar los botones. |
+| `rpeSeq` | Entero de la próxima marca. No vuelve a cero al cerrar la pregunta. Solo puede bajar si se importa un respaldo o se borra todo, porque esas dos acciones recargan la página y cortan la sesión de Fit. |
 | `seeded` | Marca de que el catálogo ya se intentó. La semilla ya no depende de esta marca para volver a correr. |
 | `lastBackup` | Marca de tiempo del último JSON exportado. |
 | `geminiApiKey` | Clave de Gemini. Solo en este teléfono. No va al repositorio ni al respaldo como secreto aparte: viaja dentro del volcado completo de `meta` si se exporta todo. |
@@ -143,16 +145,28 @@ Cada serie dispara el descanso y lo guarda en `meta.activeRest`. Recargar el tel
 
 En modo manual se usan los segundos de Ajustes (`descanso`, 90 por defecto).
 
-El 1RM estimado es Epley: si hay una repetición, el peso; si hay más, `peso * (1 + reps / 30)`. El volumen de una serie es peso por repeticiones. El PR de un ejercicio es el mayor peso, las mayores reps y el mayor 1RM de todas sus series.
+El 1RM estimado es Epley: si hay una repetición, el peso; si hay más, `peso * (1 + reps / 30)`. El volumen de una serie es peso por repeticiones, también en el calentamiento. El PR de un ejercicio sigue siendo el mayor peso, las mayores reps y el mayor 1RM de Epley. Esa curva no cambia el día que empieza el esfuerzo.
+
+Una serie de trabajo pregunta «¿Cuántas repeticiones más podrías haber hecho?» con cinco botones: 0, 1, 2, 3 y «4 o más». Debajo, «0 es no salía otra». No se copia de la serie anterior. Se guarda `rpe = 10 - rir`, y un 4 o cualquier entero mayor queda en 4, así que el RPE es 6. Ese 6 es un piso, no un punto medio, y no cuenta como serie efectiva. En calentamiento los botones siguen en su sitio, atenuados: «Los calentamientos no llevan esfuerzo». Si había un número elegido, se borra y no vuelve solo al pasar otra vez a trabajo.
+
+La pantalla puede guardar una serie de trabajo sin ese número. Avisa «Serie guardada. Falta esfuerzo» y no abre pregunta: el pendiente significa solo que Fit preguntó en voz alta y espera respuesta. Sí suelta la pregunta que hubiera. Un segundo toque igual, dentro de 8 segundos, no crea otra serie y avisa que ya estaba anotada y que el esfuerzo se añade con «Falta esfuerzo». En el entreno y en el historial esa marca es un botón y abre los cinco. Esos botones sí pisan un esfuerzo ya guardado. Fit no lo pisa.
+
+Fit, si no lo oyó al anotar, abre una pregunta con marca y hace la misma pregunta que la pantalla. El plazo se escribe en ese momento: fin del descanso más un minuto si hay reloj, o cinco minutos si no hay. Saltar el descanso es el único caso que lo reescribe, a un minuto desde ahora, en la misma operación que apaga el reloj. La respuesta entra con `anotar_rpe` y la marca vigente. Una marca vieja no anota y no gasta intento. Un número inválido gasta un intento; al segundo, la serie se queda sin esfuerzo. «No sé» la suelta sin gastar ese intento. Si no hay pregunta, el plazo venció o la serie ya no está, Fit no vuelve a preguntar.
+
+En la semana, al lado del volumen, hay tres cuentas al mismo nivel y solo sobre series de trabajo. Sin esfuerzo: tienen tipo y no tienen RPE. Fáciles: RPE menor que 7. Efectivas: RPE de 7 o más. Las tres suman las series de trabajo. Cada efectiva cuenta una vez, en el grupo de su ejercicio: eso es lo que el documento llama directa, y no parte una serie en varios músculos. Una serie vieja sin tipo no entra en ninguna. Si ahora se le pone tipo, el RPE que ya tenía cae en fácil o en efectiva según el umbral.
+
+El 1RM ajustado es otra métrica, `peso * (1 + (reps + (10 - rpe)) / 30)`. Solo usa series de trabajo cuyo RPE es un entero de 6 a 10. El RPE de una serie sin tipo, o uno fuera de ese rango (un 3, un 12, un 8.5 de cuando el campo era libre), no entra en este cálculo ni se lee como repeticiones de reserva. Si las repeticiones efectivas pasan de 12, ese punto no es fiable.
+
+`rpe-test.html` corre estos casos contra la base `brother-fit-rpe-test` y un reloj que se puede adelantar. No registra el service worker y no abre `brother-fit`.
 
 El catálogo inicial, por grupo:
 
-- Pecho: Press banca, Press inclinado con mancuernas, Aperturas, Press en poleas, Press Hammer
+- Pecho: Press banca, Press inclinado con mancuernas, Aperturas, Press en poleas, Press Hammer, Flexiones
 - Espalda: Dominadas, Remo con barra, Jalón al pecho, Peso muerto
-- Piernas: Sentadilla, Prensa de piernas, Peso muerto rumano, Zancadas
+- Piernas: Sentadilla, Prensa de piernas, Peso muerto rumano, Zancadas, Extensión de pierna, Sentadilla péndulo
 - Hombros: Press militar, Elevaciones laterales
 - Bíceps: Curl de bíceps, Curl martillo
-- Tríceps: Fondos, Extensión de tríceps
+- Tríceps: Fondos, Extensión de tríceps, Copa
 - Core: Plancha, Crunch en polea
 
 Grupos que el atleta puede elegir al crear uno: Pecho, Espalda, Piernas, Hombros, Bíceps, Tríceps, Core, Cardio, Otro.
@@ -169,7 +183,7 @@ La ciencia que la pantalla explica, y que no hay que contradecir en los textos: 
 
 ## Progreso y peso corporal
 
-Progreso agrupa las series de un ejercicio por día y muestra tres métricas: 1RM estimado, peso máximo y volumen. La gráfica es un SVG propio (`js/utils/chart.js`). Los números del eje van en el color del texto, no en el negro por defecto del SVG.
+Progreso agrupa las series de un ejercicio por día y muestra el 1RM estimado, el 1RM ajustado, el peso máximo y el volumen. El ajustado no se dibuja en la misma línea que el estimado. La gráfica es un SVG propio (`js/utils/chart.js`). Los números del eje van en el color del texto, no en el negro por defecto del SVG.
 
 El peso corporal es independiente del entreno. Se guarda por fecha y se dibuja con la misma gráfica.
 
@@ -181,12 +195,13 @@ Herramientas que el modelo puede llamar:
 
 | Herramienta | Efecto |
 | --- | --- |
-| `registrar_serie` | Anota reps, peso y RPE en la sesión abierta y en el ejercicio que está en pantalla. Reps de 1 a 100. Peso de 0 a 600; si no viene, usa el de la serie anterior. RPE de 1 a 10. |
+| `registrar_serie` | Anota la serie en la sesión abierta y en el ejercicio de pantalla. Reps de 1 a 100. Peso de 0 a 600; si no viene, usa el de la serie anterior. `tipo` es trabajo si no dicen calentamiento. `rir` son las repeticiones que sobraban. Si faltan o no son un entero de 0 para arriba, guarda la serie y abre la pregunta. |
+| `anotar_rpe` | No crea filas. Recibe la marca y el `rir`, u `omitir` si el atleta no sabe. La serie la elige `pendingRpe`, no el modelo. |
 | `guardar_recuerdo` | Guarda una nota en `agentMemory`. Una serie dicha como carga no se duplica ahí, salvo que hable de dolor, técnica o una meta. |
 | `listar_recuerdos` | Devuelve lo guardado. |
 | `borrar_recuerdo` | Borra uno por id. |
 
-Una segunda llamada igual, sobre la misma serie y dentro de 8 segundos, no escribe otra fila. Fit no habla por su cuenta durante el descanso: solo si el atleta pregunta o si la app le inyecta una orden. Los turnos van en español, cortos, sin markdown y sin el razonamiento en inglés.
+Una segunda llamada igual, de Fit o de la pantalla, sobre la misma serie y dentro de 8 segundos, no escribe otra fila ni abre otra marca. La pantalla lo dice en un aviso. Fit no habla por su cuenta durante el descanso: solo si el atleta pregunta o si la app le inyecta una orden. Pregunta el esfuerzo con las mismas palabras que la pantalla. No sugiere pesos ni cambia el descanso. Los turnos van en español, cortos, sin markdown y sin el razonamiento en inglés. El resumen de la sesión incluye el esfuerzo de cada serie.
 
 La clave se escribe en Ajustes de Fit y queda en `meta.geminiApiKey`. Sin clave no hay sesión de voz.
 
@@ -208,6 +223,8 @@ Cada push a `main` dispara `.github/workflows/deploy.yml` y publica la carpeta e
 - No se sube `DB_VERSION` si no cambia el esquema.
 - No se duplica un ejercicio que ya existe con el mismo nombre. El historial pertenece al id, no al texto.
 - No se convierte el peso al cambiar la unidad.
+- No se mezclan el 1RM estimado y el ajustado en la misma curva.
+- No se marca «falta esfuerzo» en una serie vieja que no tiene tipo.
 - No se muestra `part.text` de Fit ni se manda configuración de pensamiento.
 - No se deja que el bloqueo del tirón de recarga cancele el dedo que sube una lista.
 - La capa de vistas no abre IndexedDB. El acceso pasa por `js/db.js`.
@@ -227,7 +244,8 @@ Cada push a `main` dispara `.github/workflows/deploy.yml` y publica la carpeta e
 | `js/db.js` | IndexedDB. |
 | `js/store.js` | Ajustes en memoria. |
 | `js/router.js` | Rutas. |
-| `js/services/workouts.js` | Ejercicios, sesiones, series, descanso, PR. |
+| `js/services/workouts.js` | Ejercicios, sesiones, series, descanso, PR y 1RM ajustado. |
+| `js/services/effort.js` | Tipo de serie, pregunta de esfuerzo y marcas. |
 | `js/services/seed.js` | Catálogo que no pisa lo ya creado. |
 | `js/services/body.js` | Peso corporal. |
 | `js/services/creatine.js` | Tomas y saturación. |
@@ -238,4 +256,7 @@ Cada push a `main` dispara `.github/workflows/deploy.yml` y publica la carpeta e
 | `js/utils/exercise-editor.js` | Ficha para corregir o eliminar un ejercicio del atleta. |
 | `js/utils/calendar.js` | Hoja del día. |
 | `js/utils/chart.js` | Gráfica SVG. |
+| `js/utils/clock.js` | Reloj único. Las pruebas pueden adelantarlo. |
+| `js/utils/set-line.js` | Botones de esfuerzo en la serie ya hecha. |
+| `rpe-test.html` | Casos del esfuerzo sobre una base temporal. |
 | `fonts/FugazOne-Regular.ttf` | Títulos. Licencia en `fonts/OFL.txt`. |

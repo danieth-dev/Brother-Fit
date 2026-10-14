@@ -1,18 +1,30 @@
 import {
-  getActiveWorkout, startWorkout, finishWorkout, finishWorkoutSummary, deleteWorkout, listExercises, addExercise, muscleName, isOwnExercise,
-  addSet, deleteSet, getWorkoutDetail, lastSessionSetsFor, prByExercise, GRUPOS,
+  getActiveWorkout, startWorkout, finishWorkout, finishWorkoutSummary, deleteWorkout, listExercises, addExercise, muscleName, isOwnExercise, muscleFocus,
+  deleteSet, getWorkoutDetail, lastSessionSetsFor, prByExercise, GRUPOS,
   loadActiveRest, saveActiveRest, clearActiveRest
 } from '../services/workouts.js';
+import { registerSet, setEffort, setTipo, skipRestClock, AVISO_DUPLICADA } from '../services/effort.js';
 import { getActiveAgent, saveMemory } from '../services/agent.js';
 import { state } from '../store.js';
 import { delegate, forms, changes, toast, esc, num, fmtNum, go } from '../utils/dom.js';
 import { formatDuration, formatShort } from '../utils/dates.js';
+import { now } from '../utils/clock.js';
 import { icons } from '../utils/icons.js';
 import { bindExerciseEdit, openExerciseEditor } from '../utils/exercise-editor.js';
+import { effortTag, effortExtra, rirButtons } from '../utils/set-line.js';
 
 let selectedEx = null;
 let restEnd = 0;
 let lastReps = 0;
+let draftTipo = 'trabajo';
+let draftRir = null;
+let openEffortId = null;
+
+document.addEventListener('bf-set', (e) => {
+  if (!e.detail?.restEnd) return;
+  restEnd = e.detail.restEnd;
+  if (e.detail.lastReps) lastReps = e.detail.lastReps;
+});
 
 const mmss = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 
@@ -32,7 +44,7 @@ function restZoneLabel() {
 }
 
 function restMarkup() {
-  const left = Math.ceil((restEnd - Date.now()) / 1000);
+  const left = Math.ceil((restEnd - now()) / 1000);
   if (left <= 0) return '';
   const zone = restZoneLabel();
   return `<div class="rest">
@@ -52,7 +64,7 @@ function prevSessionMarkup(prev, unidad) {
   const rows = prev.sets.map((s, i) => `
     <div class="prev-row">
       <span class="prev-row-n">S${i + 1}</span>
-      <span class="prev-row-v">${fmtNum(s.peso)} <small>${esc(unidad)}</small> × <strong>${s.reps}</strong>${s.rpe ? `<span class="rpe-tag">RPE ${fmtNum(s.rpe)}</span>` : ''}</span>
+      <span class="prev-row-v">${fmtNum(s.peso)} <small>${esc(unidad)}</small> × <strong>${s.reps}</strong>${effortTag(s)}</span>
     </div>`).join('');
   return `<div class="prev-session">
     <div class="prev-session-head">
@@ -83,7 +95,7 @@ export async function render(el) {
   }
 
   const [exs, detail] = await Promise.all([listExercises(), getWorkoutDetail(w.id)]);
-  if (restEnd <= Date.now()) {
+  if (restEnd <= now()) {
     const saved = await loadActiveRest();
     if (saved) {
       restEnd = saved.restEnd;
@@ -118,7 +130,7 @@ export async function render(el) {
   el.innerHTML = `
     <header class="page-head">
       <h1>Entreno</h1>
-      <p class="elapsed" id="elapsed">${formatDuration(Date.now() - w.startedAt)}</p>
+      <p class="elapsed" id="elapsed">${formatDuration(now() - w.startedAt)}</p>
     </header>
 
     <div id="rest">${restMarkup()}</div>
@@ -127,7 +139,7 @@ export async function render(el) {
       <label class="field">
         <span>Ejercicio</span>
         <select name="exerciseId" data-change="exercise">
-          ${exs.map((e) => `<option value="${e.id}" data-grupo="${esc(e.grupo)}" ${isOwnExercise(e) ? 'data-propio="1"' : ''} ${e.id === selectedEx ? 'selected' : ''}>${esc(e.nombre)}</option>`).join('')}
+          ${exs.map((e) => `<option value="${e.id}" data-grupo="${esc(e.grupo)}" ${muscleFocus(e.nombre) ? `data-foco="${esc(muscleFocus(e.nombre))}"` : ''} ${isOwnExercise(e) ? 'data-propio="1"' : ''} ${e.id === selectedEx ? 'selected' : ''}>${esc(e.nombre)}</option>`).join('')}
         </select>
       </label>
 
@@ -140,13 +152,20 @@ export async function render(el) {
           <span class="workout-pr-chip workout-pr-chip--muted">${pr.maxReps} reps máx.</span>
         </div>` : ''}
 
-      <div class="grid-3">
+      <div class="grid-2">
         <label class="field"><span>Peso (${esc(unidad)})</span>
           <input name="peso" inputmode="decimal" autocomplete="off" required placeholder="0"></label>
         <label class="field"><span>Reps</span>
           <input name="reps" inputmode="numeric" pattern="[0-9]*" autocomplete="off" required placeholder="0"></label>
-        <label class="field"><span>RPE</span>
-          <input name="rpe" inputmode="decimal" autocomplete="off" placeholder="1–10"></label>
+      </div>
+      <div class="seg" role="group" aria-label="Tipo de serie">
+        <button type="button" data-action="draft-tipo" data-tipo="trabajo" aria-pressed="${draftTipo === 'trabajo'}">Trabajo</button>
+        <button type="button" data-action="draft-tipo" data-tipo="calentamiento" aria-pressed="${draftTipo === 'calentamiento'}">Calentamiento</button>
+      </div>
+      <div id="rir-pick" class="stack">
+        <span class="effort-label">¿Cuántas repeticiones más podrías haber hecho?</span>
+        <span class="effort-hint" id="effort-hint">${draftTipo === 'trabajo' ? '0 es no salía otra' : 'Los calentamientos no llevan esfuerzo'}</span>
+        ${rirButtons('', { action: 'draft-rir', pressed: draftRir, disabled: draftTipo !== 'trabajo' })}
       </div>
       <button class="btn btn-primary btn-block" type="submit">
         ${icons.plus({ size: 18 })} Añadir serie
@@ -160,10 +179,11 @@ export async function render(el) {
           ${g.sets.map((s, i) => `
             <li>
               <span class="n">Serie ${i + 1}</span>
-              <span class="v">${fmtNum(s.peso)} ${esc(unidad)} × ${s.reps}${s.rpe ? `<span class="rpe-tag">RPE ${fmtNum(s.rpe)}</span>` : ''}</span>
+              <span class="v">${fmtNum(s.peso)} ${esc(unidad)} × ${s.reps}${effortTag(s)}</span>
               <button class="btn-x" data-action="del-set" data-id="${s.id}" type="button" aria-label="Borrar serie ${i + 1}">
                 ${icons.trash({ size: 15 })}
               </button>
+              ${effortExtra(s, openEffortId)}
             </li>`).join('')}
         </ul>
       </div>`).join('')}
@@ -199,12 +219,48 @@ export async function render(el) {
       await deleteSet(Number(t.dataset.id));
       await render(el);
     },
-    'skip-rest': () => {
+    'skip-rest': async () => {
       restEnd = 0;
-      clearActiveRest();
+      await skipRestClock();
       el.querySelector('#rest').innerHTML = '';
       getActiveAgent()?.cancelPendingCheckIn();
       getActiveAgent()?.muteMic();
+    },
+    'draft-tipo': (t) => {
+      draftTipo = t.dataset.tipo === 'calentamiento' ? 'calentamiento' : 'trabajo';
+      if (draftTipo === 'calentamiento') draftRir = null;
+      const warm = draftTipo === 'calentamiento';
+      el.querySelectorAll('[data-action="draft-tipo"]').forEach((b) => {
+        b.setAttribute('aria-pressed', String(b === t));
+      });
+      el.querySelectorAll('[data-action="draft-rir"]').forEach((b) => {
+        b.disabled = warm;
+        b.setAttribute('aria-pressed', String(!warm && Number(b.dataset.rir) === draftRir));
+      });
+      const hint = el.querySelector('#effort-hint');
+      if (hint) hint.textContent = warm ? 'Los calentamientos no llevan esfuerzo' : '0 es no salía otra';
+    },
+    'draft-rir': (t) => {
+      draftRir = Number(t.dataset.rir);
+      el.querySelectorAll('[data-action="draft-rir"]').forEach((b) => {
+        b.setAttribute('aria-pressed', String(Number(b.dataset.rir) === draftRir));
+      });
+    },
+    'effort-open': async (t) => {
+      const id = Number(t.dataset.id);
+      openEffortId = openEffortId === id ? null : id;
+      await render(el);
+    },
+    'effort-rir': async (t) => {
+      const res = await setEffort(Number(t.dataset.id), Number(t.dataset.rir));
+      if (!res?.ok) { toast('No se pudo anotar el esfuerzo.'); return; }
+      openEffortId = null;
+      await render(el);
+    },
+    'set-tipo': async (t) => {
+      await setTipo(Number(t.dataset.id), t.dataset.tipo);
+      openEffortId = null;
+      await render(el);
     },
     finish: async () => {
       if (!confirm('¿Terminar este entrenamiento?')) return;
@@ -258,30 +314,36 @@ export async function render(el) {
       const exerciseId = Number(f.elements.exerciseId.value);
       const peso = num(f.elements.peso.value);
       const reps = parseInt(f.elements.reps.value, 10);
-      const rpe = num(f.elements.rpe.value);
       if (!Number.isFinite(peso) || peso < 0 || !(reps > 0)) { toast('Revisa el peso y las repeticiones.'); return; }
 
-      // Detectar nuevo PR de peso
       const prevPR = pr?.maxPeso ?? 0;
-
-      const s = { workoutId: w.id, exerciseId, peso, reps };
-      if (Number.isFinite(rpe)) s.rpe = rpe;
-      await addSet(s);
-
-      selectedEx = exerciseId;
-      lastReps = reps;
       const restSecs = state.settings.descansoMode === 'auto'
         ? smartRest(reps)
         : state.settings.descanso;
-      restEnd = Date.now() + restSecs * 1000;
+      const nextRest = now() + restSecs * 1000;
+      const saved = await registerSet({
+        workoutId: w.id,
+        exerciseId,
+        peso,
+        reps,
+        tipo: draftTipo,
+        rir: draftTipo === 'trabajo' ? draftRir : undefined,
+        restEnd: nextRest,
+      }, { guard: true, abrirPregunta: false });
+      if (saved?.duplicada) { toast(saved.aviso || AVISO_DUPLICADA); return; }
+
+      restEnd = nextRest;
+      selectedEx = exerciseId;
+      lastReps = reps;
       await saveActiveRest(restEnd, lastReps);
+      draftTipo = 'trabajo';
+      draftRir = null;
 
       // El descanso comenzó: abrir micrófono para interacción durante la pausa
       getActiveAgent()?.unmuteMic();
 
-      if (peso > prevPR && prevPR > 0) {
-        toast(`🏆 ¡Nuevo PR! ${fmtNum(peso)} ${state.settings.unidad}`);
-      }
+      if (saved?.aviso) toast(saved.aviso);
+      else if (peso > prevPR && prevPR > 0) toast(`🏆 ¡Nuevo PR! ${fmtNum(peso)} ${state.settings.unidad}`);
 
       await render(el);
     },
@@ -322,9 +384,9 @@ function startTicker(el, w) {
   const tick = () => {
     const elapsed = el.querySelector('#elapsed');
     if (!elapsed) { clearInterval(el._tickerId); el._tickerId = null; return; }
-    elapsed.textContent = formatDuration(Date.now() - w.startedAt);
+    elapsed.textContent = formatDuration(now() - w.startedAt);
 
-    const left = restEnd > Date.now() ? Math.ceil((restEnd - Date.now()) / 1000) : 0;
+    const left = restEnd > now() ? Math.ceil((restEnd - now()) / 1000) : 0;
     const rest = el.querySelector('#rest');
     if (rest) {
       if (left > 0) {

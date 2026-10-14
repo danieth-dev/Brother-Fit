@@ -1,5 +1,6 @@
 import { openDB } from './db.js';
 import { ensureSeed } from './services/seed.js';
+import { loadPending } from './services/effort.js';
 import { loadSettings, state } from './store.js';
 import { startRouter } from './router.js';
 import { watchPickers } from './utils/picker.js';
@@ -48,6 +49,7 @@ window.addEventListener('appinstalled', () => { state.installPrompt = null; });
 async function boot() {
   try {
     await openDB();
+    await loadPending();
     await ensureSeed();
     await loadSettings();
     watchPickers(document.getElementById('app'));

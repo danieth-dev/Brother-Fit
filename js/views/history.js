@@ -1,8 +1,12 @@
 import { listWorkoutSummaries, getWorkoutDetail, deleteWorkout, muscleName } from '../services/workouts.js';
+import { setEffort, setTipo } from '../services/effort.js';
 import { state } from '../store.js';
-import { delegate, esc, fmtNum, go } from '../utils/dom.js';
+import { delegate, esc, fmtNum, go, toast } from '../utils/dom.js';
 import { formatLong, formatDuration } from '../utils/dates.js';
 import { icons } from '../utils/icons.js';
+import { effortTag, effortExtra } from '../utils/set-line.js';
+
+let openEffortId = null;
 
 export async function render(el, [id]) {
   return id ? detail(el, Number(id)) : list(el);
@@ -71,7 +75,8 @@ async function detail(el, id) {
           ${g.sets.map((s, i) => `
             <li>
               <span class="n">Serie ${i + 1}</span>
-              <span class="v">${fmtNum(s.peso)} ${esc(unidad)} × ${s.reps}${s.rpe ? `<span class="rpe-tag">RPE ${fmtNum(s.rpe)}</span>` : ''}</span>
+              <span class="v">${fmtNum(s.peso)} ${esc(unidad)} × ${s.reps}${effortTag(s)}</span>
+              ${effortExtra(s, openEffortId)}
             </li>`).join('')}
         </ul>
       </div>`).join('') : '<div class="empty"><p>Este entrenamiento no tiene series.</p></div>'}
@@ -87,6 +92,22 @@ async function detail(el, id) {
       if (!confirm('¿Borrar este entrenamiento y todas sus series?')) return;
       await deleteWorkout(id);
       go('/history');
-    }
+    },
+    'effort-open': async (t) => {
+      const sid = Number(t.dataset.id);
+      openEffortId = openEffortId === sid ? null : sid;
+      await detail(el, id);
+    },
+    'effort-rir': async (t) => {
+      const res = await setEffort(Number(t.dataset.id), Number(t.dataset.rir));
+      if (!res?.ok) { toast('No se pudo anotar el esfuerzo.'); return; }
+      openEffortId = null;
+      await detail(el, id);
+    },
+    'set-tipo': async (t) => {
+      await setTipo(Number(t.dataset.id), t.dataset.tipo);
+      openEffortId = null;
+      await detail(el, id);
+    },
   });
 }

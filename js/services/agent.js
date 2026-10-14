@@ -10,7 +10,9 @@
 
 import { db } from '../db.js';
 import { state } from '../store.js';
-import { getActiveWorkout, addSet, lastSetFor } from './workouts.js';
+import { now } from '../utils/clock.js';
+import { getActiveWorkout, lastSetFor, saveActiveRest } from './workouts.js';
+import { registerSet, anotarRpe } from './effort.js';
 
 const LIVE_MODEL = 'models/gemini-3.8-live';
 const WS_URL = (apiKey) =>
@@ -20,15 +22,30 @@ const TOOL_DECLARATIONS = [
   {
     name: 'registrar_serie',
     description:
-      'Registra una serie en el entrenamiento en curso. Llama a esta función cuando el atleta indique repeticiones, peso y/o RPE de la serie que acaba de hacer (ej: "anótame 8 reps", "hice 100 kg por 3 reps a RPE 9").',
+      'Registra una serie en el entrenamiento en curso. Úsala cuando el atleta diga las repeticiones y el peso que acaba de hacer. El esfuerzo, si lo dice, responde a «¿Cuántas repeticiones más podrías haber hecho?». No uses RPE.',
     parameters: {
       type: 'OBJECT',
       properties: {
         reps: { type: 'NUMBER', description: 'Número de repeticiones completadas.' },
-        peso: { type: 'NUMBER', description: 'Peso levantado en kg o lb. Si no se indica, usa el de la serie anterior.' },
-        rpe: { type: 'NUMBER', description: 'RPE opcional de 1 a 10 indicado por el atleta.' },
+        peso: { type: 'NUMBER', description: 'Peso levantado. Si no se indica, usa el de la serie anterior.' },
+        tipo: { type: 'STRING', description: 'trabajo o calentamiento. Si no lo dice, es trabajo.' },
+        rir: { type: 'NUMBER', description: 'Respuesta a «¿Cuántas repeticiones más podrías haber hecho?»: 0 es no salía otra, 1, 2, 3, o 4 o más. No conviertas un RPE a este número.' },
       },
       required: ['reps'],
+    },
+  },
+  {
+    name: 'anotar_rpe',
+    description:
+      'Anota la respuesta a «¿Cuántas repeticiones más podrías haber hecho?» en la pregunta abierta. No crea series y no elige cuál: la marca lo dice. No resta ni convierte a RPE.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        marca: { type: 'NUMBER', description: 'La marca de la pregunta vigente. No reutilices una marca anterior.' },
+        rir: { type: 'NUMBER', description: 'Respuesta a «¿Cuántas repeticiones más podrías haber hecho?»: 0 es no salía otra, 1, 2, 3, o 4 o más.' },
+        omitir: { type: 'BOOLEAN', description: 'True solo si el atleta dice que no sabe. No anota esfuerzo.' },
+      },
+      required: ['marca'],
     },
   },
   {
@@ -77,7 +94,13 @@ export async function deleteMemory(id) {
   return db.remove('agentMemory', Number(id));
 }
 
-let lastRegisteredSetCall = { workoutId: null, exerciseId: null, reps: null, peso: null, time: 0, setId: null };
+function restSeconds(reps) {
+  if (state.settings.descansoMode !== 'auto') return state.settings.descanso || 90;
+  if (reps <= 5) return 180;
+  if (reps <= 8) return 120;
+  if (reps <= 12) return 90;
+  return 60;
+}
 
 async function executeToolCall(name, args) {
   if (name === 'registrar_serie') {
@@ -87,22 +110,11 @@ async function executeToolCall(name, args) {
     const exId = state.activeExercise?.id;
     if (!exId) return { error: 'No hay un ejercicio seleccionado en la pantalla de entrenamiento.' };
 
-    // Validar reps: número entero positivo entre 1 y 100 indicado por el atleta
     const reps = Math.round(Number(args.reps));
     if (!Number.isFinite(reps) || reps < 1 || reps > 100) {
       return { error: 'Número de repeticiones no válido o no indicado por el atleta.' };
     }
 
-    // Validar RPE si fue proporcionado: entre 1 y 10
-    let rpe = null;
-    if (args.rpe != null) {
-      const parsedRpe = Number(args.rpe);
-      if (Number.isFinite(parsedRpe) && parsedRpe >= 1 && parsedRpe <= 10) {
-        rpe = parsedRpe;
-      }
-    }
-
-    // Kilos: si la frase del atleta trajo carga válida, se usa esa; si no, la de la serie pendiente
     let peso = null;
     if (args.peso != null && Number.isFinite(Number(args.peso)) && Number(args.peso) >= 0 && Number(args.peso) <= 600) {
       peso = Number(args.peso);
@@ -111,45 +123,24 @@ async function executeToolCall(name, args) {
       peso = last?.peso ?? 0;
     }
 
-    // Idempotencia: una segunda llamada sobre la misma serie abierta no escribe de nuevo
-    const now = Date.now();
-    if (
-      lastRegisteredSetCall.workoutId === active.id &&
-      lastRegisteredSetCall.exerciseId === exId &&
-      lastRegisteredSetCall.reps === reps &&
-      lastRegisteredSetCall.peso === peso &&
-      (now - lastRegisteredSetCall.time) < 8000
-    ) {
-      return {
-        ok: true,
-        setId: lastRegisteredSetCall.setId,
-        mensaje: `La serie de ${peso} ${state.settings.unidad} × ${reps} reps ya fue anotada previamente.`,
-      };
+    const restEnd = now() + restSeconds(reps) * 1000;
+    const res = await registerSet({
+      workoutId: active.id,
+      exerciseId: exId,
+      peso,
+      reps,
+      tipo: args.tipo,
+      rir: args.rir,
+      restEnd,
+    }, { guard: true });
+    if (!res?.duplicada) {
+      await saveActiveRest(restEnd, reps);
+      document.dispatchEvent(new CustomEvent('bf-set', { detail: { restEnd, lastReps: reps } }));
     }
-
-    const setObj = {
-      workoutId: active.id,
-      exerciseId: exId,
-      peso,
-      reps,
-    };
-    if (rpe != null) setObj.rpe = rpe;
-
-    const setId = await addSet(setObj);
-    lastRegisteredSetCall = {
-      workoutId: active.id,
-      exerciseId: exId,
-      peso,
-      reps,
-      time: now,
-      setId,
-    };
-
-    return {
-      ok: true,
-      setId,
-      mensaje: `Serie registrada: ${peso} ${state.settings.unidad} × ${reps} reps${rpe ? ` (RPE ${rpe})` : ''}.`,
-    };
+    return res;
+  }
+  if (name === 'anotar_rpe') {
+    return anotarRpe({ rir: args.rir, mark: args.marca, omitir: args.omitir === true });
   }
   if (name === 'guardar_recuerdo') {
     const raw = (args.contenido || '').trim();
@@ -208,7 +199,10 @@ async function buildSystemInstruction() {
     '- Si el atleta propone algo contraproducente, peligroso o basado en mitos, cuestiónalo con amabilidad y criterio científico.\n' +
     '- REGLA DE DESCANSOS: Prohibido hablar por iniciativa propia durante los descansos entre series. Respirar no es un silencio que tengas que llenar. Solo hablas si el atleta te hace una pregunta o si la app te inyecta una orden explícita.\n' +
     '- Una sola corrección o foco técnico (cue) por turno, para que pueda aplicarlo en su siguiente serie sin sobrecarga mental.\n' +
-    '- Tienes la herramienta registrar_serie: si el atleta pide registrar una serie (reps, peso, RPE), úsala inmediatamente.\n' +
+    '- Si pide anotar una serie, llama a registrar_serie enseguida. tipo es trabajo si no dice que es calentamiento. El esfuerzo responde a «¿Cuántas repeticiones más podrías haber hecho?». Si habla en RPE, no lo conviertas: haz esa misma pregunta. 0 es que no salía otra.\n' +
+    '- Si la herramienta responde preguntar true, haz esa pregunta con la marca que viene y espera. Si preguntar es false, no vuelvas a preguntar el esfuerzo.\n' +
+    '- La respuesta del atleta se anota con anotar_rpe: la marca vigente y el rir. Si dice que no sabe, omitir true. Una marca vieja no sirve: pregunta de nuevo y no reutilices la respuesta anterior.\n' +
+    '- No sugieras pesos, no cambies el descanso y no inventes el esfuerzo.\n' +
     '- El atleta manda el tema: tus objetivos de registro jamás pisan lo que él decida consultar.\n' +
     '- Si menciona datos personales (peso, marcas, objetivos, molestias, suplementación), llama inmediatamente a guardar_recuerdo.\n' +
     '- Usa los recuerdos guardados de forma natural, sin recitarlos como un informe.\n' +

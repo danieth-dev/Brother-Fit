@@ -35,7 +35,11 @@ function muscleOf(opt) {
   return g && g !== 'Otro' ? g : '';
 }
 
-function muscleNode(grupo) {
+function focusOf(opt) {
+  return opt?.dataset?.foco?.trim() || '';
+}
+
+function muscleNode(grupo, foco) {
   const meta = document.createElement('span');
   meta.className = 'muscle';
   const dot = document.createElement('i');
@@ -43,6 +47,12 @@ function muscleNode(grupo) {
   dot.dataset.g = grupo;
   dot.setAttribute('aria-hidden', 'true');
   meta.append(dot, document.createTextNode(grupo));
+  if (foco) {
+    const spec = document.createElement('span');
+    spec.className = 'muscle-focus';
+    spec.textContent = foco;
+    meta.append(spec);
+  }
   return meta;
 }
 
@@ -115,19 +125,20 @@ function openPicker(select, label, trigger) {
     btn.setAttribute('aria-selected', selected ? 'true' : 'false');
     const name = opt.textContent.trim();
     const grupo = muscleOf(opt);
+    const foco = focusOf(opt);
     const copy = document.createElement('span');
     copy.className = 'picker-copy';
     const title = document.createElement('span');
     title.className = 'picker-name';
     title.textContent = name;
     copy.append(title);
-    if (grupo) copy.append(muscleNode(grupo));
+    if (grupo) copy.append(muscleNode(grupo, foco));
     const mark = document.createElement('span');
     mark.className = 'picker-mark';
     mark.setAttribute('aria-hidden', 'true');
     if (selected) mark.innerHTML = icons.check({ size: 14 });
     btn.append(copy);
-    if (grupo) btn.setAttribute('aria-label', `${name}, ${grupo}`);
+    if (grupo) btn.setAttribute('aria-label', `${name}, ${grupo}${foco ? `, ${foco}` : ''}`);
     btn.addEventListener('click', () => choose(select, opt.value));
     if (!own) {
       btn.append(mark);
@@ -186,8 +197,9 @@ function enhance(select) {
     const opt = select.selectedOptions[0];
     const text = opt?.textContent.trim() || 'Elegir';
     const grupo = muscleOf(opt);
+    const foco = focusOf(opt);
     value.textContent = text;
-    trigger.setAttribute('aria-label', `${labelOf(select)}: ${text}${grupo ? `, ${grupo}` : ''}`);
+    trigger.setAttribute('aria-label', `${labelOf(select)}: ${text}${grupo ? `, ${grupo}` : ''}${foco ? `, ${foco}` : ''}`);
     const field = select.closest('label.field');
     let hint = field?.querySelector(':scope > .muscle-hint');
     if (grupo && field) {
@@ -197,7 +209,7 @@ function enhance(select) {
         hint.setAttribute('aria-hidden', 'true');
         trigger.after(hint);
       }
-      hint.replaceChildren(muscleNode(grupo));
+      hint.replaceChildren(muscleNode(grupo, foco));
     } else {
       hint?.remove();
     }

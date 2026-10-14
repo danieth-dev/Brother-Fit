@@ -1,7 +1,9 @@
 /* Lógica de entrenamientos, ejercicios y progreso. Las vistas solo llaman a estas funciones. */
 import { db } from '../db.js';
+import { now } from '../utils/clock.js';
 import { todayISO, startOfWeekISO } from '../utils/dates.js';
 import { isCatalogExercise } from './seed.js';
+import { PENDING_KEY, effortPhrase } from './effort.js';
 
 export { isCatalogExercise };
 
@@ -13,8 +15,31 @@ export function muscleName(grupo) {
   return g && g !== 'Otro' ? g : '';
 }
 
+/* Parte concreta, cuando el grupo se queda corto. El nombre tiene que coincidir exactamente. */
+const FOCO = {
+  'Sentadilla péndulo': 'cuádriceps y glúteo',
+};
+
+export function muscleFocus(nombre) {
+  return FOCO[String(nombre || '').trim()] || '';
+}
+
 export const estimate1RM = (peso, reps) => (reps <= 1 ? peso : peso * (1 + reps / 30)); // Epley
 export const volume = (sets) => sets.reduce((a, s) => a + s.peso * s.reps, 0);
+
+/* Solo entran 6, 7, 8, 9 y 10. Un RPE viejo suelto, o uno fuera de ese rango, no se usa. */
+export function rpeEnRango(rpe) {
+  const n = Number(rpe);
+  return Number.isInteger(n) && n >= 6 && n <= 10;
+}
+
+/* Escala aparte. reps efectivas = reps + (10 - rpe). RPE 6 suma 4 y es un piso. Por encima de 12 reps efectivas no es fiable. */
+export function adjusted1RM(peso, reps, rpe) {
+  if (!rpeEnRango(rpe)) return null;
+  const r = Number(rpe);
+  const eff = reps + (10 - r);
+  return { value: peso * (1 + eff / 30), reliable: eff <= 12, floor: r === 6 };
+}
 
 /* ---------- Ejercicios ---------- */
 export async function listExercises() {
@@ -68,15 +93,25 @@ export async function deleteExercise(id) {
   if (!ex) return 0;
   if (!isOwnExercise(ex)) throw new Error('El catálogo no se elimina.');
   const n = await countSetsForExercise(ex.id);
-  await db.mutate(['sets', 'exercises'], (tx) => {
+  await db.mutate(['sets', 'exercises', 'meta'], (tx) => {
+    const meta = tx.objectStore('meta');
+    const ids = [];
+    tx.objectStore('exercises').delete(ex.id);
     const req = tx.objectStore('sets').index('exerciseId').openCursor(IDBKeyRange.only(ex.id));
     req.onsuccess = () => {
       const cursor = req.result;
-      if (!cursor) return;
-      cursor.delete();
-      cursor.continue();
+      if (cursor) {
+        ids.push(cursor.value.id);
+        cursor.delete();
+        cursor.continue();
+        return;
+      }
+      const pReq = meta.get(PENDING_KEY);
+      pReq.onsuccess = () => {
+        const pending = pReq.result?.value;
+        if (pending && ids.includes(pending.setId)) meta.delete(PENDING_KEY);
+      };
     };
-    tx.objectStore('exercises').delete(ex.id);
   });
   return n;
 }
@@ -95,7 +130,7 @@ const REST_KEY = 'activeRest';
 export async function loadActiveRest() {
   const row = await db.get('meta', REST_KEY);
   const value = row?.value;
-  if (!value?.restEnd || value.restEnd <= Date.now()) {
+  if (!value?.restEnd || value.restEnd <= now()) {
     if (row) await db.remove('meta', REST_KEY);
     return null;
   }
@@ -113,19 +148,26 @@ export async function clearActiveRest() {
 export async function startWorkout() {
   const existing = await getActiveWorkout();
   if (existing) return existing;
-  const w = { fecha: todayISO(), startedAt: Date.now(), finishedAt: null, notas: '' };
+  const w = { fecha: todayISO(), startedAt: now(), finishedAt: null, notas: '' };
   w.id = await db.add('workouts', w);
   await db.put('meta', { key: 'activeWorkoutId', value: w.id });
   return w;
 }
 
 export async function finishWorkout(id) {
-  const w = await db.get('workouts', id);
-  if (!w) return;
-  w.finishedAt = Date.now();
-  w.duracion = w.finishedAt - w.startedAt;
-  await db.put('workouts', w);
-  await db.remove('meta', 'activeWorkoutId');
+  await db.mutate(['workouts', 'meta'], (tx) => {
+    const meta = tx.objectStore('meta');
+    const req = tx.objectStore('workouts').get(id);
+    req.onsuccess = () => {
+      const w = req.result;
+      if (!w) return;
+      w.finishedAt = now();
+      w.duracion = w.finishedAt - w.startedAt;
+      tx.objectStore('workouts').put(w);
+      meta.delete('activeWorkoutId');
+      meta.delete(PENDING_KEY);
+    };
+  });
 }
 
 export async function finishWorkoutSummary(id) {
@@ -140,7 +182,7 @@ export async function finishWorkoutSummary(id) {
     volumen += (s.peso || 0) * (s.reps || 0);
     const exName = exMap.get(s.exerciseId)?.nombre || 'Ejercicio';
     if (!groups[exName]) groups[exName] = [];
-    groups[exName].push(`${s.peso}kg×${s.reps}`);
+    groups[exName].push(setBit(s));
   }
   const lines = Object.entries(groups).map(([name, sList]) => `${name} (${sList.join(', ')})`);
   return {
@@ -150,17 +192,37 @@ export async function finishWorkoutSummary(id) {
   };
 }
 
+function setBit(s) {
+  const base = `${s.peso}kg×${s.reps}`;
+  if (s.tipo === 'calentamiento') return `${base} calentamiento`;
+  if (s.tipo === 'trabajo' && (s.rpe == null || s.rpe === '')) return `${base} sin esfuerzo`;
+  if (s.rpe != null && s.rpe !== '') return `${base} ${effortPhrase(s.rpe)}`;
+  return base;
+}
+
 export async function deleteWorkout(id) {
   const sets = await getSets(id);
-  await Promise.all(sets.map((s) => db.remove('sets', s.id)));
-  await db.remove('workouts', id);
-  const m = await db.get('meta', 'activeWorkoutId');
-  if (m?.value === id) await db.remove('meta', 'activeWorkoutId');
+  const ids = new Set(sets.map((s) => s.id));
+  await db.mutate(['sets', 'workouts', 'meta'], (tx) => {
+    const meta = tx.objectStore('meta');
+    for (const sid of ids) tx.objectStore('sets').delete(sid);
+    tx.objectStore('workouts').delete(id);
+    const aReq = meta.get('activeWorkoutId');
+    const pReq = meta.get(PENDING_KEY);
+    aReq.onsuccess = () => {
+      if (aReq.result?.value === id) meta.delete('activeWorkoutId');
+    };
+    pReq.onsuccess = () => {
+      const pending = pReq.result?.value;
+      if (!pending) return;
+      if (aReq.result?.value === id || ids.has(pending.setId)) meta.delete(PENDING_KEY);
+    };
+  });
 }
 
 /* ---------- Series ---------- */
-export const addSet = (s) => db.add('sets', { ...s, ts: Date.now() });
-export const deleteSet = (id) => db.remove('sets', id);
+export const addSet = (s) => db.add('sets', { ...s, ts: now() });
+export { removeLoggedSet as deleteSet } from './effort.js';
 export const getSets = (workoutId) => db.byIndex('sets', 'workoutId', workoutId);
 
 export async function lastSetFor(exerciseId) {
@@ -234,9 +296,32 @@ export async function listWorkoutSummaries(limit = Infinity) {
 
 export async function weekStats() {
   const start = startOfWeekISO();
-  const [ws, sets] = await Promise.all([db.getAll('workouts'), db.getAll('sets')]);
+  const [ws, sets, exs] = await Promise.all([db.getAll('workouts'), db.getAll('sets'), db.getAll('exercises')]);
   const ids = new Set(ws.filter((w) => w.fecha >= start).map((w) => w.id));
-  return { entrenos: ids.size, volumen: volume(sets.filter((s) => ids.has(s.workoutId))) };
+  const weekSets = sets.filter((s) => ids.has(s.workoutId));
+  const byEx = new Map(exs.map((e) => [e.id, e]));
+  const porGrupo = new Map();
+  let efectivas = 0;
+  let sinEsfuerzo = 0;
+  let faciles = 0;
+  for (const s of weekSets) {
+    if (s.tipo !== 'trabajo') continue;
+    const r = Number(s.rpe);
+    const tiene = s.rpe != null && s.rpe !== '' && Number.isFinite(r);
+    if (!tiene) { sinEsfuerzo++; continue; }
+    if (r < 7) { faciles++; continue; }
+    efectivas++;
+    const grupo = byEx.get(s.exerciseId)?.grupo || 'Otro';
+    porGrupo.set(grupo, (porGrupo.get(grupo) || 0) + 1);
+  }
+  return {
+    entrenos: ids.size,
+    volumen: volume(weekSets),
+    efectivas,
+    sinEsfuerzo,
+    faciles,
+    porGrupo: [...porGrupo.entries()].map(([grupo, n]) => ({ grupo, n })).sort((a, b) => b.n - a.n),
+  };
 }
 
 /* Sesiones agrupadas por día para un ejercicio: peso máx., 1RM estimado y volumen. */
@@ -247,11 +332,19 @@ export async function progressForExercise(exerciseId) {
   for (const s of sets) {
     const f = fechaDe.get(s.workoutId);
     if (!f) continue;
-    const d = byDay.get(f) || { fecha: f, maxPeso: 0, e1rm: 0, volumen: 0, series: 0 };
+    const d = byDay.get(f) || { fecha: f, maxPeso: 0, e1rm: 0, volumen: 0, series: 0, adj: null, adjReliable: true, adjFloor: false };
     d.maxPeso = Math.max(d.maxPeso, s.peso);
     d.e1rm = Math.max(d.e1rm, estimate1RM(s.peso, s.reps));
     d.volumen += s.peso * s.reps;
     d.series++;
+    if (s.tipo === 'trabajo') {
+      const adj = adjusted1RM(s.peso, s.reps, s.rpe);
+      if (adj && (d.adj == null || adj.value > d.adj)) {
+        d.adj = adj.value;
+        d.adjReliable = adj.reliable;
+        d.adjFloor = adj.floor;
+      }
+    }
     byDay.set(f, d);
   }
   const sessions = [...byDay.values()].sort((a, b) => a.fecha.localeCompare(b.fecha));
