@@ -324,6 +324,9 @@ export class FitAgent {
   #sessionReady = false;
   #isSpeaking = false;
   #speechRec = null;
+  #listenGen = 0;
+  #restartTimer = null;
+  #micFailures = 0;
   #isMuted = false;
   #isUserSpeaking = false;
   #pendingCheckIn = null;
@@ -429,12 +432,13 @@ export class FitAgent {
 
   muteMic() {
     this.#isMuted = true;
+    this.#listenGen += 1;
+    this.#clearRestart();
     if (this.#speakingTimeout) {
       clearTimeout(this.#speakingTimeout);
       this.#speakingTimeout = null;
     }
-    this.#speechRec?.abort?.();
-    this.#speechRec = null;
+    this.#releaseRecognizer();
     this.#isUserSpeaking = false;
 
     // Enviar audioStreamEnd para que Gemini Live cierre formalmente el stream de audio
@@ -532,26 +536,64 @@ export class FitAgent {
     this.#listenCycle();
   }
 
-  #listenCycle() {
-    if (!this.#isLiveMode || !this.connected || this.#isMuted) return;
+  #clearRestart() {
+    if (!this.#restartTimer) return;
+    clearTimeout(this.#restartTimer);
+    this.#restartTimer = null;
+  }
 
-    // Si Fit está hablando, no escuchamos aún para evitar feedback de audio
-    if (this.#isSpeaking) return;
+  /* Quita los avisos antes de abortar. Si no, el cierre del anterior pide otro micrófono. */
+  #releaseRecognizer() {
+    const rec = this.#speechRec;
+    this.#speechRec = null;
+    if (!rec) return;
+    rec.onstart = null;
+    rec.onresult = null;
+    rec.onerror = null;
+    rec.onend = null;
+    try { rec.abort(); } catch {}
+  }
+
+  #scheduleListen(delay) {
+    this.#clearRestart();
+    this.#restartTimer = setTimeout(() => {
+      this.#restartTimer = null;
+      this.#listenCycle();
+    }, delay);
+  }
+
+  #giveUpMic(message) {
+    this.stopLiveMode();
+    this.#emit('mic_paused', message);
+  }
+
+  #listenCycle() {
+    if (!this.#isLiveMode || !this.connected || this.#isMuted || this.#isSpeaking) return;
+    this.#clearRestart();
+    this.#releaseRecognizer();
 
     const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-    this.#speechRec = new SpeechRec();
-    this.#speechRec.lang = 'es';
-    this.#speechRec.continuous = false;
-    this.#speechRec.interimResults = true;
+    if (!SpeechRec) return;
+
+    const gen = ++this.#listenGen;
+    const rec = new SpeechRec();
+    this.#speechRec = rec;
+    rec.lang = 'es';
+    rec.continuous = false;
+    rec.interimResults = true;
 
     let finalTranscript = '';
+    let error = '';
 
-    this.#speechRec.onstart = () => {
+    rec.onstart = () => {
+      if (gen !== this.#listenGen) return;
+      this.#micFailures = 0;
       this.#isUserSpeaking = false;
       this.#emit('listening');
     };
 
-    this.#speechRec.onresult = (e) => {
+    rec.onresult = (e) => {
+      if (gen !== this.#listenGen) return;
       let interim = '';
       for (let i = e.resultIndex; i < e.results.length; ++i) {
         if (e.results[i].isFinal) {
@@ -566,58 +608,91 @@ export class FitAgent {
         if (this.#speakingTimeout) clearTimeout(this.#speakingTimeout);
         // Timeout de seguridad: si tras 4s no se finaliza texto, tratar como ruido para no bloquear el check-in
         this.#speakingTimeout = setTimeout(() => {
-          if (this.#isUserSpeaking) {
-            this.#isUserSpeaking = false;
-            if (this.#pendingCheckIn) {
-              const checkIn = this.#pendingCheckIn;
-              this.#pendingCheckIn = null;
-              this.triggerCheckIn(checkIn);
-            }
+          if (gen !== this.#listenGen || !this.#isUserSpeaking) return;
+          this.#isUserSpeaking = false;
+          if (this.#pendingCheckIn) {
+            const checkIn = this.#pendingCheckIn;
+            this.#pendingCheckIn = null;
+            this.triggerCheckIn(checkIn);
           }
         }, 4000);
       }
       this.#emit('interim_speech', rawText);
     };
 
-    this.#speechRec.onerror = (e) => {
-      // Si no hubo habla (no-speech) simplemente reiniciamos el ciclo si no está muteado
-      if (e.error === 'no-speech' && this.#isLiveMode && !this.#isSpeaking && !this.#isMuted) {
-        this.#listenCycle();
-      }
+    /* onerror siempre va seguido de onend. Reiniciar aquí abría un segundo micrófono. */
+    rec.onerror = (e) => {
+      if (gen !== this.#listenGen) return;
+      error = e?.error || '';
     };
 
-    this.#speechRec.onend = () => {
+    rec.onend = () => {
+      if (gen !== this.#listenGen) return;
       if (this.#speakingTimeout) clearTimeout(this.#speakingTimeout);
       this.#isUserSpeaking = false;
-      const text = finalTranscript.trim();
+      if (this.#speechRec === rec) this.#speechRec = null;
 
+      const text = finalTranscript.trim();
       if (isAthleteTurn(text)) {
-        // Frase real del atleta: cancela el aviso de descanso automático porque ya está dialogando
+        this.#micFailures = 0;
         this.#pendingCheckIn = null;
         this.#emit('user_speaking_finished', text);
         this.sendText(text);
-      } else {
-        // Ruido sin palabras o silencio: liberar aviso retenido inmediatamente si existía
-        if (this.#pendingCheckIn) {
-          const checkIn = this.#pendingCheckIn;
-          this.#pendingCheckIn = null;
-          this.triggerCheckIn(checkIn);
-        } else if (this.#isLiveMode && !this.#isSpeaking && !this.#isMuted) {
-          setTimeout(() => this.#listenCycle(), 300);
-        }
+        return;
       }
+
+      if (this.#pendingCheckIn && !error) {
+        const checkIn = this.#pendingCheckIn;
+        this.#pendingCheckIn = null;
+        this.triggerCheckIn(checkIn);
+        return;
+      }
+
+      if (!this.#isLiveMode || !this.connected || this.#isMuted || this.#isSpeaking) return;
+      if (error === 'aborted') return;
+      if (error === 'not-allowed' || error === 'service-not-allowed' || error === 'audio-capture') {
+        this.#giveUpMic('El micrófono se cerró. Toca Iniciar para volver a abrirlo.');
+        return;
+      }
+
+      if (error && error !== 'no-speech') {
+        this.#micFailures += 1;
+        if (this.#micFailures >= 5) {
+          this.#giveUpMic('El micrófono se trabó. Toca Iniciar para volver a abrirlo.');
+          return;
+        }
+        this.#scheduleListen(Math.min(400 * 2 ** (this.#micFailures - 1), 4000));
+        return;
+      }
+
+      this.#scheduleListen(500);
     };
 
     try {
-      this.#speechRec.start();
-    } catch {}
+      rec.start();
+    } catch {
+      if (gen !== this.#listenGen) return;
+      this.#micFailures += 1;
+      if (this.#micFailures >= 5) {
+        this.#giveUpMic('El micrófono se trabó. Toca Iniciar para volver a abrirlo.');
+        return;
+      }
+      this.#scheduleListen(Math.min(400 * 2 ** (this.#micFailures - 1), 4000));
+    }
   }
 
   stopLiveMode() {
     if (!this.#isLiveMode) return;
     this.#isLiveMode = false;
-    this.#speechRec?.abort?.();
-    this.#speechRec = null;
+    this.#listenGen += 1;
+    this.#clearRestart();
+    this.#micFailures = 0;
+    if (this.#speakingTimeout) {
+      clearTimeout(this.#speakingTimeout);
+      this.#speakingTimeout = null;
+    }
+    this.#releaseRecognizer();
+    this.#isUserSpeaking = false;
     this.#stopCurrentAudio();
     this.#emit('live_mode_stopped');
   }

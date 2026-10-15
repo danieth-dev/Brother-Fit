@@ -5,6 +5,7 @@ import { loadSettings, state } from './store.js';
 import { startRouter } from './router.js';
 import { watchPickers } from './utils/picker.js';
 import { watchCalendars } from './utils/calendar.js';
+import { watchTimes } from './utils/time-sheet.js';
 
 function blockTabMenu() {
   const bar = document.querySelector('.tabbar');
@@ -54,6 +55,7 @@ async function boot() {
     await loadSettings();
     watchPickers(document.getElementById('app'));
     watchCalendars(document.getElementById('app'));
+    watchTimes(document.getElementById('app'));
   } catch (err) {
     console.error(err);
     document.getElementById('app').innerHTML =

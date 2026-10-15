@@ -169,7 +169,7 @@ export async function render(el) {
       <form class="stack" data-form="manual">
         <div class="grid-3">
           <label class="field"><span>Día</span><input type="date" name="fecha" value="${todayISO()}" max="${todayISO()}" required></label>
-          <label class="field"><span>Hora</span><input type="time" name="hora" value="${nowHM()}" required></label>
+          <label class="field"><span>Hora</span><input data-time name="hora" value="${nowHM()}" inputmode="none" readonly required></label>
           <label class="field"><span>Gramos</span><input name="cantidad" inputmode="decimal" value="${fmtNum(g)}" required></label>
         </div>
         <button class="btn btn-primary btn-block" type="submit">Guardar toma</button>

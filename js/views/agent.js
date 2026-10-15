@@ -260,6 +260,9 @@ function renderLiveChat(el, apiKey) {
       setStatus('Error de conexion', false);
       toast(err.message);
     })
+    .on('mic_paused', (message) => {
+      toast(message);
+    })
     .on('disconnected', () => {
       setStatus('Desconectado', false);
       enableControls(false);

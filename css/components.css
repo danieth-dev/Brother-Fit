@@ -310,6 +310,71 @@ body.picker-open {
 .picker-sheet.open .picker-panel {
   transform: translateY(0);
 }
+.time-face {
+  margin: 4px 0 18px;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 3rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.time-steps {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.time-step {
+  display: grid;
+  grid-template-columns: 52px 1fr 52px;
+  align-items: center;
+  gap: 6px;
+}
+.time-step span {
+  text-align: center;
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+}
+.time-step button,
+.time-period button {
+  min-height: 52px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.time-step button:focus-visible,
+.time-period button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255, 230, 0, 0.28);
+}
+.time-period {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 12px;
+}
+.time-period button {
+  font-family: var(--font);
+  font-size: var(--fs-base);
+}
+.time-period button[aria-pressed="true"] {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-ink);
+}
+.time-actions {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 8px;
+  margin-top: 16px;
+}
 .picker-head {
   display: flex;
   align-items: center;
