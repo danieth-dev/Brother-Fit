@@ -1,7 +1,7 @@
 /* Service worker de Brother ft.
  * Con red responde lo publicado y guarda una copia. Sin red usa esa copia.
  * Sube VERSION al publicar para que el teléfono suelte la caché anterior. */
-const VERSION = 'v46';
+const VERSION = 'v47';
 const CACHE = `brother-ft-${VERSION}`;
 
 const ASSETS = [
@@ -73,11 +73,12 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(networkFirst(req));
 });
 
-/* Con red se usa lo publicado. La copia local solo entra si no hay conexión. */
+/* Con red se usa lo publicado, sin la copia que el navegador guarda unos minutos.
+ * La copia local solo entra si no hay conexión. */
 async function networkFirst(req) {
   const cache = await caches.open(CACHE);
   try {
-    const res = await fetch(req);
+    const res = await fetch(new Request(req.url, { cache: 'reload', credentials: 'same-origin' }));
     if (res.ok) cache.put(req, res.clone());
     return res;
   } catch {

@@ -2,7 +2,7 @@
 
 Documento vivo del producto. Describe cómo está armado, dónde vive cada dato y qué no se puede romper. Cuando cambie el comportamiento, el esquema, una pantalla o la forma de publicar, este archivo se actualiza en el mismo cambio.
 
-Última revisión: 14 de octubre de 2026. Base de datos versión 2. Caché de la app `v46`.
+Última revisión: 14 de octubre de 2026. Base de datos versión 2. Caché de la app `v47`.
 
 ## Qué es
 
