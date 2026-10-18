@@ -37,7 +37,7 @@ function renderKeyPrompt(el) {
   el.innerHTML = `
     <header class="page-head">
       <h1>Fit AI · Gemini Live</h1>
-      <p>Bía · compañera técnica por voz en tiempo real</p>
+      <p>Compañera técnica por voz. Puedes llamarla Fit o Bía.</p>
     </header>
 
     <div class="agent-key-card">
@@ -89,7 +89,6 @@ async function renderLiveChat(el, apiKey) {
     <header class="page-head agent-chat-head">
       <div>
         <h1>Fit <span class="chip chip-accent" style="font-size:10px;vertical-align:middle;margin-left:6px">LIVE</span></h1>
-        <p class="agent-aka">Bía</p>
         <p id="agent-status">${isExisting ? 'En línea · Conectado' : 'Conectando con Gemini Live...'}</p>
       </div>
       <div class="agent-head-actions">

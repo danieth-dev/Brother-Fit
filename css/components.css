@@ -1650,14 +1650,6 @@ body.picker-open {
 .agent-chat-head h1 {
   font-size: var(--fs-2xl);
 }
-.agent-aka {
-  margin: 2px 0 0;
-  font-size: var(--fs-xs);
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
 .agent-head-actions {
   display: flex;
   align-items: center;

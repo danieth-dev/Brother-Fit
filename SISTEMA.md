@@ -2,7 +2,7 @@
 
 Documento vivo del producto. Describe cómo está armado, dónde vive cada dato y qué no se puede romper. Cuando cambie el comportamiento, el esquema, una pantalla o la forma de publicar, este archivo se actualiza en el mismo cambio.
 
-Última revisión: 18 de octubre de 2026. Base de datos versión 2. Caché de la app `v74`.
+Última revisión: 18 de octubre de 2026. Base de datos versión 2. Caché de la app `v75`.
 
 ## Qué es
 
@@ -195,7 +195,7 @@ El peso corporal es independiente del entreno. Se guarda por fecha y se dibuja c
 
 ## Fit
 
-En la app se llama **Fit** (tab, títulos, código). Su nombre personal es **Bía**: el prompt del sistema la presenta así y responde a ambos. Un solo personaje. En el chat aparece «Bía» bajo el título Fit.
+En la UI se llama **Fit**. El atleta puede llamarla Fit o Bía: el prompt responde a ambos como un solo personaje. Si preguntan el nombre, dice que pueden usar cualquiera de los dos.
 
 Fit habla por el canal en directo de Gemini, modelo `models/gemini-3.8-live`, voz Aoede, audio de respuesta, 24 kHz PCM16. No se envía `thinkingConfig`. En pantalla solo entra `outputTranscription.text`. El texto de `part.text` es razonamiento interno y no se muestra.
 
