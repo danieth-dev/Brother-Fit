@@ -13,8 +13,8 @@ const QUIET_START = 22; /* desde las 22:00 no se programa */
 const QUIET_END = 8;   /* antes de las 8:00 se empuja a las 8 */
 
 const COPY = [
-  'Bebe un vaso de agua. Con creatina conviene un poco más de hidratación.',
-  'Otro vaso viene bien. La creatina pide unos 500 ml extra de agua al día.',
+  'Bebe un poco más de agua para mejorar tu hidratación.',
+  'Toma un poco más de agua. Tomar creatina requiere hidratarte bien.',
 ];
 
 let timers = [];
