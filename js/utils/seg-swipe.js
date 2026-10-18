@@ -1,7 +1,9 @@
-/* Desliz horizontal en .seg: mismo resultado que pulsar. El toque sigue funcionando. */
+/* Pastilla amarilla del .seg: se arrastra con el dedo y al soltar encaja.
+ * Un toque (también con un poco de temblor) sigue eligiendo la opción. */
 
 const BOUND = new WeakSet();
-const THRESHOLD = 28;
+const AXIS_SLOP = 8;
+const DRAG_MIN = 18; /* por debajo = toque; el clic nativo elige */
 
 function buttonsOf(seg) {
   return [...seg.querySelectorAll(':scope > button')].filter((b) => !b.disabled);
@@ -38,7 +40,7 @@ export function syncSegThumb(seg) {
   thumb.style.transform = `translate(${active.offsetLeft}px, ${active.offsetTop}px)`;
 }
 
-function placeThumbAt(seg, x, y, w, h) {
+function placeThumb(seg, x, y, w, h) {
   const thumb = ensureThumb(seg);
   thumb.hidden = false;
   thumb.style.width = `${w}px`;
@@ -46,15 +48,78 @@ function placeThumbAt(seg, x, y, w, h) {
   thumb.style.transform = `translate(${x}px, ${y}px)`;
 }
 
-function nearestIndex(btns, centerX) {
+function centers(btns) {
+  return btns.map((b) => ({
+    x: b.offsetLeft + b.offsetWidth / 2,
+    y: b.offsetTop + b.offsetHeight / 2,
+    w: b.offsetWidth,
+    h: b.offsetHeight,
+    left: b.offsetLeft,
+    top: b.offsetTop,
+  }));
+}
+
+/* Más de una fila (p. ej. métricas en Progreso). */
+function isWrapped(btns) {
+  if (btns.length < 2) return false;
+  const top0 = btns[0].offsetTop;
+  return btns.some((b) => b.offsetTop !== top0);
+}
+
+function nearestIndex(btns, centerX, centerY = null) {
   let best = 0;
   let bestDist = Infinity;
-  btns.forEach((b, i) => {
-    const mid = b.offsetLeft + b.offsetWidth / 2;
-    const d = Math.abs(mid - centerX);
+  const pts = centers(btns);
+  pts.forEach((p, i) => {
+    const d = centerY == null
+      ? Math.abs(p.x - centerX)
+      : Math.hypot(p.x - centerX, p.y - centerY);
     if (d < bestDist) { bestDist = d; best = i; }
   });
   return best;
+}
+
+function thumbLayout(btns, centerX, centerY = null) {
+  if (!btns.length) return null;
+  if (btns.length === 1) {
+    const b = btns[0];
+    return { x: b.offsetLeft, y: b.offsetTop, w: b.offsetWidth, h: b.offsetHeight };
+  }
+
+  /* Varias filas: pastilla bajo el dedo, tamaño de la opción más cercana. */
+  if (centerY != null && isWrapped(btns)) {
+    const idx = nearestIndex(btns, centerX, centerY);
+    const b = btns[idx];
+    const halfW = b.offsetWidth / 2;
+    const halfH = b.offsetHeight / 2;
+    const xs = centers(btns).map((p) => p.x);
+    const ys = centers(btns).map((p) => p.y);
+    const cx = Math.min(Math.max(...xs), Math.max(Math.min(...xs), centerX));
+    const cy = Math.min(Math.max(...ys), Math.max(Math.min(...ys), centerY));
+    return { x: cx - halfW, y: cy - halfH, w: b.offsetWidth, h: b.offsetHeight };
+  }
+
+  const first = btns[0];
+  const last = btns[btns.length - 1];
+  const minC = first.offsetLeft + first.offsetWidth / 2;
+  const maxC = last.offsetLeft + last.offsetWidth / 2;
+  const c = Math.min(maxC, Math.max(minC, centerX));
+
+  for (let i = 0; i < btns.length - 1; i++) {
+    const a = btns[i];
+    const b = btns[i + 1];
+    const am = a.offsetLeft + a.offsetWidth / 2;
+    const bm = b.offsetLeft + b.offsetWidth / 2;
+    if (c >= am && c <= bm) {
+      const t = (c - am) / (bm - am || 1);
+      const w = a.offsetWidth + (b.offsetWidth - a.offsetWidth) * t;
+      const h = a.offsetHeight + (b.offsetHeight - a.offsetHeight) * t;
+      const mid = am + (bm - am) * t;
+      return { x: mid - w / 2, y: a.offsetTop + (b.offsetTop - a.offsetTop) * t, w, h };
+    }
+  }
+  const edge = c <= minC ? first : last;
+  return { x: edge.offsetLeft, y: edge.offsetTop, w: edge.offsetWidth, h: edge.offsetHeight };
 }
 
 function bindSeg(seg) {
@@ -74,18 +139,29 @@ function bindSeg(seg) {
 
   let startX = 0;
   let startY = 0;
-  let originLeft = 0;
-  let originTop = 0;
-  let thumbW = 0;
-  let thumbH = 0;
-  let minX = 0;
-  let maxX = 0;
-  let axis = null;
-  let dragging = false;
-  let didSwipe = false;
+  let originCenterX = 0;
+  let originCenterY = 0;
+  let axis = null; /* 'x' | 'y' | 'free' | null */
+  let tracking = false;
+  let didDrag = false;
   let swallowClick = false;
   let swallowTimer = 0;
   let pointerId = null;
+  let wrapped = false;
+
+  const releaseCapture = () => {
+    if (pointerId != null && seg.releasePointerCapture) {
+      try { seg.releasePointerCapture(pointerId); } catch { /* ok */ }
+    }
+    pointerId = null;
+  };
+
+  const beginDrag = () => {
+    seg.classList.add('seg--dragging');
+    if (seg.setPointerCapture && pointerId != null) {
+      try { seg.setPointerCapture(pointerId); } catch { /* ok */ }
+    }
+  };
 
   const onDown = (e) => {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
@@ -95,81 +171,71 @@ function bindSeg(seg) {
     const point = e.touches ? e.touches[0] : e;
     startX = point.clientX;
     startY = point.clientY;
-    originLeft = active.offsetLeft;
-    originTop = active.offsetTop;
-    thumbW = active.offsetWidth;
-    thumbH = active.offsetHeight;
-    minX = btns[0].offsetLeft;
-    maxX = btns[btns.length - 1].offsetLeft;
+    originCenterX = active.offsetLeft + active.offsetWidth / 2;
+    originCenterY = active.offsetTop + active.offsetHeight / 2;
+    wrapped = isWrapped(btns);
     axis = null;
-    dragging = true;
-    didSwipe = false;
+    tracking = true;
+    didDrag = false;
     pointerId = e.pointerId ?? null;
-    if (seg.setPointerCapture && pointerId != null) {
-      try { seg.setPointerCapture(pointerId); } catch { /* ok */ }
-    }
+    /* No capturar aún: un toque debe poder completar el click en el botón. */
   };
 
   const onMove = (e) => {
-    if (!dragging) return;
+    if (!tracking) return;
     const btns = buttonsOf(seg);
     if (btns.length < 2) return;
     const point = e.touches ? e.touches[0] : e;
     const dx = point.clientX - startX;
     const dy = point.clientY - startY;
     if (!axis) {
-      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
-      axis = Math.abs(dx) > Math.abs(dy) * 1.15 ? 'x' : 'y';
-      if (axis === 'x') seg.classList.add('seg--dragging');
+      if (Math.abs(dx) < AXIS_SLOP && Math.abs(dy) < AXIS_SLOP) return;
+      if (wrapped) {
+        axis = 'free';
+        beginDrag();
+      } else {
+        axis = Math.abs(dx) > Math.abs(dy) * 1.1 ? 'x' : 'y';
+        if (axis === 'x') beginDrag();
+      }
     }
-    if (axis !== 'x') return;
+    if (axis !== 'x' && axis !== 'free') return;
     if (e.cancelable) e.preventDefault();
-    didSwipe = Math.abs(dx) >= THRESHOLD || didSwipe;
-    const x = Math.min(maxX, Math.max(minX, originLeft + dx));
-    placeThumbAt(seg, x, originTop, thumbW, thumbH);
+    const travel = axis === 'free' ? Math.hypot(dx, dy) : Math.abs(dx);
+    if (travel >= DRAG_MIN) didDrag = true;
+    const layout = axis === 'free'
+      ? thumbLayout(btns, originCenterX + dx, originCenterY + dy)
+      : thumbLayout(btns, originCenterX + dx);
+    if (layout) placeThumb(seg, layout.x, layout.y, layout.w, layout.h);
   };
 
   const finish = (e) => {
-    if (!dragging) return;
-    dragging = false;
+    if (!tracking) return;
+    tracking = false;
     seg.classList.remove('seg--dragging');
-    if (pointerId != null && seg.releasePointerCapture) {
-      try { seg.releasePointerCapture(pointerId); } catch { /* ok */ }
-    }
-    pointerId = null;
+    releaseCapture();
 
     const btns = buttonsOf(seg);
-    if (axis === 'x' && btns.length >= 2) {
-      const point = e.changedTouches ? e.changedTouches[0] : e;
-      const dx = (point?.clientX ?? startX) - startX;
-      const thumb = seg.querySelector(':scope > .seg-thumb');
-      const left = thumb
-        ? parseFloat(String(thumb.style.transform).match(/translate\(([-\d.]+)/)?.[1] || originLeft)
-        : originLeft + dx;
-      let idx = nearestIndex(btns, left + thumbW / 2);
-      /* Si el dedo cruzó el umbral, fuerza el vecino en esa dirección. */
-      if (Math.abs(dx) >= THRESHOLD) {
-        const cur = activeIndex(btns);
-        const dir = dx < 0 ? 1 : -1;
-        idx = Math.min(btns.length - 1, Math.max(0, cur + dir));
-        didSwipe = true;
-      }
+    const point = e.changedTouches ? e.changedTouches[0] : e;
+    const dx = (point?.clientX ?? startX) - startX;
+    const dy = (point?.clientY ?? startY) - startY;
+
+    if ((axis === 'x' || axis === 'free') && didDrag && btns.length >= 2) {
+      const idx = axis === 'free'
+        ? nearestIndex(btns, originCenterX + dx, originCenterY + dy)
+        : nearestIndex(btns, originCenterX + dx);
       const target = btns[idx];
       const curBtn = btns[activeIndex(btns)];
-      syncSegThumb(seg);
       if (target && target !== curBtn) target.click();
       else syncSegThumb(seg);
-      /* Tras un desliz, traga solo el clic fantasma inmediato (no los toques siguientes). */
-      if (didSwipe || Math.abs(dx) >= 10) {
-        swallowClick = true;
-        clearTimeout(swallowTimer);
-        swallowTimer = setTimeout(() => { swallowClick = false; }, 50);
-      }
+      swallowClick = true;
+      clearTimeout(swallowTimer);
+      swallowTimer = setTimeout(() => { swallowClick = false; }, 50);
     } else {
+      /* Toque o gesto corto: deja pasar el click nativo al botón. */
       syncSegThumb(seg);
     }
     axis = null;
-    didSwipe = false;
+    didDrag = false;
   };
 
   const onClickCapture = (e) => {
@@ -202,7 +268,6 @@ function scan(root) {
   base.querySelectorAll?.('.seg').forEach(bindSeg);
 }
 
-/** Engancha desliz + pastilla en los .seg del árbol (y los que se pinten después). */
 export function watchSegs(root) {
   const el = root || document.getElementById('app') || document.body;
   scan(el);
@@ -214,7 +279,8 @@ export function watchSegs(root) {
       }
       if (rec.type === 'attributes' && rec.target instanceof Element) {
         const seg = rec.target.closest?.('.seg');
-        if (seg) syncSegThumb(seg);
+        /* No pisar la pastilla mientras el dedo la arrastra. */
+        if (seg && !seg.classList.contains('seg--dragging')) syncSegThumb(seg);
       }
     }
   }).observe(el, {

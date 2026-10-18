@@ -14,6 +14,7 @@ import { bindExerciseEdit, openExerciseEditor } from '../utils/exercise-editor.j
 import { askConfirm } from '../utils/confirm-sheet.js';
 import { effortTag, effortExtra, rirButtons } from '../utils/set-line.js';
 import { weightUnit, toKg, fmtWeight, fmtVolume, unitSegHtml } from '../utils/units.js';
+import { syncSegThumb } from '../utils/seg-swipe.js';
 
 let selectedEx = null;
 let restEnd = 0;
@@ -71,7 +72,7 @@ function prevSessionMarkup(prev, unidad = weightUnit()) {
   const rows = prev.sets.map((s, i) => `
     <div class="prev-row">
       <span class="prev-row-n">S${i + 1}</span>
-      <span class="prev-row-v">${fmtWeight(s.peso, unidad)} <small>${esc(unidad)}</small> × <strong>${s.reps}</strong>${effortTag(s)}</span>
+      <span class="prev-row-v"><span data-kg="${s.peso}">${fmtWeight(s.peso, unidad)}</span> <small data-unit>${esc(unidad)}</small> × <strong>${s.reps}</strong>${effortTag(s)}</span>
     </div>`).join('');
   return `<div class="prev-session">
     <div class="prev-session-head">
@@ -80,6 +81,24 @@ function prevSessionMarkup(prev, unidad = weightUnit()) {
     </div>
     <div class="prev-rows">${rows}</div>
   </div>`;
+}
+
+/* Cambia kg/lb sin repintar Entreno (si no, parpadea Trabajo/Calentamiento). */
+function applyUnitLive(root, next, pesoKg) {
+  root.querySelectorAll('.unit-seg [data-unidad]').forEach((b) => {
+    b.setAttribute('aria-pressed', String(b.dataset.unidad === next));
+  });
+  const unitSeg = root.querySelector('.unit-seg');
+  if (unitSeg) {
+    requestAnimationFrame(() => syncSegThumb(unitSeg));
+  }
+  const input = root.querySelector('input[name="peso"]');
+  if (input && pesoKg != null) input.value = fmtWeight(pesoKg, next);
+  root.querySelectorAll('[data-kg]').forEach((n) => {
+    const k = Number(n.dataset.kg);
+    if (Number.isFinite(k)) n.textContent = fmtWeight(k, next);
+  });
+  root.querySelectorAll('[data-unit]').forEach((n) => { n.textContent = next; });
 }
 
 export async function render(el) {
@@ -154,14 +173,16 @@ export async function render(el) {
 
       ${pr && pr.maxPeso > 0 ? `
         <div class="workout-pr-strip">
-          <span class="workout-pr-chip">${icons.trophy({ size: 12 })} PR ${fmtWeight(pr.maxPeso, unidad)} ${esc(unidad)}</span>
-          <span class="workout-pr-chip workout-pr-chip--muted">${fmtWeight(pr.e1rmMax, unidad)} 1RM est.</span>
+          <span class="workout-pr-chip">${icons.trophy({ size: 12 })} PR <span data-kg="${pr.maxPeso}">${fmtWeight(pr.maxPeso, unidad)}</span> <span data-unit>${esc(unidad)}</span></span>
+          <span class="workout-pr-chip workout-pr-chip--muted"><span data-kg="${pr.e1rmMax}">${fmtWeight(pr.e1rmMax, unidad)}</span> 1RM est.</span>
           <span class="workout-pr-chip workout-pr-chip--muted">${pr.maxReps} reps máx.</span>
         </div>` : ''}
 
       <div class="grid-2">
-        <label class="field"><span>Peso ${unitSegHtml(unidad)}</span>
-          <input name="peso" inputmode="decimal" autocomplete="off" required placeholder="0"></label>
+        <div class="field">
+          <span>Peso ${unitSegHtml(unidad)}</span>
+          <input name="peso" inputmode="decimal" autocomplete="off" required placeholder="0" aria-label="Peso">
+        </div>
         <label class="field"><span>Reps</span>
           <input name="reps" inputmode="numeric" pattern="[0-9]*" autocomplete="off" required placeholder="0"></label>
       </div>
@@ -186,7 +207,7 @@ export async function render(el) {
           ${g.sets.map((s, i) => `
             <li>
               <span class="n">Serie ${i + 1}</span>
-              <span class="v">${fmtWeight(s.peso, unidad)} ${esc(unidad)} × ${s.reps}${effortTag(s)}</span>
+              <span class="v"><span data-kg="${s.peso}">${fmtWeight(s.peso, unidad)}</span> <span data-unit>${esc(unidad)}</span> × ${s.reps}${effortTag(s)}</span>
               <button class="btn-x" data-action="del-set" data-id="${s.id}" type="button" aria-label="Borrar serie ${i + 1}">
                 ${icons.trash({ size: 15 })}
               </button>
@@ -229,13 +250,8 @@ export async function render(el) {
       const input = el.querySelector('input[name="peso"]');
       const raw = num(input?.value);
       const kg = Number.isFinite(raw) ? toKg(raw, prev) : null;
-      const repsKeep = el.querySelector('input[name="reps"]')?.value ?? '';
       await saveSettings({ unidad: next });
-      await render(el);
-      const pesoEl = el.querySelector('input[name="peso"]');
-      const repsEl = el.querySelector('input[name="reps"]');
-      if (pesoEl && kg != null) pesoEl.value = fmtWeight(kg, next);
-      if (repsEl && repsKeep !== '') repsEl.value = repsKeep;
+      applyUnitLive(el, next, Number.isFinite(kg) ? kg : null);
     },
     'del-set': async (t) => {
       const ok = await askConfirm({
@@ -342,8 +358,8 @@ export async function render(el) {
       const strip = el.querySelector('.workout-pr-strip');
       if (strip && prData && prData.maxPeso > 0) {
         strip.innerHTML = `
-          <span class="workout-pr-chip">${icons.trophy({ size: 12 })} PR ${fmtWeight(prData.maxPeso, u)} ${esc(u)}</span>
-          <span class="workout-pr-chip workout-pr-chip--muted">${fmtWeight(prData.e1rmMax, u)} 1RM est.</span>
+          <span class="workout-pr-chip">${icons.trophy({ size: 12 })} PR <span data-kg="${prData.maxPeso}">${fmtWeight(prData.maxPeso, u)}</span> <span data-unit>${esc(u)}</span></span>
+          <span class="workout-pr-chip workout-pr-chip--muted"><span data-kg="${prData.e1rmMax}">${fmtWeight(prData.e1rmMax, u)}</span> 1RM est.</span>
           <span class="workout-pr-chip workout-pr-chip--muted">${prData.maxReps} reps máx.</span>`;
       }
       await prefill(el, p);

@@ -8,9 +8,13 @@ import { icons } from '../utils/icons.js';
 import { bindExerciseEdit, openExerciseEditor } from '../utils/exercise-editor.js';
 import { askConfirm } from '../utils/confirm-sheet.js';
 import { weightUnit, toKg, fromKg, fmtWeight, fmtVolume, unitSegHtml } from '../utils/units.js';
+import { syncSegThumb } from '../utils/seg-swipe.js';
 
 const METRICS = { e1rm: '1RM est.', adj: '1RM aj.', maxPeso: 'Peso máx.', volumen: 'Volumen' };
 let metric = 'e1rm';
+
+/* Datos de la vista actual: actualizar unidad/métrica sin remount de los .seg. */
+let view = null;
 
 function trendChip(curr, prev) {
   if (!prev || prev === 0) return '';
@@ -32,6 +36,21 @@ function adjCaption(sessions) {
 
 function showW(kg, unidad) {
   return fromKg(kg, unidad);
+}
+
+function metricPoints(sessions, unidad) {
+  return sessions
+    .filter((s) => metric !== 'adj' || s.adj != null)
+    .map((s) => {
+      const raw = metric === 'adj' ? s.adj : s[metric];
+      const shown = metric === 'volumen' || metric === 'maxPeso' || metric === 'e1rm' || metric === 'adj'
+        ? fromKg(raw, unidad)
+        : raw;
+      return {
+        label: formatShort(s.fecha),
+        value: Math.round(shown * 10) / 10,
+      };
+    });
 }
 
 function compareCard(sessions, unidad) {
@@ -93,6 +112,119 @@ function sessionTable(sessions, unidad) {
     <div class="sess-table">${rows.join('')}</div>`;
 }
 
+function prBadgesHtml(pr, unidad) {
+  return `
+    <div class="pr-badges">
+      <div class="pr-badge pr-badge--gold">
+        ${icons.trophy({ size: 16, stroke: 'var(--primary-ink)' })}
+        <div>
+          <span class="pr-badge-val">${fmtWeight(pr.maxPeso, unidad)}<small> ${esc(unidad)}</small></span>
+          <span class="pr-badge-label">PR Peso</span>
+        </div>
+      </div>
+      <div class="pr-badge">
+        ${icons.trendUp({ size: 16, stroke: 'var(--green)' })}
+        <div>
+          <span class="pr-badge-val">${fmtWeight(pr.e1rmMax, unidad)}<small> ${esc(unidad)}</small></span>
+          <span class="pr-badge-label">Mejor 1RM</span>
+        </div>
+      </div>
+      <div class="pr-badge">
+        ${icons.activity({ size: 16, stroke: 'var(--blue)' })}
+        <div>
+          <span class="pr-badge-val">${pr.maxReps}<small> reps</small></span>
+          <span class="pr-badge-label">Más reps</span>
+        </div>
+      </div>
+    </div>`;
+}
+
+function bodyListHtml(body, unidad) {
+  if (!body.length) return '';
+  return `
+    <div class="list" id="body-list" style="margin-top:12px">
+      ${body.slice(-5).reverse().map((b) => `
+        <div class="row">
+          <div>
+            <strong class="num">${fmtWeight(b.peso, unidad)} ${esc(unidad)}</strong>
+            <small>${esc(formatShort(b.fecha))}</small>
+          </div>
+          <button class="btn-x" data-action="del-body" data-id="${b.id}" type="button" aria-label="Borrar registro">
+            ${icons.trash({ size: 16 })}
+          </button>
+        </div>`).join('')}
+    </div>`;
+}
+
+function setChart(slot, html) {
+  if (!slot) return;
+  slot.innerHTML = html;
+}
+
+/* Solo números/gráficos: kg/lb y métricas no se destruyen. */
+function applyUnitLive(root, next, pesoKg) {
+  if (!view) return;
+  view.unidad = next;
+
+  root.querySelectorAll('.unit-seg [data-unidad]').forEach((b) => {
+    b.setAttribute('aria-pressed', String(b.dataset.unidad === next));
+  });
+  const unitSeg = root.querySelector('.unit-seg');
+  if (unitSeg) requestAnimationFrame(() => syncSegThumb(unitSeg));
+
+  const input = root.querySelector('form[data-form="body"] input[name="peso"]');
+  if (input && pesoKg != null) input.value = fmtWeight(pesoKg, next);
+
+  const { sessions, body, pr } = view;
+  const prSlot = root.querySelector('#pr-slot');
+  if (prSlot) prSlot.innerHTML = prBadgesHtml(pr, next);
+
+  const compareSlot = root.querySelector('#compare-slot');
+  if (compareSlot) compareSlot.innerHTML = compareCard(sessions, next);
+
+  setChart(root.querySelector('#metric-chart'), lineChart(metricPoints(sessions, next), {
+    desc: `${METRICS[metric]} por sesión`,
+  }));
+
+  const sessSlot = root.querySelector('#sess-slot');
+  if (sessSlot) sessSlot.innerHTML = sessionTable(sessions, next);
+
+  const bodyPoints = body.slice(-30).map((b) => ({
+    label: formatShort(b.fecha),
+    value: Math.round(fromKg(b.peso, next) * 10) / 10,
+  }));
+  setChart(root.querySelector('#body-chart'), lineChart(bodyPoints, { desc: 'Peso corporal en el tiempo' }));
+
+  const listSlot = root.querySelector('#body-list-slot');
+  if (listSlot) listSlot.innerHTML = bodyListHtml(body, next);
+}
+
+function applyMetricLive(root) {
+  if (!view) return;
+  const { sessions, unidad } = view;
+
+  root.querySelectorAll('.metric-seg [data-metric]').forEach((b) => {
+    b.setAttribute('aria-pressed', String(b.dataset.metric === metric));
+  });
+  const metricSeg = root.querySelector('.metric-seg');
+  if (metricSeg) requestAnimationFrame(() => syncSegThumb(metricSeg));
+
+  setChart(root.querySelector('#metric-chart'), lineChart(metricPoints(sessions, unidad), {
+    desc: `${METRICS[metric]} por sesión`,
+  }));
+
+  const note = root.querySelector('#adj-note');
+  if (note) {
+    if (metric === 'adj') {
+      note.hidden = false;
+      note.textContent = adjCaption(sessions);
+    } else {
+      note.hidden = true;
+      note.textContent = '';
+    }
+  }
+}
+
 export async function render(el, [idParam] = []) {
   const exs = await listExercises();
   const exId = Number(idParam) || (await lastTrainedExerciseId()) || exs[0]?.id;
@@ -103,18 +235,9 @@ export async function render(el, [idParam] = []) {
   ]);
   const unidad = weightUnit();
   const sessions = prog.sessions.slice(-20);
-  const points = sessions
-    .filter((s) => metric !== 'adj' || s.adj != null)
-    .map((s) => {
-      const raw = metric === 'adj' ? s.adj : s[metric];
-      const shown = metric === 'volumen' || metric === 'maxPeso' || metric === 'e1rm' || metric === 'adj'
-        ? fromKg(raw, unidad)
-        : raw;
-      return {
-        label: formatShort(s.fecha),
-        value: Math.round(shown * 10) / 10,
-      };
-    });
+  view = { exId, sessions, body, pr, unidad };
+
+  const points = metricPoints(sessions, unidad);
   const adjNote = metric === 'adj' ? adjCaption(sessions) : '';
   const bodyPoints = body.slice(-30).map((b) => ({
     label: formatShort(b.fecha),
@@ -132,44 +255,17 @@ export async function render(el, [idParam] = []) {
     </label>
 
     ${prog.sessions.length ? `
-      <!-- PR BADGES -->
-      <div class="pr-badges">
-        <div class="pr-badge pr-badge--gold">
-          ${icons.trophy({ size: 16, stroke: 'var(--primary-ink)' })}
-          <div>
-            <span class="pr-badge-val">${fmtWeight(pr.maxPeso, unidad)}<small> ${esc(unidad)}</small></span>
-            <span class="pr-badge-label">PR Peso</span>
-          </div>
-        </div>
-        <div class="pr-badge">
-          ${icons.trendUp({ size: 16, stroke: 'var(--green)' })}
-          <div>
-            <span class="pr-badge-val">${fmtWeight(pr.e1rmMax, unidad)}<small> ${esc(unidad)}</small></span>
-            <span class="pr-badge-label">Mejor 1RM</span>
-          </div>
-        </div>
-        <div class="pr-badge">
-          ${icons.activity({ size: 16, stroke: 'var(--blue)' })}
-          <div>
-            <span class="pr-badge-val">${pr.maxReps}<small> reps</small></span>
-            <span class="pr-badge-label">Más reps</span>
-          </div>
-        </div>
-      </div>
+      <div id="pr-slot">${prBadgesHtml(pr, unidad)}</div>
+      <div id="compare-slot">${compareCard(sessions, unidad)}</div>
 
-      <!-- COMPARATIVA ÚLTIMA VS ANTERIOR -->
-      ${compareCard(sessions, unidad)}
-
-      <!-- GRÁFICO -->
       <div class="seg metric-seg" role="group" aria-label="Métrica del gráfico" style="margin:16px 0 10px">
         ${Object.entries(METRICS).map(([k, label]) =>
           `<button type="button" data-action="metric" data-metric="${k}" aria-pressed="${k === metric}">${label}</button>`).join('')}
       </div>
-      ${lineChart(points, { desc: `${METRICS[metric]} por sesión` })}
-      ${adjNote ? `<p class="muted effort-note">${esc(adjNote)}</p>` : ''}
+      <div id="metric-chart">${lineChart(points, { desc: `${METRICS[metric]} por sesión` })}</div>
+      <p class="muted effort-note" id="adj-note" ${metric === 'adj' ? '' : 'hidden'}>${esc(adjNote)}</p>
 
-      <!-- TABLA DE SESIONES CON TENDENCIAS -->
-      ${sessionTable(sessions, unidad)}`
+      <div id="sess-slot">${sessionTable(sessions, unidad)}</div>`
 
       : `<div class="empty">
           ${icons.dumbbell({ size: 40, stroke: 'var(--line-strong)' })}
@@ -178,29 +274,20 @@ export async function render(el, [idParam] = []) {
         </div>`}
 
     <h2 class="section-title">Peso corporal</h2>
-    ${lineChart(bodyPoints, { desc: 'Peso corporal en el tiempo' })}
+    <div id="body-chart">${lineChart(bodyPoints, { desc: 'Peso corporal en el tiempo' })}</div>
     <form class="form-card stack" data-form="body">
       <div class="grid-2">
         <label class="field"><span>Día</span><input type="date" name="fecha" value="${todayISO()}" max="${todayISO()}" required></label>
-        <label class="field"><span>Peso ${unitSegHtml(unidad)}</span><input name="peso" inputmode="decimal" autocomplete="off" required placeholder="0"></label>
+        <div class="field">
+          <span>Peso ${unitSegHtml(unidad)}</span>
+          <input name="peso" inputmode="decimal" autocomplete="off" required placeholder="0" aria-label="Peso corporal">
+        </div>
       </div>
       <button class="btn btn-primary btn-block" type="submit">
         ${icons.plus({ size: 18 })} Guardar peso corporal
       </button>
     </form>
-    ${body.length ? `
-      <div class="list" style="margin-top:12px">
-        ${body.slice(-5).reverse().map((b) => `
-          <div class="row">
-            <div>
-              <strong class="num">${fmtWeight(b.peso, unidad)} ${esc(unidad)}</strong>
-              <small>${esc(formatShort(b.fecha))}</small>
-            </div>
-            <button class="btn-x" data-action="del-body" data-id="${b.id}" type="button" aria-label="Borrar registro">
-              ${icons.trash({ size: 16 })}
-            </button>
-          </div>`).join('')}
-      </div>` : ''}
+    <div id="body-list-slot">${bodyListHtml(body, unidad)}</div>
   `;
 
   changes(el, { exercise: (t) => go(`/progress/${t.value}`) });
@@ -214,11 +301,14 @@ export async function render(el, [idParam] = []) {
       const raw = num(input?.value);
       const kg = Number.isFinite(raw) ? toKg(raw, prev) : null;
       await saveSettings({ unidad: next });
-      await render(el, [exId]);
-      const pesoEl = el.querySelector('form[data-form="body"] input[name="peso"]');
-      if (pesoEl && kg != null) pesoEl.value = fmtWeight(kg, next);
+      applyUnitLive(el, next, Number.isFinite(kg) ? kg : null);
     },
-    metric: async (t) => { metric = t.dataset.metric; await render(el, [exId]); },
+    metric: (t) => {
+      const next = t.dataset.metric;
+      if (!next || next === metric) return;
+      metric = next;
+      applyMetricLive(el);
+    },
     'del-body': async (t) => {
       const ok = await askConfirm({
         title: 'Borrar peso',

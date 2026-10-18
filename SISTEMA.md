@@ -2,7 +2,7 @@
 
 Documento vivo del producto. Describe cómo está armado, dónde vive cada dato y qué no se puede romper. Cuando cambie el comportamiento, el esquema, una pantalla o la forma de publicar, este archivo se actualiza en el mismo cambio.
 
-Última revisión: 18 de octubre de 2026. Base de datos versión 2. Caché de la app `v68`.
+Última revisión: 18 de octubre de 2026. Base de datos versión 2. Caché de la app `v73`.
 
 ## Qué es
 
@@ -132,7 +132,7 @@ Tras registrar la creatina de hoy, si los recordatorios están activos y el tel�
 
 Los pesos de series y peso corporal se guardan siempre en **kg**. En Entreno y en Progreso un segmento `kg | lb` junto al campo Peso cambia `settings.unidad`, convierte el valor del input abierto y muestra historial/PR/volumen en esa unidad (`js/utils/units.js`). Lo ya guardado se interpreta como kg.
 
-Los controles segmentados (`.seg`: tipo de serie, kg/lb, métricas) se pueden pulsar o deslizar en horizontal: una pastilla amarilla sigue el dedo y al soltar encaja en la opción (`js/utils/seg-swipe.js`). El scroll vertical de la página no se bloquea.
+Los controles segmentados (`.seg`: tipo de serie, kg/lb, métricas, tipo en historial) se pueden pulsar o arrastrar: la pastilla amarilla se mueve con el dedo y al soltar encaja en la opción más cercana (`js/utils/seg-swipe.js`). Si el `.seg` tiene varias filas (métricas en Progreso), el gesto es libre en 2D. En Progreso, cambiar kg/lb o la métrica del gráfico actualiza números y charts sin remount del `.seg` (si no, parpadea la pastilla). El segmento de unidad no va dentro del `<label>` del input de peso, para no liar el gesto.
 
 El respaldo es un JSON `{ app: "brother-ft", schema: 1, exportedAt, data }`. Importar reemplaza todas las tablas en una sola transacción: si falla, no queda a medias. Borrar todo es restaurar un volcado vacío.
 

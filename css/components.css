@@ -1164,6 +1164,9 @@ body.picker-open {
   pointer-events: none;
   transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), width 0.2s ease, height 0.2s ease;
 }
+.seg.seg--dragging {
+  touch-action: none;
+}
 .seg.seg--dragging .seg-thumb {
   transition: none;
 }
