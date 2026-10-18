@@ -2,7 +2,6 @@
 import { db } from './db.js';
 
 export const DEFAULTS = {
-  creatinaGramos: 5,
   descanso: 90,
   descansoMode: 'auto',
   unidad: 'kg',

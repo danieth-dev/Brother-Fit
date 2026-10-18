@@ -52,6 +52,15 @@ function clearTimers() {
   timers = [];
 }
 
+/* No usar serviceWorker.ready: sin SW activo la promesa no resuelve nunca. */
+async function swRegistration() {
+  try {
+    return await navigator.serviceWorker?.getRegistration?.() || null;
+  } catch {
+    return null;
+  }
+}
+
 async function showLocal(body, tag) {
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
   const title = 'Brother Fit';
@@ -63,7 +72,7 @@ async function showLocal(body, tag) {
     data: { url: './#/' },
   };
   try {
-    const reg = await navigator.serviceWorker?.ready;
+    const reg = await swRegistration();
     if (reg?.showNotification) {
       await reg.showNotification(title, opts);
       return;
@@ -154,7 +163,7 @@ export async function cancelWaterReminders() {
   clearTimers();
   await savePlan(null);
   try {
-    const reg = await navigator.serviceWorker?.ready;
+    const reg = await swRegistration();
     const all = await reg?.getNotifications?.() || [];
     for (const n of all) {
       if (String(n.tag || '').startsWith(TAG)) n.close();

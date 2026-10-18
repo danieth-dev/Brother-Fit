@@ -15,8 +15,6 @@ export async function render(el) {
     <header class="page-head"><h1>Ajustes</h1></header>
 
     <div class="form-card stack">
-      <label class="field"><span>Gramos por toma de creatina</span>
-        <input data-change="creatinaGramos" inputmode="decimal" value="${s.creatinaGramos}"></label>
       <label class="field"><span>Descanso entre series</span>
         <select data-change="descansoMode">
           <option value="auto" ${s.descansoMode === 'auto' ? 'selected' : ''}>Automático (según reps)</option>
@@ -65,12 +63,6 @@ export async function render(el) {
   `;
 
   changes(el, {
-    creatinaGramos: async (t) => {
-      const v = num(t.value);
-      if (!(v > 0)) { toast('Escribe una cantidad válida.'); t.value = state.settings.creatinaGramos; return; }
-      await saveSettings({ creatinaGramos: v });
-      toast('Ajuste guardado');
-    },
     descanso: async (t) => {
       const v = Math.round(num(t.value));
       if (!(v >= 5 && v <= 900)) { toast('Usa un valor entre 5 y 900 segundos.'); t.value = state.settings.descanso; return; }

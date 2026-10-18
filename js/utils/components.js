@@ -17,7 +17,7 @@ export function creatinePlate(cr, g, action, caption) {
   return `
     <div class="plate-wrapper">
       <button class="plate ${done ? 'done' : ''}" data-action="${action}" type="button"
-        aria-label="${done ? 'Creatina registrada hoy' : 'Registrar toma de creatina'}">
+        aria-label="${done ? 'Quitar toma de creatina de hoy' : 'Registrar toma de creatina'}">
         <span class="plate-brand">BROTHER FIT</span>
         <b>${done ? `${icons.check({ size: 20 })} Tomada` : 'Registrar'}</b>
         <small class="num">${fmtNum(g)} g hoy</small>

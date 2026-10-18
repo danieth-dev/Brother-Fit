@@ -1,4 +1,4 @@
-import { creatineSummary, logIntake, deleteIntake } from '../services/creatine.js';
+import { creatineSummary, logIntake, deleteIntake, toggleTodayIntake, intakesForDate, DOSE_G } from '../services/creatine.js';
 import { scheduleAfterCreatine, cancelWaterReminders } from '../services/water-reminders.js';
 import { state } from '../store.js';
 import { delegate, forms, toast, esc, num, fmtNum } from '../utils/dom.js';
@@ -130,7 +130,7 @@ function sciencePanel(sat) {
 
 export async function render(el) {
   const cr = await creatineSummary();
-  const g = state.settings.creatinaGramos;
+  const g = DOSE_G;
   const isCurrent = view.y === now.getFullYear() && view.m === now.getMonth();
 
   el.innerHTML = `
@@ -201,20 +201,18 @@ export async function render(el) {
   delegate(el, {
     log: async (btn) => {
       btn.disabled = true;
-      const id = await logIntake({ cantidad: g });
-      const water = await scheduleAfterCreatine(todayISO());
-      await render(el);
-      toast('Creatina registrada', {
-        actionLabel: 'Deshacer',
-        onAction: async () => {
-          await deleteIntake(id);
-          const cr = await creatineSummary();
-          if (!cr.tomadaHoy) await cancelWaterReminders();
-          await render(el);
+      const res = await toggleTodayIntake(g);
+      if (res.taken) {
+        const water = await scheduleAfterCreatine(todayISO());
+        await render(el);
+        toast('Creatina registrada');
+        if (water.reason === 'denied') {
+          setTimeout(() => toast('Activa las notificaciones si quieres el recordatorio de agua.'), 4200);
         }
-      });
-      if (water.reason === 'denied') {
-        setTimeout(() => toast('Activa las notificaciones si quieres el recordatorio de agua.'), 4200);
+      } else {
+        await render(el);
+        toast('Toma de hoy quitada');
+        cancelWaterReminders().catch(() => {});
       }
     },
     del: async (t) => {
@@ -227,8 +225,8 @@ export async function render(el) {
       if (!ok) return;
       await deleteIntake(Number(btn.dataset.id));
       const cr = await creatineSummary();
-      if (!cr.tomadaHoy) await cancelWaterReminders();
       await render(el);
+      if (!cr.tomadaHoy) cancelWaterReminders().catch(() => {});
     },
     prev: async () => { view = view.m === 0 ? { y: view.y - 1, m: 11 } : { y: view.y, m: view.m - 1 }; await render(el); },
     next: async () => {
@@ -243,6 +241,11 @@ export async function render(el) {
       const cantidad = num(f.elements.cantidad.value);
       if (!(cantidad > 0)) { toast('Escribe una cantidad válida.'); return; }
       const fecha = f.elements.fecha.value;
+      const existing = await intakesForDate(fecha);
+      if (existing.length) {
+        toast('Ese día ya tiene una toma. Bórrala de la lista si quieres cambiarla.');
+        return;
+      }
       await logIntake({ cantidad, fecha, hora: f.elements.hora.value });
       if (fecha === todayISO()) await scheduleAfterCreatine(fecha);
       await render(el);

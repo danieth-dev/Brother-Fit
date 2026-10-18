@@ -2,7 +2,7 @@
 
 Documento vivo del producto. Describe cómo está armado, dónde vive cada dato y qué no se puede romper. Cuando cambie el comportamiento, el esquema, una pantalla o la forma de publicar, este archivo se actualiza en el mismo cambio.
 
-Última revisión: 18 de octubre de 2026. Base de datos versión 2. Caché de la app `v55`.
+Última revisión: 18 de octubre de 2026. Base de datos versión 2. Caché de la app `v58`.
 
 ## Qué es
 
@@ -91,7 +91,7 @@ El día del peso corporal y el de una toma de creatina usan la misma hoja, con e
 | `#/progress` y `#/progress/:id` | Progreso | Un ejercicio: PR, comparativa, gráfica y tabla. Abajo, el peso corporal. |
 | `#/creatine` | Creatina | Tomas, racha, calendario y saturación. |
 | `#/agent` | Fit AI | Voz en directo. Sin clave, solo pide la clave. La charla se guarda en el teléfono; Nuevo chat la borra tras confirmar. |
-| `#/settings` | Ajustes | Gramos, descanso, unidad, respaldo, instalar y borrar todo. |
+| `#/settings` | Ajustes | Descanso, unidad, recordatorios de agua, respaldo, instalar y borrar todo. |
 
 Si el ejercicio tiene grupo muscular, el nombre lo lleva debajo, en letra pequeña y con un punto de color. También queda bajo el campo ya elegido y junto al nombre en las series registradas. El grupo `Otro` no se muestra: no nombra un músculo. Cuando el grupo se queda corto, la misma línea sigue con la parte concreta en minúscula, por ejemplo «PIERNAS · cuádriceps y glúteo». Eso se ve al elegir y bajo el campo. En las series ya registradas sigue solo el grupo.
 
@@ -115,7 +115,7 @@ Claves de `meta`:
 
 | Clave | Valor |
 | --- | --- |
-| `settings` | `{ creatinaGramos, descanso, descansoMode, unidad, aguaRecordatorios }`. `aguaRecordatorios` es true de fábrica. |
+| `settings` | `{ descanso, descansoMode, unidad, aguaRecordatorios }`. `aguaRecordatorios` es true de fábrica. La toma de creatina es siempre 5 g (`DOSE_G`). |
 | `waterReminders` | Plan del día: `{ fecha, items: [{ id, at, body, done }] }`. Avisos locales de agua tras la creatina. |
 | `activeWorkoutId` | Id de la sesión abierta. Se borra al terminar o si esa sesión ya está cerrada. |
 | `activeRest` | `{ restEnd, lastReps }` del descanso en curso. Si ya venció, se borra al leerlo. |
@@ -126,7 +126,7 @@ Claves de `meta`:
 | `geminiApiKey` | Clave de Gemini. Solo en este teléfono. No va al repositorio ni al respaldo como secreto aparte: viaja dentro del volcado completo de `meta` si se exporta todo. |
 | `fitChat` | `{ messages: [{ role, text, ts }], updatedAt }`. Charla visible de Fit. Tope 60 mensajes. No son recuerdos. Se borra solo con Nuevo chat. |
 
-Ajustes de fábrica: 5 g de creatina, descanso manual de 90 s, modo automático, unidad `kg`, recordatorios de agua activos.
+Ajustes de fábrica: descanso manual de 90 s, modo automático, unidad `kg`, recordatorios de agua activos. La creatina del botón es 5 g fijos.
 
 Tras registrar la creatina de hoy, si los recordatorios están activos y el teléfono concede notificaciones, se programan hasta dos avisos locales (aprox. 45 min y 3 h después), sin sonar de noche. Deshacer o borrar la última toma del día cancela el plan. No hay push desde un servidor.
 
@@ -181,7 +181,7 @@ Corregir un ejercicio del atleta cambia el nombre y el grupo del mismo id: el hi
 
 ## Creatina
 
-Cada toma es una fila de `supplements` con `tipo: "creatina"`. La saturación que muestra la app es un modelo simple, no un análisis de laboratorio: 28 días con toma cuentan como saturación, un día saltado no vacía el depósito, y por encima de eso la fase pasa a mantenimiento. La racha no se rompe el mismo día si todavía no se tomó: cuenta desde ayer.
+Cada toma es una fila de `supplements` con `tipo: "creatina"`. El disco de Inicio y Creatina es un interruptor: un toque registra 5 g hoy; otro quita todas las tomas de hoy. Un día solo cuenta una toma; la ficha retroactiva no deja añadir otra si ese día ya tiene. La saturación que muestra la app es un modelo simple, no un análisis de laboratorio: 28 días con toma cuentan como saturación, un día saltado no vacía el depósito, y por encima de eso la fase pasa a mantenimiento. La racha no se rompe el mismo día si todavía no se tomó: cuenta desde ayer.
 
 La ciencia que la pantalla explica, y que no hay que contradecir en los textos: sin carga, 3–5 g al día saturan en unas cuatro semanas; con carga, unos 20 g al día durante 5–7 días y luego mantenimiento. La forma de referencia es el monohidrato.
 

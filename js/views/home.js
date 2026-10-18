@@ -1,4 +1,4 @@
-import { creatineSummary, logIntake, deleteIntake } from '../services/creatine.js';
+import { creatineSummary, toggleTodayIntake, DOSE_G } from '../services/creatine.js';
 import { getActiveWorkout, startWorkout, listWorkoutSummaries, weekStats, muscleName } from '../services/workouts.js';
 import { scheduleAfterCreatine, cancelWaterReminders } from '../services/water-reminders.js';
 import { state } from '../store.js';
@@ -19,7 +19,7 @@ export async function render(el) {
   const [cr, active, recent, week] = await Promise.all([
     creatineSummary(), getActiveWorkout(), listWorkoutSummaries(3), weekStats()
   ]);
-  const g = state.settings.creatinaGramos;
+  const g = DOSE_G;
   const unidad = state.settings.unidad;
 
   const estadoCreatina = cr.tomadaHoy
@@ -105,25 +105,22 @@ export async function render(el) {
 
   delegate(el, {
     creatine: async (btn) => {
-      // Bloquea puntero durante la mutación para prevenir clics accidentales
       el.style.pointerEvents = 'none';
       btn.disabled = true;
 
       try {
-        const id = await logIntake({ cantidad: g });
-        const water = await scheduleAfterCreatine(todayISO());
-        await render(el);
-        toast('Creatina registrada', {
-          actionLabel: 'Deshacer',
-          onAction: async () => {
-            await deleteIntake(id);
-            const cr = await creatineSummary();
-            if (!cr.tomadaHoy) await cancelWaterReminders();
-            await render(el);
+        const res = await toggleTodayIntake(g);
+        if (res.taken) {
+          const water = await scheduleAfterCreatine(todayISO());
+          await render(el);
+          toast('Creatina registrada');
+          if (water.reason === 'denied') {
+            setTimeout(() => toast('Activa las notificaciones si quieres el recordatorio de agua.'), 4200);
           }
-        });
-        if (water.reason === 'denied') {
-          setTimeout(() => toast('Activa las notificaciones si quieres el recordatorio de agua.'), 4200);
+        } else {
+          await render(el);
+          toast('Toma de hoy quitada');
+          cancelWaterReminders().catch(() => {});
         }
       } finally {
         requestAnimationFrame(() => {

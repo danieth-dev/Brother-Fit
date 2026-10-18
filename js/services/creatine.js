@@ -15,6 +15,9 @@ import { todayISO, nowHM, addDays, parseISO } from '../utils/dates.js';
 
 const TIPO = 'creatina';
 
+/* Mantenimiento habitual en la literatura: 3–5 g/día. La app usa 5 g. */
+export const DOSE_G = 5;
+
 // Días para considerar saturación completa sin fase de carga
 export const SATURATION_DAYS = 28;
 // Días con >90% consistencia para declarar "en zona"
@@ -28,6 +31,29 @@ export const deleteIntake = (id) => db.remove('supplements', id);
 export async function listIntakes() {
   const all = await db.byIndex('supplements', 'tipo', TIPO);
   return all.sort((a, b) => (b.fecha + b.hora).localeCompare(a.fecha + a.hora));
+}
+
+export async function intakesForDate(fecha) {
+  const all = await listIntakes();
+  return all.filter((i) => i.fecha === fecha);
+}
+
+export async function clearIntakesOn(fecha) {
+  const list = await intakesForDate(fecha);
+  for (const i of list) await deleteIntake(i.id);
+  return list.length;
+}
+
+/* Disco: un toque pone la toma de hoy; otro la quita. Una sola toma por día. */
+export async function toggleTodayIntake(cantidad = DOSE_G) {
+  const fecha = todayISO();
+  const today = await intakesForDate(fecha);
+  if (today.length) {
+    await clearIntakesOn(fecha);
+    return { taken: false };
+  }
+  const id = await logIntake({ cantidad, fecha });
+  return { taken: true, id };
 }
 
 /* fecha -> { count, gramos } */
