@@ -88,7 +88,7 @@ async function renderLiveChat(el, apiKey) {
   el.innerHTML = `
     <header class="page-head agent-chat-head">
       <div>
-        <h1>Fit <span class="chip chip-accent" style="font-size:10px;vertical-align:middle;margin-left:6px">LIVE</span></h1>
+        <h1>Fit</h1>
         <p id="agent-status">${isExisting ? 'En línea · Conectado' : 'Conectando con Gemini Live...'}</p>
       </div>
       <div class="agent-head-actions">
