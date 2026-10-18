@@ -1,0 +1,20 @@
+---
+description: Nunca permitir el menú nativo del navegador al mantener pulsado un control
+alwaysApply: true
+---
+
+# Sin menú de vínculo al mantener pulsado
+
+En el teléfono, una pulsación larga sobre un `<a>` o botón abre el menú de Brave/Chrome (copiar vínculo, compartir, abrir en navegador). **Eso no debe salir nunca** en Brother Fit: la app debe sentirse nativa.
+
+## Obligatorio
+
+- Mantener en `js/main.js` el bloqueo global de `contextmenu` y `dragstart` (salvo `input` / `textarea` / `contenteditable`).
+- Mantener en `css/base.css` `-webkit-touch-callout: none` y `-webkit-user-drag: none` en vínculos, botones, filas, disco, chips y `[data-action]`.
+- Todo `<a href>` nuevo (también los que se pintan al cambiar de vista) debe poder quedar con `draggable = false` vía el observer existente; no quitar ese observer.
+- No “arreglar” un caso suelto solo en la tabbar: el bloqueo es de **toda** la app.
+
+## Al publicar un cambio de este gesto
+
+- Subir `VERSION` en `sw.js` y la mención de caché en `SISTEMA.md`.
+- Probar en el teléfono: mantener pulsado “Ver progreso”, una fila del historial y un botón de la tabbar; no debe abrirse el menú del navegador.

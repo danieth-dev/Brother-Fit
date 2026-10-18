@@ -8,13 +8,32 @@ import { watchCalendars } from './utils/calendar.js';
 import { watchTimes } from './utils/time-sheet.js';
 import { resumeWaterReminders } from './services/water-reminders.js';
 
-function blockTabMenu() {
-  const bar = document.querySelector('.tabbar');
-  if (!bar) return;
-  bar.addEventListener('contextmenu', (e) => e.preventDefault());
-  bar.querySelectorAll('a').forEach((a) => { a.draggable = false; });
+/* Pulsación larga: el navegador muestra menú de vínculo/compartir. En Brother Fit no debe salir nunca. */
+function blockBrowserChrome() {
+  const editable = 'input, textarea, [contenteditable="true"]';
+  document.addEventListener('contextmenu', (e) => {
+    if (e.target.closest?.(editable)) return;
+    e.preventDefault();
+  }, { capture: true });
+  document.addEventListener('dragstart', (e) => {
+    if (e.target.closest?.(editable)) return;
+    e.preventDefault();
+  }, { capture: true });
+  const disarm = (root = document) => {
+    root.querySelectorAll?.('a[href]').forEach((a) => { a.draggable = false; });
+  };
+  disarm();
+  new MutationObserver((records) => {
+    for (const rec of records) {
+      for (const node of rec.addedNodes) {
+        if (node.nodeType !== 1) continue;
+        if (node.matches?.('a[href]')) node.draggable = false;
+        else disarm(node);
+      }
+    }
+  }).observe(document.body, { childList: true, subtree: true });
 }
-blockTabMenu();
+blockBrowserChrome();
 
 // El tirón hacia abajo en Chrome recarga la página. No debe comerse el scroll de una lista.
 function blockPullToRefresh() {

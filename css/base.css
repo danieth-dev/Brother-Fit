@@ -22,6 +22,24 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Sin menú nativo al mantener pulsado (Brave/Chrome/iOS). Nunca en botones ni vínculos. */
+a, button, label, summary,
+.btn, .btn-x, .btn-link-sm, .btn-quiet, .row, .plate, .chip,
+.tabbar a, .agent-head-btn, [role="button"], [data-action] {
+  -webkit-touch-callout: none;
+  -webkit-user-drag: none;
+  user-select: none;
+}
+a img, a svg, button img, button svg, [data-action] img, [data-action] svg {
+  -webkit-touch-callout: none;
+  -webkit-user-drag: none;
+  pointer-events: none;
+}
+input, textarea, [contenteditable="true"] {
+  -webkit-touch-callout: default;
+  user-select: text;
+}
+
 /* Selección temática: amarillo eléctrico sobre carbón */
 ::selection {
   background: var(--primary);

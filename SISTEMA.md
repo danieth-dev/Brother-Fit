@@ -2,7 +2,7 @@
 
 Documento vivo del producto. Describe cómo está armado, dónde vive cada dato y qué no se puede romper. Cuando cambie el comportamiento, el esquema, una pantalla o la forma de publicar, este archivo se actualiza en el mismo cambio.
 
-Última revisión: 18 de octubre de 2026. Base de datos versión 2. Caché de la app `v59`.
+Última revisión: 18 de octubre de 2026. Base de datos versión 2. Caché de la app `v61`.
 
 ## Qué es
 
@@ -77,7 +77,7 @@ flowchart TD
 
 ## Pantallas
 
-La barra es una isla fija abajo. El historial no tiene icono propio: cuelga de Inicio. Una pulsación larga en un icono no abre el menú de vínculos del navegador: la isla cancela ese gesto.
+La barra es una isla fija abajo. El historial no tiene icono propio: cuelga de Inicio. Una pulsación larga en cualquier vínculo o botón **nunca** debe abrir el menú del navegador (copiar vínculo, compartir, abrir en Brave): `main.js` cancela `contextmenu` y `dragstart` en captura (salvo campos de texto), marca `draggable=false` en los `<a>` también tras cada repintado, y `base.css` aplica `-webkit-touch-callout: none` a botones, filas, disco, chips y `[data-action]`. Regla de agente: `.cursor/rules/no-browser-link-menu.mdc`.
 
 Los `<select>` de ejercicio, grupo muscular, descanso y unidad no usan el menú del sistema. Un botón abre una hoja inferior con la misma paleta. El `<select>` real sigue en el formulario: al elegir, se escribe su valor y se dispara `change`, así que las vistas no saben que la lista es propia. La hoja vive en `document.body`, fuera de `#app`, y se cierra al elegir, al cambiar de ruta o si el control desaparece.
 
