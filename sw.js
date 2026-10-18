@@ -1,7 +1,7 @@
 /* Service worker de Brother Fit.
  * Con red responde lo publicado y guarda una copia. Sin red usa esa copia.
  * Sube VERSION al publicar para que el teléfono suelte la caché anterior. */
-const VERSION = 'v64';
+const VERSION = 'v68';
 const CACHE = `brother-ft-${VERSION}`;
 
 const ASSETS = [
@@ -27,6 +27,7 @@ const ASSETS = [
   './js/utils/clock.js',
   './js/utils/set-line.js',
   './js/utils/units.js',
+  './js/utils/seg-swipe.js',
   './js/services/workouts.js',
   './js/services/creatine.js',
   './js/services/body.js',

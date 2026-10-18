@@ -2,7 +2,7 @@
 
 Documento vivo del producto. Describe cómo está armado, dónde vive cada dato y qué no se puede romper. Cuando cambie el comportamiento, el esquema, una pantalla o la forma de publicar, este archivo se actualiza en el mismo cambio.
 
-Última revisión: 18 de octubre de 2026. Base de datos versión 2. Caché de la app `v64`.
+Última revisión: 18 de octubre de 2026. Base de datos versión 2. Caché de la app `v68`.
 
 ## Qué es
 
@@ -131,6 +131,8 @@ Ajustes de fábrica: descanso manual de 90 s, modo automático, unidad `kg`, rec
 Tras registrar la creatina de hoy, si los recordatorios están activos y el teléfono concede notificaciones, se programan hasta dos avisos locales (aprox. 45 min y 3 h después), sin sonar de noche. Deshacer o borrar la última toma del día cancela el plan. No hay push desde un servidor.
 
 Los pesos de series y peso corporal se guardan siempre en **kg**. En Entreno y en Progreso un segmento `kg | lb` junto al campo Peso cambia `settings.unidad`, convierte el valor del input abierto y muestra historial/PR/volumen en esa unidad (`js/utils/units.js`). Lo ya guardado se interpreta como kg.
+
+Los controles segmentados (`.seg`: tipo de serie, kg/lb, métricas) se pueden pulsar o deslizar en horizontal: una pastilla amarilla sigue el dedo y al soltar encaja en la opción (`js/utils/seg-swipe.js`). El scroll vertical de la página no se bloquea.
 
 El respaldo es un JSON `{ app: "brother-ft", schema: 1, exportedAt, data }`. Importar reemplaza todas las tablas en una sola transacción: si falla, no queda a medias. Borrar todo es restaurar un volcado vacío.
 

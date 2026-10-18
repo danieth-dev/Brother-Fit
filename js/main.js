@@ -6,6 +6,7 @@ import { startRouter } from './router.js';
 import { watchPickers } from './utils/picker.js';
 import { watchCalendars } from './utils/calendar.js';
 import { watchTimes } from './utils/time-sheet.js';
+import { watchSegs } from './utils/seg-swipe.js';
 import { resumeWaterReminders } from './services/water-reminders.js';
 
 /* Pulsación larga: el navegador muestra menú de vínculo/compartir. En Brother Fit no debe salir nunca. */
@@ -76,6 +77,7 @@ async function boot() {
     watchPickers(document.getElementById('app'));
     watchCalendars(document.getElementById('app'));
     watchTimes(document.getElementById('app'));
+    watchSegs(document.getElementById('app'));
   } catch (err) {
     console.error(err);
     document.getElementById('app').innerHTML =
