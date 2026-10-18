@@ -1588,9 +1588,16 @@ body.picker-open {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
 }
 .agent-chat-head h1 {
   font-size: var(--fs-2xl);
+}
+.agent-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
 }
 #agent-status {
   font-size: var(--fs-xs);

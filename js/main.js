@@ -6,6 +6,7 @@ import { startRouter } from './router.js';
 import { watchPickers } from './utils/picker.js';
 import { watchCalendars } from './utils/calendar.js';
 import { watchTimes } from './utils/time-sheet.js';
+import { resumeWaterReminders } from './services/water-reminders.js';
 
 function blockTabMenu() {
   const bar = document.querySelector('.tabbar');
@@ -71,11 +72,18 @@ async function boot() {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').then((reg) => {
       reg.update();
+      resumeWaterReminders();
     }).catch((e) => console.warn('SW no registrado:', e));
     navigator.serviceWorker.addEventListener('controllerchange', () => {
       window.location.reload();
     });
+  } else {
+    resumeWaterReminders();
   }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') resumeWaterReminders();
+  });
 }
 
 boot();

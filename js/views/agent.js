@@ -4,7 +4,7 @@
  */
 
 import { FitAgent, getActiveAgent, loadAllMemories, deleteMemory, visibleFitText } from '../services/agent.js';
-import { state } from '../store.js';
+import { loadFitChat, appendFitChat, clearFitChat, formatChatForContext } from '../services/fit-chat.js';
 import { db } from '../db.js';
 import { icons } from '../utils/icons.js';
 import { toast, esc } from '../utils/dom.js';
@@ -29,7 +29,7 @@ export async function render(el) {
     return;
   }
 
-  renderLiveChat(el, apiKey);
+  await renderLiveChat(el, apiKey);
 }
 
 /* --- API Key entry screen --- */
@@ -68,17 +68,20 @@ function renderKeyPrompt(el) {
       return;
     }
     await setApiKey(val);
-    renderLiveChat(el, val);
+    await renderLiveChat(el, val);
   });
 }
 
 /* --- Live Chat Interface --- */
-function renderLiveChat(el, apiKey) {
+async function renderLiveChat(el, apiKey) {
   let agent = getActiveAgent();
-  const isExisting = agent && agent.connected;
+  const isExisting = !!(agent && agent.connected);
   if (!agent) {
     agent = new FitAgent(apiKey);
   }
+
+  const history = await loadFitChat();
+  const hadHistory = history.length > 0;
   let currentBotText = '';
   let botBubble = null;
 
@@ -86,14 +89,18 @@ function renderLiveChat(el, apiKey) {
     <header class="page-head agent-chat-head">
       <div>
         <h1>Fit <span class="chip chip-accent" style="font-size:10px;vertical-align:middle;margin-left:6px">LIVE</span></h1>
-        <p id="agent-status">Conectando con Gemini Live...</p>
+        <p id="agent-status">${isExisting ? 'En línea · Conectado' : 'Conectando con Gemini Live...'}</p>
       </div>
-      <button class="agent-head-btn" data-action="memories" type="button" aria-label="Ver recuerdos" id="btn-memories">
-        ${icons.bolt({ size: 20 })}
-      </button>
+      <div class="agent-head-actions">
+        <button class="agent-head-btn" data-action="new-chat" type="button" aria-label="Nuevo chat" id="btn-new-chat">
+          ${(icons.chat || icons.plus)({ size: 20 })}
+        </button>
+        <button class="agent-head-btn" data-action="memories" type="button" aria-label="Ver recuerdos" id="btn-memories">
+          ${icons.bolt({ size: 20 })}
+        </button>
+      </div>
     </header>
 
-    <!-- BANNER DE VOZ EN TIEMPO REAL -->
     <div class="agent-live-banner" id="agent-live-banner">
       <div class="agent-live-pulse" id="agent-live-pulse">
         ${icons.mic({ size: 28 })}
@@ -131,6 +138,7 @@ function renderLiveChat(el, apiKey) {
   const liveTitle = el.querySelector('#agent-live-title');
   const liveDesc = el.querySelector('#agent-live-desc');
   const memoriesBtn = el.querySelector('#btn-memories');
+  const newChatBtn = el.querySelector('#btn-new-chat');
 
   function setStatus(text, ok = true) {
     statusEl.textContent = text;
@@ -145,6 +153,19 @@ function renderLiveChat(el, apiKey) {
     msgsEl.appendChild(div);
     msgsEl.scrollTop = msgsEl.scrollHeight;
     return div;
+  }
+
+  function paintHistory(list) {
+    msgsEl.replaceChildren();
+    for (const m of list) {
+      appendMsg(m.role, m.text);
+    }
+  }
+
+  async function persist(role, text) {
+    const t = String(text || '').trim();
+    if (!t) return;
+    await appendFitChat(role, t);
   }
 
   function enableControls(on) {
@@ -172,21 +193,29 @@ function renderLiveChat(el, apiKey) {
     inputEl.style.height = Math.min(inputEl.scrollHeight, 140) + 'px';
   }
 
+  paintHistory(history);
+
   /* Eventos del agente */
   agent
     .on('ready', () => {
       setStatus('Conectado a Gemini 3.8 Live', true);
       enableControls(true);
-      appendMsg('bot', 'Hola, estoy en línea. Toca "Iniciar" para hablarme por voz o escríbeme.');
+      if (hadHistory) {
+        agent.seedPriorChat(formatChatForContext(history));
+      } else {
+        appendMsg('bot', 'Hola, estoy en línea. Toca "Iniciar" para hablarme por voz o escríbeme.');
+      }
     })
     .on('user_message', (text) => {
       appendMsg('user', text);
+      persist('user', text);
       currentBotText = '';
       botBubble = null;
     })
     .on('effort_saved', (res) => {
       const line = String(res?.mensaje || '').includes('sin esfuerzo') ? 'Quedó sin esfuerzo.' : 'Anotado.';
       appendMsg('bot', line);
+      persist('bot', line);
       currentBotText = '';
       botBubble = null;
     })
@@ -244,6 +273,8 @@ function renderLiveChat(el, apiKey) {
       }
     })
     .on('turn_complete', () => {
+      const shown = visibleFitText(currentBotText);
+      if (shown) persist('bot', shown);
       botBubble = null;
       currentBotText = '';
     })
@@ -269,7 +300,6 @@ function renderLiveChat(el, apiKey) {
       enableControls(false);
     });
 
-  /* Boton Iniciar/Detener Live Mode */
   toggleLiveBtn.addEventListener('click', async () => {
     if (!agent.isLiveMode) {
       try {
@@ -282,7 +312,6 @@ function renderLiveChat(el, apiKey) {
     }
   });
 
-  /* Enviar texto */
   sendBtn.addEventListener('click', sendText);
   inputEl.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -292,27 +321,39 @@ function renderLiveChat(el, apiKey) {
   });
   inputEl.addEventListener('input', autoResize);
 
-  /* Panel de recuerdos */
   memoriesBtn.addEventListener('click', () => {
     showMemoriesPanel(el, agent);
   });
 
-  /* Cambiar API Key */
-  el.addEventListener('click', async (e) => {
-    if (!e.target.closest('[data-action="change-key"]')) return;
+  newChatBtn.addEventListener('click', async () => {
     const ok = await askConfirm({
-      title: 'Cambiar API key',
-      body: 'Se desconecta Fit hasta que pegues otra clave.',
-      confirmLabel: 'Cambiar',
-      danger: false,
+      title: 'Nuevo chat',
+      body: 'Se borrará la conversación actual. Los recuerdos se quedan.',
+      confirmLabel: 'Empezar de nuevo',
     });
     if (!ok) return;
     agent.disconnect();
-    db.put('meta', { key: API_KEY_STORE, value: '' });
-    render(el);
+    await clearFitChat();
+    await renderLiveChat(el, apiKey);
   });
 
-  /* Conectar solo si no estaba ya conectado */
+  if (!el._changeKeyBound) {
+    el._changeKeyBound = true;
+    el.addEventListener('click', async (e) => {
+      if (!e.target.closest('[data-action="change-key"]')) return;
+      const ok = await askConfirm({
+        title: 'Cambiar API key',
+        body: 'Se desconecta Fit hasta que pegues otra clave.',
+        confirmLabel: 'Cambiar',
+        danger: false,
+      });
+      if (!ok) return;
+      getActiveAgent()?.disconnect();
+      await db.put('meta', { key: API_KEY_STORE, value: '' });
+      await render(el);
+    });
+  }
+
   if (isExisting) {
     setStatus('En línea · Conectado', true);
     enableControls(true);

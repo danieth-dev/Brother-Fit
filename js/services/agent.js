@@ -474,6 +474,15 @@ export class FitAgent {
     });
   }
 
+  /* Historial de la charla tras cerrar la app. Una sola vez al abrir sesión nueva. */
+  seedPriorChat(transcript) {
+    const note = String(transcript || '').trim();
+    if (!note) return;
+    this.sendContext(
+      `Conversación previa de esta charla:\n${note}\n\nNo la repitas ni la contestes. Espera la siguiente frase del atleta.`
+    );
+  }
+
   /* --- Inyección 3: Aviso de fin de descanso (turnComplete: true) --- */
   triggerCheckIn(instruction) {
     if (!this.connected) return;

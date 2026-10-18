@@ -1,7 +1,7 @@
 /* Service worker de Brother Fit.
  * Con red responde lo publicado y guarda una copia. Sin red usa esa copia.
  * Sube VERSION al publicar para que el teléfono suelte la caché anterior. */
-const VERSION = 'v52';
+const VERSION = 'v55';
 const CACHE = `brother-ft-${VERSION}`;
 
 const ASSETS = [
@@ -32,6 +32,8 @@ const ASSETS = [
   './js/services/seed.js',
   './js/services/backup.js',
   './js/services/agent.js',
+  './js/services/fit-chat.js',
+  './js/services/water-reminders.js',
   './js/services/effort.js',
   './js/views/home.js',
   './js/views/workout.js',
@@ -73,6 +75,24 @@ self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
   event.respondWith(networkFirst(req));
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const target = event.notification.data?.url || './#/';
+  event.waitUntil((async () => {
+    const all = await clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const client of all) {
+      if (client.url.startsWith(self.registration.scope) && 'focus' in client) {
+        await client.focus();
+        if ('navigate' in client) {
+          try { await client.navigate(target); } catch { /* ok */ }
+        }
+        return;
+      }
+    }
+    if (clients.openWindow) await clients.openWindow(target);
+  })());
 });
 
 /* Con red se usa lo publicado, sin la copia que el navegador guarda unos minutos.

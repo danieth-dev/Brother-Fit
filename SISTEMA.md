@@ -2,7 +2,7 @@
 
 Documento vivo del producto. Describe cómo está armado, dónde vive cada dato y qué no se puede romper. Cuando cambie el comportamiento, el esquema, una pantalla o la forma de publicar, este archivo se actualiza en el mismo cambio.
 
-Última revisión: 18 de octubre de 2026. Base de datos versión 2. Caché de la app `v52`.
+Última revisión: 18 de octubre de 2026. Base de datos versión 2. Caché de la app `v55`.
 
 ## Qué es
 
@@ -90,7 +90,7 @@ El día del peso corporal y el de una toma de creatina usan la misma hoja, con e
 | `#/history` y `#/history/:id` | Historial | Lista y detalle. Borrar un entreno borra también sus series. |
 | `#/progress` y `#/progress/:id` | Progreso | Un ejercicio: PR, comparativa, gráfica y tabla. Abajo, el peso corporal. |
 | `#/creatine` | Creatina | Tomas, racha, calendario y saturación. |
-| `#/agent` | Fit AI | Voz en directo. Sin clave, solo pide la clave. |
+| `#/agent` | Fit AI | Voz en directo. Sin clave, solo pide la clave. La charla se guarda en el teléfono; Nuevo chat la borra tras confirmar. |
 | `#/settings` | Ajustes | Gramos, descanso, unidad, respaldo, instalar y borrar todo. |
 
 Si el ejercicio tiene grupo muscular, el nombre lo lleva debajo, en letra pequeña y con un punto de color. También queda bajo el campo ya elegido y junto al nombre en las series registradas. El grupo `Otro` no se muestra: no nombra un músculo. Cuando el grupo se queda corto, la misma línea sigue con la parte concreta en minúscula, por ejemplo «PIERNAS · cuádriceps y glúteo». Eso se ve al elegir y bajo el campo. En las series ya registradas sigue solo el grupo.
@@ -115,7 +115,8 @@ Claves de `meta`:
 
 | Clave | Valor |
 | --- | --- |
-| `settings` | `{ creatinaGramos, descanso, descansoMode, unidad }`. |
+| `settings` | `{ creatinaGramos, descanso, descansoMode, unidad, aguaRecordatorios }`. `aguaRecordatorios` es true de fábrica. |
+| `waterReminders` | Plan del día: `{ fecha, items: [{ id, at, body, done }] }`. Avisos locales de agua tras la creatina. |
 | `activeWorkoutId` | Id de la sesión abierta. Se borra al terminar o si esa sesión ya está cerrada. |
 | `activeRest` | `{ restEnd, lastReps }` del descanso en curso. Si ya venció, se borra al leerlo. |
 | `pendingRpe` | Pregunta abierta: `{ setId, mark, attempts, until }`. Se suelta al anotar, al vencer, al crear otra serie, al terminar o descartar, al borrar esa serie, al pasarla a calentamiento o al usar los botones. |
@@ -123,8 +124,11 @@ Claves de `meta`:
 | `seeded` | Marca de que el catálogo ya se intentó. La semilla ya no depende de esta marca para volver a correr. |
 | `lastBackup` | Marca de tiempo del último JSON exportado. |
 | `geminiApiKey` | Clave de Gemini. Solo en este teléfono. No va al repositorio ni al respaldo como secreto aparte: viaja dentro del volcado completo de `meta` si se exporta todo. |
+| `fitChat` | `{ messages: [{ role, text, ts }], updatedAt }`. Charla visible de Fit. Tope 60 mensajes. No son recuerdos. Se borra solo con Nuevo chat. |
 
-Ajustes de fábrica: 5 g de creatina, descanso manual de 90 s, modo automático, unidad `kg`.
+Ajustes de fábrica: 5 g de creatina, descanso manual de 90 s, modo automático, unidad `kg`, recordatorios de agua activos.
+
+Tras registrar la creatina de hoy, si los recordatorios están activos y el teléfono concede notificaciones, se programan hasta dos avisos locales (aprox. 45 min y 3 h después), sin sonar de noche. Deshacer o borrar la última toma del día cancela el plan. No hay push desde un servidor.
 
 Cambiar de kg a lb solo cambia la etiqueta. Los números ya guardados no se convierten.
 
@@ -204,7 +208,7 @@ Herramientas que el modelo puede llamar:
 
 El nombre lo resuelve la app: ignora mayúsculas y acentos, y acepta el singular si solo hay un ejercicio. Nombrarlo, aunque todavía no haya serie, deja Entreno en ese ejercicio. Un acierto al anotar también lo cambia, aunque el atleta esté en Fit. Cero aciertos o varios no escriben nada y no crean el ejercicio. El peso, si no lo dice, sale de la última serie de ese ejercicio. Fit no pregunta el peso antes de la serie ni dice «lastre». Una segunda llamada igual, de Fit o de la pantalla, sobre la misma serie y el mismo ejercicio dentro de 8 segundos, no escribe otra fila ni abre otra marca. La pantalla lo dice en un aviso. Su criterio de fondo son cuatro pilares: dormir bien, comer bien, hacer ejercicio y no estresarse. Solo los usa si el atleta saca el tema o propone algo que los rompe. No los recita ni los pone por delante de anotar la serie. Durante el descanso Fit no habla por su cuenta. El micrófono se abre de uno en uno: un silencio no dispara dos aperturas, y si el teléfono lo rechaza varias veces seguidas, Fit lo suelta en vez de dejarlo en bucle. Si la pregunta está abierta y el atleta dice 0, cero o ninguna, la app lo anota y ese turno no se lo manda a Fit, para que no lea una nota interna. Pregunta el esfuerzo con las mismas palabras que la pantalla. No sugiere pesos ni cambia el descanso. Los turnos van en español, cortos, sin markdown y sin el razonamiento en inglés. El resumen de la sesión incluye el esfuerzo de cada serie.
 
-La clave se escribe en Ajustes de Fit y queda en `meta.geminiApiKey`. Sin clave no hay sesión de voz.
+La clave se escribe en Ajustes de Fit y queda en `meta.geminiApiKey`. Sin clave no hay sesión de voz. La charla visible vive en `meta.fitChat`. Al cambiar de pestaña, si la sesión sigue abierta, solo se redibuja. Si se cortó, al reconectar se inyecta el historial una vez como contexto y Fit no lo repite. Nuevo chat (icono +) pide confirmación, borra solo esa charla y abre sesión limpia. Los recuerdos no se tocan.
 
 ## Interfaz
 
@@ -252,6 +256,8 @@ Cada push a `main` dispara `.github/workflows/deploy.yml` y publica la carpeta e
 | `js/services/creatine.js` | Tomas y saturación. |
 | `js/services/backup.js` | Exportar e importar. |
 | `js/services/agent.js` | Voz, herramientas y recuerdos. |
+| `js/services/fit-chat.js` | Charla visible de Fit en `meta.fitChat`. |
+| `js/services/water-reminders.js` | Recordatorios locales de agua tras la creatina. |
 | `js/views/*.js` | Una pantalla por archivo. |
 | `js/utils/picker.js` | Hoja de las listas. |
 | `js/utils/exercise-editor.js` | Ficha para corregir o eliminar un ejercicio del atleta. |

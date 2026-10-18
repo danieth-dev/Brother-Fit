@@ -1,5 +1,6 @@
 import { creatineSummary, logIntake, deleteIntake } from '../services/creatine.js';
 import { getActiveWorkout, startWorkout, listWorkoutSummaries, weekStats, muscleName } from '../services/workouts.js';
+import { scheduleAfterCreatine, cancelWaterReminders } from '../services/water-reminders.js';
 import { state } from '../store.js';
 import { delegate, toast, esc, fmtNum, go } from '../utils/dom.js';
 import { formatLong, todayISO } from '../utils/dates.js';
@@ -110,11 +111,20 @@ export async function render(el) {
 
       try {
         const id = await logIntake({ cantidad: g });
+        const water = await scheduleAfterCreatine(todayISO());
         await render(el);
         toast('Creatina registrada', {
           actionLabel: 'Deshacer',
-          onAction: async () => { await deleteIntake(id); await render(el); }
+          onAction: async () => {
+            await deleteIntake(id);
+            const cr = await creatineSummary();
+            if (!cr.tomadaHoy) await cancelWaterReminders();
+            await render(el);
+          }
         });
+        if (water.reason === 'denied') {
+          setTimeout(() => toast('Activa las notificaciones si quieres el recordatorio de agua.'), 4200);
+        }
       } finally {
         requestAnimationFrame(() => {
           requestAnimationFrame(() => { el.style.pointerEvents = ''; });

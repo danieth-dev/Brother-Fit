@@ -1,4 +1,5 @@
 import { creatineSummary, logIntake, deleteIntake } from '../services/creatine.js';
+import { scheduleAfterCreatine, cancelWaterReminders } from '../services/water-reminders.js';
 import { state } from '../store.js';
 import { delegate, forms, toast, esc, num, fmtNum } from '../utils/dom.js';
 import { formatMonth, formatLong, todayISO, nowHM, toISO } from '../utils/dates.js';
@@ -201,11 +202,20 @@ export async function render(el) {
     log: async (btn) => {
       btn.disabled = true;
       const id = await logIntake({ cantidad: g });
+      const water = await scheduleAfterCreatine(todayISO());
       await render(el);
       toast('Creatina registrada', {
         actionLabel: 'Deshacer',
-        onAction: async () => { await deleteIntake(id); await render(el); }
+        onAction: async () => {
+          await deleteIntake(id);
+          const cr = await creatineSummary();
+          if (!cr.tomadaHoy) await cancelWaterReminders();
+          await render(el);
+        }
       });
+      if (water.reason === 'denied') {
+        setTimeout(() => toast('Activa las notificaciones si quieres el recordatorio de agua.'), 4200);
+      }
     },
     del: async (t) => {
       const btn = t.closest('[data-action="del"]');
@@ -216,6 +226,8 @@ export async function render(el) {
       });
       if (!ok) return;
       await deleteIntake(Number(btn.dataset.id));
+      const cr = await creatineSummary();
+      if (!cr.tomadaHoy) await cancelWaterReminders();
       await render(el);
     },
     prev: async () => { view = view.m === 0 ? { y: view.y - 1, m: 11 } : { y: view.y, m: view.m - 1 }; await render(el); },
@@ -230,7 +242,9 @@ export async function render(el) {
     manual: async (f) => {
       const cantidad = num(f.elements.cantidad.value);
       if (!(cantidad > 0)) { toast('Escribe una cantidad válida.'); return; }
-      await logIntake({ cantidad, fecha: f.elements.fecha.value, hora: f.elements.hora.value });
+      const fecha = f.elements.fecha.value;
+      await logIntake({ cantidad, fecha, hora: f.elements.hora.value });
+      if (fecha === todayISO()) await scheduleAfterCreatine(fecha);
       await render(el);
       toast('Creatina registrada');
     }

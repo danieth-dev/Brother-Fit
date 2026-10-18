@@ -1,5 +1,6 @@
 import { state, saveSettings } from '../store.js';
 import { exportData, importData, lastBackup } from '../services/backup.js';
+import { ensureNotifyPermission, cancelWaterReminders, resumeWaterReminders } from '../services/water-reminders.js';
 import { db } from '../db.js';
 import { delegate, changes, toast, num } from '../utils/dom.js';
 import { icons } from '../utils/icons.js';
@@ -30,6 +31,12 @@ export async function render(el) {
           <option value="lb" ${s.unidad === 'lb' ? 'selected' : ''}>Libras (lb)</option>
         </select></label>
       <p class="hint">Cambiar la unidad solo cambia la etiqueta; no convierte los pesos ya guardados.</p>
+      <label class="field"><span>Recordatorios de agua</span>
+        <select data-change="aguaRecordatorios">
+          <option value="1" ${s.aguaRecordatorios !== false ? 'selected' : ''}>Tras la creatina de hoy</option>
+          <option value="0" ${s.aguaRecordatorios === false ? 'selected' : ''}>Apagados</option>
+        </select></label>
+      <p class="hint">Dos avisos suaves el mismo día (vaso de agua). El teléfono debe permitir notificaciones.</p>
     </div>
 
     <h2 class="section-title">Tus datos y respaldos</h2>
@@ -79,6 +86,22 @@ export async function render(el) {
       toast('Ajuste guardado');
     },
     unidad: async (t) => { await saveSettings({ unidad: t.value }); toast('Ajuste guardado'); },
+    aguaRecordatorios: async (t) => {
+      const on = t.value === '1';
+      await saveSettings({ aguaRecordatorios: on });
+      if (on) {
+        const perm = await ensureNotifyPermission();
+        if (perm === 'denied') toast('El teléfono bloqueó las notificaciones. Actívalas en ajustes del sistema.');
+        else if (perm === 'unsupported') toast('Este navegador no muestra notificaciones.');
+        else {
+          await resumeWaterReminders();
+          toast('Ajuste guardado');
+        }
+      } else {
+        await cancelWaterReminders();
+        toast('Ajuste guardado');
+      }
+    },
     import: async (t) => {
       const file = t.files[0];
       if (!file) return;
