@@ -1,7 +1,7 @@
 import { creatineSummary, toggleTodayIntake, DOSE_G } from '../services/creatine.js';
 import { getActiveWorkout, startWorkout, listWorkoutSummaries, weekStats, muscleName } from '../services/workouts.js';
 import { scheduleAfterCreatine, cancelWaterReminders } from '../services/water-reminders.js';
-import { delegate, toast, esc, go } from '../utils/dom.js';
+import { delegate, toast, esc, fmtNum, go } from '../utils/dom.js';
 import { formatLong, todayISO } from '../utils/dates.js';
 import { icons } from '../utils/icons.js';
 import { creatinePlate } from '../utils/components.js';
