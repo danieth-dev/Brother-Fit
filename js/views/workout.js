@@ -11,6 +11,7 @@ import { formatDuration, formatShort } from '../utils/dates.js';
 import { now } from '../utils/clock.js';
 import { icons } from '../utils/icons.js';
 import { bindExerciseEdit, openExerciseEditor } from '../utils/exercise-editor.js';
+import { askConfirm } from '../utils/confirm-sheet.js';
 import { effortTag, effortExtra, rirButtons } from '../utils/set-line.js';
 
 let selectedEx = null;
@@ -221,6 +222,11 @@ export async function render(el) {
 
   delegate(el, {
     'del-set': async (t) => {
+      const ok = await askConfirm({
+        title: 'Borrar serie',
+        body: 'Se quitará esta serie del entreno.',
+      });
+      if (!ok) return;
       await deleteSet(Number(t.dataset.id));
       await render(el);
     },
@@ -268,7 +274,13 @@ export async function render(el) {
       await render(el);
     },
     finish: async () => {
-      if (!confirm('¿Terminar este entrenamiento?')) return;
+      const ok = await askConfirm({
+        title: 'Terminar sesión',
+        body: 'Se cierra este entrenamiento.',
+        confirmLabel: 'Terminar',
+        danger: false,
+      });
+      if (!ok) return;
       const summary = await finishWorkoutSummary(w.id);
       if (summary.totalSets > 0) {
         const fechaStr = new Date().toLocaleDateString('es');
@@ -283,7 +295,12 @@ export async function render(el) {
       go(`/history/${w.id}`);
     },
     discard: async () => {
-      if (!confirm('¿Descartar este entrenamiento y todas sus series?')) return;
+      const ok = await askConfirm({
+        title: 'Descartar entrenamiento',
+        body: 'Se borran este entreno y todas sus series. No se puede deshacer.',
+        confirmLabel: 'Descartar',
+      });
+      if (!ok) return;
       await deleteWorkout(w.id);
       state.activeWorkoutId = null;
       state.activeExercise = null;

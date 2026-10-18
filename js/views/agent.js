@@ -8,6 +8,7 @@ import { state } from '../store.js';
 import { db } from '../db.js';
 import { icons } from '../utils/icons.js';
 import { toast, esc } from '../utils/dom.js';
+import { askConfirm } from '../utils/confirm-sheet.js';
 
 const API_KEY_STORE = 'geminiApiKey';
 
@@ -297,13 +298,18 @@ function renderLiveChat(el, apiKey) {
   });
 
   /* Cambiar API Key */
-  el.addEventListener('click', (e) => {
-    if (e.target.closest('[data-action="change-key"]')) {
-      if (!confirm('Deseas cambiar tu API Key de Gemini?')) return;
-      agent.disconnect();
-      db.put('meta', { key: API_KEY_STORE, value: '' });
-      render(el);
-    }
+  el.addEventListener('click', async (e) => {
+    if (!e.target.closest('[data-action="change-key"]')) return;
+    const ok = await askConfirm({
+      title: 'Cambiar API key',
+      body: 'Se desconecta Fit hasta que pegues otra clave.',
+      confirmLabel: 'Cambiar',
+      danger: false,
+    });
+    if (!ok) return;
+    agent.disconnect();
+    db.put('meta', { key: API_KEY_STORE, value: '' });
+    render(el);
   });
 
   /* Conectar solo si no estaba ya conectado */
@@ -370,20 +376,25 @@ async function showMemoriesPanel(parentEl, agent) {
   };
 
   sheet.querySelector('#agent-sheet-close').addEventListener('click', close);
-  sheet.addEventListener('click', (e) => {
+  sheet.addEventListener('click', async (e) => {
     if (e.target === sheet) close();
 
     const delBtn = e.target.closest('.agent-mem-del');
     if (delBtn) {
       const id = Number(delBtn.dataset.id);
-      deleteMemory(id).then(() => {
-        delBtn.closest('.agent-mem-item')?.remove();
-        const list = sheet.querySelector('#agent-mem-list');
-        if (!list.querySelector('.agent-mem-item')) {
-          list.innerHTML = '<p class="agent-mem-empty">Todavia no hay recuerdos guardados.</p>';
-        }
-        toast('Recuerdo eliminado');
+      const ok = await askConfirm({
+        title: 'Borrar recuerdo',
+        body: 'Fit deja de usar este dato en las próximas sesiones.',
       });
+      if (!ok) return;
+      await deleteMemory(id);
+      delBtn.closest('.agent-mem-item')?.remove();
+      const list = sheet.querySelector('#agent-mem-list');
+      if (!list.querySelector('.agent-mem-item')) {
+        list.innerHTML = '<p class="agent-mem-empty">Todavia no hay recuerdos guardados.</p>';
+      }
+      toast('Recuerdo eliminado');
+      return;
     }
 
     if (e.target.closest('[data-action="change-key"]')) {

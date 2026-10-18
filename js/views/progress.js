@@ -6,6 +6,7 @@ import { lineChart } from '../utils/chart.js';
 import { formatShort, todayISO } from '../utils/dates.js';
 import { icons } from '../utils/icons.js';
 import { bindExerciseEdit, openExerciseEditor } from '../utils/exercise-editor.js';
+import { askConfirm } from '../utils/confirm-sheet.js';
 
 const METRICS = { e1rm: '1RM est.', adj: '1RM aj.', maxPeso: 'Peso máx.', volumen: 'Volumen' };
 let metric = 'e1rm';
@@ -193,6 +194,11 @@ export async function render(el, [idParam] = []) {
   delegate(el, {
     metric: async (t) => { metric = t.dataset.metric; await render(el, [exId]); },
     'del-body': async (t) => {
+      const ok = await askConfirm({
+        title: 'Borrar peso',
+        body: 'Se quita este registro de peso corporal.',
+      });
+      if (!ok) return;
       await deleteBodyMetric(Number(t.dataset.id));
       await render(el, [exId]);
     }

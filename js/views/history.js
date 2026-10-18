@@ -5,6 +5,7 @@ import { delegate, esc, fmtNum, go, toast } from '../utils/dom.js';
 import { formatLong, formatDuration } from '../utils/dates.js';
 import { icons } from '../utils/icons.js';
 import { effortTag, effortExtra } from '../utils/set-line.js';
+import { askConfirm } from '../utils/confirm-sheet.js';
 
 let openEffortId = null;
 
@@ -89,7 +90,11 @@ async function detail(el, id) {
 
   delegate(el, {
     delete: async () => {
-      if (!confirm('¿Borrar este entrenamiento y todas sus series?')) return;
+      const ok = await askConfirm({
+        title: 'Borrar entrenamiento',
+        body: 'Se borran este entreno y todas sus series. No se puede deshacer.',
+      });
+      if (!ok) return;
       await deleteWorkout(id);
       go('/history');
     },

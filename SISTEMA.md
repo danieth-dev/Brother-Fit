@@ -2,13 +2,13 @@
 
 Documento vivo del producto. Describe cómo está armado, dónde vive cada dato y qué no se puede romper. Cuando cambie el comportamiento, el esquema, una pantalla o la forma de publicar, este archivo se actualiza en el mismo cambio.
 
-Última revisión: 14 de octubre de 2026. Base de datos versión 2. Caché de la app `v47`.
+Última revisión: 18 de octubre de 2026. Base de datos versión 2. Caché de la app `v49`.
 
 ## Qué es
 
 Brother Fit es una aplicación web progresiva para registrar entrenos, peso corporal y creatina en el teléfono. Los datos del atleta viven en el navegador, no en un servidor propio. La única pieza que sale del teléfono es Fit, la voz en directo, y solo si el atleta pegó su clave de Gemini.
 
-Se usa con una mano, en vertical, con fondo negro y amarillo eléctrico. El nombre público de la app instalada es «Brother ft».
+Se usa con una mano, en vertical, con fondo negro y amarillo eléctrico. El nombre público de la app instalada es «Brother Fit».
 
 - Repositorio: https://github.com/danieth-dev/Brother-Fit.git
 - Teléfono: https://danieth-dev.github.io/Brother-Fit/
@@ -257,6 +257,7 @@ Cada push a `main` dispara `.github/workflows/deploy.yml` y publica la carpeta e
 | `js/utils/exercise-editor.js` | Ficha para corregir o eliminar un ejercicio del atleta. |
 | `js/utils/calendar.js` | Hoja del día. |
 | `js/utils/time-sheet.js` | Hoja de la hora. Los minutos van de 5 en 5. |
+| `js/utils/confirm-sheet.js` | Hoja de confirmación antes de borrar o acciones fuertes. |
 | `js/utils/chart.js` | Gráfica SVG. |
 | `js/utils/clock.js` | Reloj único. Las pruebas pueden adelantarlo. |
 | `js/utils/set-line.js` | Botones de esfuerzo en la serie ya hecha. |

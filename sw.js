@@ -1,7 +1,7 @@
-/* Service worker de Brother ft.
+/* Service worker de Brother Fit.
  * Con red responde lo publicado y guarda una copia. Sin red usa esa copia.
  * Sube VERSION al publicar para que el teléfono suelte la caché anterior. */
-const VERSION = 'v47';
+const VERSION = 'v49';
 const CACHE = `brother-ft-${VERSION}`;
 
 const ASSETS = [
@@ -23,6 +23,7 @@ const ASSETS = [
   './js/utils/exercise-editor.js',
   './js/utils/calendar.js',
   './js/utils/time-sheet.js',
+  './js/utils/confirm-sheet.js',
   './js/utils/clock.js',
   './js/utils/set-line.js',
   './js/services/workouts.js',
@@ -42,7 +43,8 @@ const ASSETS = [
   './fonts/FugazOne-Regular.ttf',
   './icons/icon.svg',
   './icons/icon-192.png',
-  './icons/icon-512.png'
+  './icons/icon-512.png',
+  './icons/icon-maskable-512.png'
 ];
 
 self.addEventListener('install', (event) => {

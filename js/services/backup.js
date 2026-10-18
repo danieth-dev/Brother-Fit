@@ -20,7 +20,7 @@ export async function importData(file) {
   let payload;
   try { payload = JSON.parse(await file.text()); } catch { throw new Error('El archivo no es un JSON válido.'); }
   if (payload?.app !== 'brother-ft' || typeof payload.data !== 'object') {
-    throw new Error('Ese archivo no es un respaldo de Brother ft.');
+    throw new Error('Ese archivo no es un respaldo de Brother Fit.');
   }
   await db.restoreAll(payload.data); // atómico: si falla, queda todo como estaba
 }

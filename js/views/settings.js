@@ -3,6 +3,7 @@ import { exportData, importData, lastBackup } from '../services/backup.js';
 import { db } from '../db.js';
 import { delegate, changes, toast, num } from '../utils/dom.js';
 import { icons } from '../utils/icons.js';
+import { askConfirm } from '../utils/confirm-sheet.js';
 
 export async function render(el) {
   const s = state.settings;
@@ -81,7 +82,12 @@ export async function render(el) {
     import: async (t) => {
       const file = t.files[0];
       if (!file) return;
-      if (!confirm('Importar reemplaza TODOS los datos actuales. ¿Continuar?')) { t.value = ''; return; }
+      const ok = await askConfirm({
+        title: 'Importar respaldo',
+        body: 'Reemplaza todos los datos actuales. No se puede deshacer.',
+        confirmLabel: 'Importar',
+      });
+      if (!ok) { t.value = ''; return; }
       try {
         await importData(file);
         location.reload();
@@ -103,8 +109,18 @@ export async function render(el) {
       await render(el);
     },
     reset: async () => {
-      if (!confirm('Esto borra TODOS tus entrenamientos, tomas de creatina y ajustes. ¿Seguro?')) return;
-      if (!confirm('Última confirmación: no se puede deshacer.')) return;
+      const first = await askConfirm({
+        title: 'Borrar todos los datos',
+        body: 'Se borran entrenos, creatina, peso y ajustes.',
+        confirmLabel: 'Continuar',
+      });
+      if (!first) return;
+      const second = await askConfirm({
+        title: 'Última confirmación',
+        body: 'No se puede deshacer.',
+        confirmLabel: 'Borrar todo',
+      });
+      if (!second) return;
       await db.clearAll();
       location.hash = '#/';
       location.reload();

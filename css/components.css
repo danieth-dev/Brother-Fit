@@ -114,6 +114,19 @@
   background: var(--red-dim);
   border-color: var(--red);
 }
+.btn-danger:active {
+  background: var(--red);
+  border-color: var(--red);
+  color: #fff;
+}
+.btn-confirm.btn-danger {
+  background: var(--red);
+  border-color: var(--red);
+  color: #fff;
+}
+.btn-confirm.btn-danger:active {
+  filter: brightness(0.92);
+}
 
 .btn-sm {
   min-height: 48px;
@@ -140,6 +153,11 @@
   color: var(--text);
   background: var(--surface-2);
   border-color: var(--line);
+}
+.btn-x:active {
+  color: var(--red);
+  background: var(--red-dim);
+  border-color: var(--red);
 }
 
 /* ---------- Formularios y Contenedores Técnicos ---------- */
@@ -517,9 +535,32 @@ body.picker-open {
   outline: none;
   box-shadow: 0 0 0 3px rgba(255, 230, 0, 0.2);
 }
+.editor-delete:active {
+  background: var(--red-dim);
+  color: var(--red);
+}
 .editor-delete:disabled,
 .editor-form button:disabled {
   opacity: 0.5;
+}
+
+.confirm-sheet {
+  z-index: 60;
+}
+.confirm-body {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: var(--fs-sm);
+  line-height: 1.45;
+}
+.confirm-body[hidden] {
+  display: none !important;
+}
+.confirm-actions {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 8px;
+  margin-top: 18px;
 }
 
 .cal-nav {
@@ -1950,6 +1991,10 @@ body.picker-open {
 }
 .agent-mem-del:hover {
   color: var(--red);
+}
+.agent-mem-del:active {
+  color: var(--red);
+  background: var(--red-dim);
 }
 
 .agent-mem-empty {

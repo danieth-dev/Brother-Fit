@@ -1,4 +1,4 @@
-# Brother ft
+# Brother Fit
 
 Registro personal de entrenamiento y creatina. PWA en HTML, CSS y JavaScript puro:
 sin frameworks, sin dependencias y sin paso de compilación. Funciona offline y guarda

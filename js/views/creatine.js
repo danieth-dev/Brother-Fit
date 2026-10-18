@@ -4,6 +4,7 @@ import { delegate, forms, toast, esc, num, fmtNum } from '../utils/dom.js';
 import { formatMonth, formatLong, todayISO, nowHM, toISO } from '../utils/dates.js';
 import { icons } from '../utils/icons.js';
 import { creatinePlate } from '../utils/components.js';
+import { askConfirm } from '../utils/confirm-sheet.js';
 
 const now = new Date();
 let view = { y: now.getFullYear(), m: now.getMonth() };
@@ -209,6 +210,11 @@ export async function render(el) {
     del: async (t) => {
       const btn = t.closest('[data-action="del"]');
       if (!btn) return;
+      const ok = await askConfirm({
+        title: 'Borrar toma',
+        body: 'Se quita esta toma del calendario y de la racha.',
+      });
+      if (!ok) return;
       await deleteIntake(Number(btn.dataset.id));
       await render(el);
     },

@@ -3,6 +3,7 @@ import {
   getExercise, updateExercise, deleteExercise, countSetsForExercise, GRUPOS, isOwnExercise
 } from '../services/workouts.js';
 import { dismissPicker, mountPickers } from './picker.js';
+import { askConfirm } from './confirm-sheet.js';
 import { icons } from './icons.js';
 import { esc, toast } from './dom.js';
 
@@ -98,12 +99,17 @@ async function remove() {
   const id = Number(form.dataset.id);
   const nombre = form.elements.nombre.value.trim() || 'este ejercicio';
   const n = await countSetsForExercise(id);
-  const msg = n === 0
-    ? `¿Eliminar «${nombre}»?`
+  const body = n === 0
+    ? `Se elimina «${nombre}» de tu lista.`
     : n === 1
-      ? `«${nombre}» tiene 1 serie. Si lo eliminas, esa serie sale del historial. ¿Eliminarlo?`
-      : `«${nombre}» tiene ${n} series. Si lo eliminas, esas series salen del historial. ¿Eliminarlo?`;
-  if (!confirm(msg)) return;
+      ? `«${nombre}» tiene 1 serie. Esa serie sale del historial.`
+      : `«${nombre}» tiene ${n} series. Esas series salen del historial.`;
+  const ok = await askConfirm({
+    title: 'Eliminar ejercicio',
+    body,
+    confirmLabel: 'Eliminar',
+  });
+  if (!ok) return;
   const done = onDone;
   busy(true);
   try {
