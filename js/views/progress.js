@@ -116,7 +116,7 @@ function prBadgesHtml(pr, unidad) {
   return `
     <div class="pr-badges">
       <div class="pr-badge pr-badge--gold">
-        ${icons.trophy({ size: 16, stroke: 'var(--primary-ink)' })}
+        ${icons.trophy({ size: 16, stroke: 'var(--primary)' })}
         <div>
           <span class="pr-badge-val">${fmtWeight(pr.maxPeso, unidad)}<small> ${esc(unidad)}</small></span>
           <span class="pr-badge-label">PR Peso</span>
