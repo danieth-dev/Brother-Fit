@@ -2,7 +2,7 @@
 
 Documento vivo del producto. Describe cómo está armado, dónde vive cada dato y qué no se puede romper. Cuando cambie el comportamiento, el esquema, una pantalla o la forma de publicar, este archivo se actualiza en el mismo cambio.
 
-Última revisión: 18 de octubre de 2026. Base de datos versión 2. Caché de la app `v61`.
+Última revisión: 18 de octubre de 2026. Base de datos versión 2. Caché de la app `v63`.
 
 ## Qué es
 
@@ -79,7 +79,7 @@ flowchart TD
 
 La barra es una isla fija abajo. El historial no tiene icono propio: cuelga de Inicio. Una pulsación larga en cualquier vínculo o botón **nunca** debe abrir el menú del navegador (copiar vínculo, compartir, abrir en Brave): `main.js` cancela `contextmenu` y `dragstart` en captura (salvo campos de texto), marca `draggable=false` en los `<a>` también tras cada repintado, y `base.css` aplica `-webkit-touch-callout: none` a botones, filas, disco, chips y `[data-action]`. Regla de agente: `.cursor/rules/no-browser-link-menu.mdc`.
 
-Los `<select>` de ejercicio, grupo muscular, descanso y unidad no usan el menú del sistema. Un botón abre una hoja inferior con la misma paleta. El `<select>` real sigue en el formulario: al elegir, se escribe su valor y se dispara `change`, así que las vistas no saben que la lista es propia. La hoja vive en `document.body`, fuera de `#app`, y se cierra al elegir, al cambiar de ruta o si el control desaparece.
+Los `<select>` de ejercicio, grupo muscular y descanso no usan el menú del sistema. Un botón abre una hoja inferior con la misma paleta. El `<select>` real sigue en el formulario: al elegir, se escribe su valor y se dispara `change`, así que las vistas no saben que la lista es propia. La hoja vive en `document.body`, fuera de `#app`, y se cierra al elegir, al cambiar de ruta o si el control desaparece.
 
 El día del peso corporal y el de una toma de creatina usan la misma hoja, con el mes en curso y el día elegido en amarillo. El `input type="date"` sigue en el formulario y recibe la fecha. El calendario del teléfono no se abre.
 
@@ -91,7 +91,7 @@ El día del peso corporal y el de una toma de creatina usan la misma hoja, con e
 | `#/progress` y `#/progress/:id` | Progreso | Un ejercicio: PR, comparativa, gráfica y tabla. Abajo, el peso corporal. |
 | `#/creatine` | Creatina | Tomas, racha, calendario y saturación. |
 | `#/agent` | Fit AI | Voz en directo. Sin clave, solo pide la clave. La charla se guarda en el teléfono; Nuevo chat la borra tras confirmar. |
-| `#/settings` | Ajustes | Descanso, unidad, recordatorios de agua, respaldo, instalar y borrar todo. |
+| `#/settings` | Ajustes | Descanso, recordatorios de agua, respaldo, instalar y borrar todo. |
 
 Si el ejercicio tiene grupo muscular, el nombre lo lleva debajo, en letra pequeña y con un punto de color. También queda bajo el campo ya elegido y junto al nombre en las series registradas. El grupo `Otro` no se muestra: no nombra un músculo. Cuando el grupo se queda corto, la misma línea sigue con la parte concreta en minúscula, por ejemplo «PIERNAS · cuádriceps y glúteo». Eso se ve al elegir y bajo el campo. En las series ya registradas sigue solo el grupo.
 
@@ -115,7 +115,7 @@ Claves de `meta`:
 
 | Clave | Valor |
 | --- | --- |
-| `settings` | `{ descanso, descansoMode, unidad, aguaRecordatorios }`. `aguaRecordatorios` es true de fábrica. La toma de creatina es siempre 5 g (`DOSE_G`). |
+| `settings` | `{ descanso, descansoMode, unidad, aguaRecordatorios }`. `unidad` es `kg` o `lb` (preferencia de pantalla). `aguaRecordatorios` es true de fábrica. La toma de creatina es siempre 5 g (`DOSE_G`). |
 | `waterReminders` | Plan del día: `{ fecha, items: [{ id, at, body, done }] }`. Avisos locales de agua tras la creatina. |
 | `activeWorkoutId` | Id de la sesión abierta. Se borra al terminar o si esa sesión ya está cerrada. |
 | `activeRest` | `{ restEnd, lastReps }` del descanso en curso. Si ya venció, se borra al leerlo. |
@@ -130,7 +130,7 @@ Ajustes de fábrica: descanso manual de 90 s, modo automático, unidad `kg`, rec
 
 Tras registrar la creatina de hoy, si los recordatorios están activos y el teléfono concede notificaciones, se programan hasta dos avisos locales (aprox. 45 min y 3 h después), sin sonar de noche. Deshacer o borrar la última toma del día cancela el plan. No hay push desde un servidor.
 
-Cambiar de kg a lb solo cambia la etiqueta. Los números ya guardados no se convierten.
+Los pesos de series y peso corporal se guardan siempre en **kg**. En Entreno y en Progreso un segmento `kg | lb` junto al campo Peso cambia `settings.unidad`, convierte el valor del input abierto y muestra historial/PR/volumen en esa unidad (`js/utils/units.js`). Lo ya guardado se interpreta como kg.
 
 El respaldo es un JSON `{ app: "brother-ft", schema: 1, exportedAt, data }`. Importar reemplaza todas las tablas en una sola transacción: si falla, no queda a medias. Borrar todo es restaurar un volcado vacío.
 
@@ -227,7 +227,7 @@ Cada push a `main` dispara `.github/workflows/deploy.yml` y publica la carpeta e
 - No se vacía IndexedDB ni se pide al atleta que borre los datos del sitio para probar un cambio.
 - No se sube `DB_VERSION` si no cambia el esquema.
 - No se duplica un ejercicio que ya existe con el mismo nombre. El historial pertenece al id, no al texto.
-- No se convierte el peso al cambiar la unidad.
+- Los pesos en base están en kg; la unidad de pantalla convierte al mostrar y al escribir.
 - No se mezclan el 1RM estimado y el ajustado en la misma curva.
 - No se marca «falta esfuerzo» en una serie vieja que no tiene tipo.
 - No se muestra `part.text` de Fit ni se manda configuración de pensamiento.

@@ -23,12 +23,6 @@ export async function render(el) {
       <p class="hint" id="rest-mode-hint" ${s.descansoMode !== 'auto' ? 'hidden' : ''}>1–5 reps → 3 min · 6–8 → 2 min · 9–12 → 1:30 · 13+ → 1 min</p>
       <label class="field" id="descanso-manual" ${s.descansoMode !== 'manual' ? 'hidden' : ''}><span>Segundos de descanso fijo</span>
         <input data-change="descanso" inputmode="numeric" value="${s.descanso}"></label>
-      <label class="field"><span>Unidad de peso</span>
-        <select data-change="unidad">
-          <option value="kg" ${s.unidad === 'kg' ? 'selected' : ''}>Kilogramos (kg)</option>
-          <option value="lb" ${s.unidad === 'lb' ? 'selected' : ''}>Libras (lb)</option>
-        </select></label>
-      <p class="hint">Cambiar la unidad solo cambia la etiqueta; no convierte los pesos ya guardados.</p>
       <label class="field"><span>Recordatorios de agua</span>
         <select data-change="aguaRecordatorios">
           <option value="1" ${s.aguaRecordatorios !== false ? 'selected' : ''}>Tras la creatina de hoy</option>
@@ -77,7 +71,6 @@ export async function render(el) {
       if (manual) manual.hidden = t.value !== 'manual';
       toast('Ajuste guardado');
     },
-    unidad: async (t) => { await saveSettings({ unidad: t.value }); toast('Ajuste guardado'); },
     aguaRecordatorios: async (t) => {
       const on = t.value === '1';
       await saveSettings({ aguaRecordatorios: on });

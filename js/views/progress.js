@@ -1,12 +1,13 @@
 import { listExercises, progressForExercise, lastTrainedExerciseId, prByExercise, isOwnExercise, muscleFocus } from '../services/workouts.js';
 import { addBodyWeight, listBodyWeights, deleteBodyMetric } from '../services/body.js';
-import { state } from '../store.js';
+import { saveSettings } from '../store.js';
 import { delegate, forms, changes, toast, esc, num, fmtNum, go } from '../utils/dom.js';
 import { lineChart } from '../utils/chart.js';
 import { formatShort, todayISO } from '../utils/dates.js';
 import { icons } from '../utils/icons.js';
 import { bindExerciseEdit, openExerciseEditor } from '../utils/exercise-editor.js';
 import { askConfirm } from '../utils/confirm-sheet.js';
+import { weightUnit, toKg, fromKg, fmtWeight, fmtVolume, unitSegHtml } from '../utils/units.js';
 
 const METRICS = { e1rm: '1RM est.', adj: '1RM aj.', maxPeso: 'Peso máx.', volumen: 'Volumen' };
 let metric = 'e1rm';
@@ -29,20 +30,24 @@ function adjCaption(sessions) {
   return bits.join(' ');
 }
 
+function showW(kg, unidad) {
+  return fromKg(kg, unidad);
+}
+
 function compareCard(sessions, unidad) {
   if (sessions.length < 2) return '';
   const last = sessions[sessions.length - 1];
   const prev = sessions[sessions.length - 2];
   const rows = [
-    { label: '1RM est.', curr: last.e1rm, prev: prev.e1rm, unit: unidad },
+    { label: '1RM est.', curr: showW(last.e1rm, unidad), prev: showW(prev.e1rm, unidad), unit: unidad, rawCurr: last.e1rm, rawPrev: prev.e1rm },
   ];
   if (last.adj != null && prev.adj != null) {
-    rows.push({ label: '1RM aj.', curr: last.adj, prev: prev.adj, unit: unidad });
+    rows.push({ label: '1RM aj.', curr: showW(last.adj, unidad), prev: showW(prev.adj, unidad), unit: unidad, rawCurr: last.adj, rawPrev: prev.adj });
   }
   rows.push(
-    { label: 'Volumen', curr: last.volumen, prev: prev.volumen, unit: unidad },
-    { label: 'Series', curr: last.series, prev: prev.series, unit: '' },
-    { label: 'Peso máx.', curr: last.maxPeso, prev: prev.maxPeso, unit: unidad },
+    { label: 'Volumen', curr: showW(last.volumen, unidad), prev: showW(prev.volumen, unidad), unit: unidad, rawCurr: last.volumen, rawPrev: prev.volumen },
+    { label: 'Series', curr: last.series, prev: prev.series, unit: '', rawCurr: last.series, rawPrev: prev.series },
+    { label: 'Peso máx.', curr: showW(last.maxPeso, unidad), prev: showW(prev.maxPeso, unidad), unit: unidad, rawCurr: last.maxPeso, rawPrev: prev.maxPeso },
   );
   return `
     <div class="compare-card">
@@ -58,7 +63,7 @@ function compareCard(sessions, unidad) {
             <span class="compare-row-prev">${fmtNum(Math.round(r.prev * 10) / 10)} ${esc(r.unit)}</span>
             <span class="compare-row-arrow">→</span>
             <span class="compare-row-curr">${fmtNum(Math.round(r.curr * 10) / 10)} ${esc(r.unit)}</span>
-            ${trendChip(r.curr, r.prev)}
+            ${trendChip(r.rawCurr, r.rawPrev)}
           </div>`).join('')}
       </div>
     </div>`;
@@ -75,8 +80,8 @@ function sessionTable(sessions, unidad) {
           <small>${s.series} series</small>
         </div>
         <div class="sess-row-best">
-          <span>${fmtNum(s.maxPeso)} ${esc(unidad)} × —</span>
-          <small>${fmtNum(Math.round(s.volumen))} ${esc(unidad)} vol.</small>
+          <span>${fmtWeight(s.maxPeso, unidad)} ${esc(unidad)} × —</span>
+          <small>${fmtVolume(s.volumen, unidad)} ${esc(unidad)} vol.</small>
         </div>
         <div class="sess-row-trend">
           ${trendChip(s.e1rm, prev?.e1rm)}
@@ -96,16 +101,25 @@ export async function render(el, [idParam] = []) {
     listBodyWeights(),
     exId ? prByExercise(exId) : { maxPeso: 0, maxReps: 0, e1rmMax: 0 },
   ]);
-  const unidad = state.settings.unidad;
+  const unidad = weightUnit();
   const sessions = prog.sessions.slice(-20);
   const points = sessions
     .filter((s) => metric !== 'adj' || s.adj != null)
-    .map((s) => ({
-      label: formatShort(s.fecha),
-      value: Math.round((metric === 'adj' ? s.adj : s[metric]) * 10) / 10,
-    }));
+    .map((s) => {
+      const raw = metric === 'adj' ? s.adj : s[metric];
+      const shown = metric === 'volumen' || metric === 'maxPeso' || metric === 'e1rm' || metric === 'adj'
+        ? fromKg(raw, unidad)
+        : raw;
+      return {
+        label: formatShort(s.fecha),
+        value: Math.round(shown * 10) / 10,
+      };
+    });
   const adjNote = metric === 'adj' ? adjCaption(sessions) : '';
-  const bodyPoints = body.slice(-30).map((b) => ({ label: formatShort(b.fecha), value: b.peso }));
+  const bodyPoints = body.slice(-30).map((b) => ({
+    label: formatShort(b.fecha),
+    value: Math.round(fromKg(b.peso, unidad) * 10) / 10,
+  }));
 
   el.innerHTML = `
     <header class="page-head"><h1>Progreso</h1></header>
@@ -123,14 +137,14 @@ export async function render(el, [idParam] = []) {
         <div class="pr-badge pr-badge--gold">
           ${icons.trophy({ size: 16, stroke: 'var(--primary-ink)' })}
           <div>
-            <span class="pr-badge-val">${fmtNum(pr.maxPeso)}<small> ${esc(unidad)}</small></span>
+            <span class="pr-badge-val">${fmtWeight(pr.maxPeso, unidad)}<small> ${esc(unidad)}</small></span>
             <span class="pr-badge-label">PR Peso</span>
           </div>
         </div>
         <div class="pr-badge">
           ${icons.trendUp({ size: 16, stroke: 'var(--green)' })}
           <div>
-            <span class="pr-badge-val">${fmtNum(Math.round(pr.e1rmMax * 10) / 10)}<small> ${esc(unidad)}</small></span>
+            <span class="pr-badge-val">${fmtWeight(pr.e1rmMax, unidad)}<small> ${esc(unidad)}</small></span>
             <span class="pr-badge-label">Mejor 1RM</span>
           </div>
         </div>
@@ -168,7 +182,7 @@ export async function render(el, [idParam] = []) {
     <form class="form-card stack" data-form="body">
       <div class="grid-2">
         <label class="field"><span>Día</span><input type="date" name="fecha" value="${todayISO()}" max="${todayISO()}" required></label>
-        <label class="field"><span>Peso (${esc(unidad)})</span><input name="peso" inputmode="decimal" autocomplete="off" required placeholder="0"></label>
+        <label class="field"><span>Peso ${unitSegHtml(unidad)}</span><input name="peso" inputmode="decimal" autocomplete="off" required placeholder="0"></label>
       </div>
       <button class="btn btn-primary btn-block" type="submit">
         ${icons.plus({ size: 18 })} Guardar peso corporal
@@ -179,7 +193,7 @@ export async function render(el, [idParam] = []) {
         ${body.slice(-5).reverse().map((b) => `
           <div class="row">
             <div>
-              <strong class="num">${fmtNum(b.peso)} ${esc(unidad)}</strong>
+              <strong class="num">${fmtWeight(b.peso, unidad)} ${esc(unidad)}</strong>
               <small>${esc(formatShort(b.fecha))}</small>
             </div>
             <button class="btn-x" data-action="del-body" data-id="${b.id}" type="button" aria-label="Borrar registro">
@@ -192,6 +206,18 @@ export async function render(el, [idParam] = []) {
   changes(el, { exercise: (t) => go(`/progress/${t.value}`) });
 
   delegate(el, {
+    unidad: async (t) => {
+      const next = t.dataset.unidad === 'lb' ? 'lb' : 'kg';
+      const prev = weightUnit();
+      if (next === prev) return;
+      const input = el.querySelector('form[data-form="body"] input[name="peso"]');
+      const raw = num(input?.value);
+      const kg = Number.isFinite(raw) ? toKg(raw, prev) : null;
+      await saveSettings({ unidad: next });
+      await render(el, [exId]);
+      const pesoEl = el.querySelector('form[data-form="body"] input[name="peso"]');
+      if (pesoEl && kg != null) pesoEl.value = fmtWeight(kg, next);
+    },
     metric: async (t) => { metric = t.dataset.metric; await render(el, [exId]); },
     'del-body': async (t) => {
       const ok = await askConfirm({
@@ -206,8 +232,8 @@ export async function render(el, [idParam] = []) {
 
   forms(el, {
     body: async (f) => {
-      const peso = num(f.elements.peso.value);
-      if (!(peso > 0)) { toast('Escribe un peso válido.'); return; }
+      const peso = toKg(num(f.elements.peso.value));
+      if (!(peso > 0) || peso > 600) { toast('Escribe un peso válido.'); return; }
       await addBodyWeight({ fecha: f.elements.fecha.value, peso });
       await render(el, [exId]);
       toast('Peso corporal guardado');

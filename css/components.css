@@ -648,6 +648,10 @@ body.picker-open {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
+/* Si una columna tiene kg|lb, alinear los inputs por la base */
+.grid-2:has(.unit-seg) {
+  align-items: end;
+}
 .grid-3 {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1175,6 +1179,29 @@ body.picker-open {
 }
 .metric-seg button {
   flex: 1 1 40%;
+}
+
+/* kg | lb junto a la etiqueta Peso (una sola línea, también en teléfono estrecho) */
+.field > span:has(.unit-seg) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.unit-seg {
+  display: inline-flex;
+  width: auto;
+  flex: 0 0 auto;
+  gap: 2px;
+  padding: 2px;
+}
+.unit-seg button {
+  flex: 0 0 auto;
+  min-width: 2.4rem;
+  min-height: 28px;
+  padding: 0 8px;
+  font-size: 11px;
+  letter-spacing: 0.02em;
 }
 
 /* ---------- Gráfico SVG de Progresión ---------- */
@@ -2352,6 +2379,13 @@ body.picker-open {
     font-size: 0.6875rem;
     letter-spacing: 0.02em;
     line-height: 1.2;
+  }
+  .grid-2 .field > span:has(.unit-seg),
+  .grid-3 .field > span:has(.unit-seg) {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
   }
   .grid-3 {
     gap: 8px;

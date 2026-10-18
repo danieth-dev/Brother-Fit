@@ -1,11 +1,11 @@
 import { creatineSummary, toggleTodayIntake, DOSE_G } from '../services/creatine.js';
 import { getActiveWorkout, startWorkout, listWorkoutSummaries, weekStats, muscleName } from '../services/workouts.js';
 import { scheduleAfterCreatine, cancelWaterReminders } from '../services/water-reminders.js';
-import { state } from '../store.js';
-import { delegate, toast, esc, fmtNum, go } from '../utils/dom.js';
+import { delegate, toast, esc, go } from '../utils/dom.js';
 import { formatLong, todayISO } from '../utils/dates.js';
 import { icons } from '../utils/icons.js';
 import { creatinePlate } from '../utils/components.js';
+import { weightUnit, fmtVolume } from '../utils/units.js';
 
 function weekGroupLine(week) {
   const groups = (week.porGrupo || [])
@@ -20,7 +20,7 @@ export async function render(el) {
     creatineSummary(), getActiveWorkout(), listWorkoutSummaries(3), weekStats()
   ]);
   const g = DOSE_G;
-  const unidad = state.settings.unidad;
+  const unidad = weightUnit();
 
   const estadoCreatina = cr.tomadaHoy
     ? `${cr.hoy.count} toma${cr.hoy.count > 1 ? 's' : ''} · ${fmtNum(cr.hoy.gramos)} g registrados`
@@ -68,7 +68,7 @@ export async function render(el) {
     <!-- ═══ TELEMETRÍA SEMANAL ═══ -->
     <div class="stats">
       <div class="stat"><b>${week.entrenos}</b><span>entrenos<br>esta semana</span></div>
-      <div class="stat"><b>${fmtNum(Math.round(week.volumen))}</b><span>${esc(unidad)} de<br>volumen</span></div>
+      <div class="stat"><b>${fmtVolume(week.volumen, unidad)}</b><span>${esc(unidad)} de<br>volumen</span></div>
       <div class="stat"><b>${cr.dias7}/7</b><span>días con<br>creatina</span></div>
     </div>
     ${week.entrenos ? `
@@ -90,7 +90,7 @@ export async function render(el) {
           <a class="row" href="#/history/${w.id}">
             <div>
               <strong style="text-transform:capitalize">${esc(formatLong(w.fecha))}</strong>
-              <small>${w.totalSets} series · ${fmtNum(Math.round(w.volumen))} ${esc(unidad)}</small>
+              <small>${w.totalSets} series · ${fmtVolume(w.volumen, unidad)} ${esc(unidad)}</small>
             </div>
             ${w.finishedAt
               ? icons.chevronRight({ size: 18, cls: 'chev' })

@@ -1,11 +1,11 @@
 import { listWorkoutSummaries, getWorkoutDetail, deleteWorkout, muscleName } from '../services/workouts.js';
 import { setEffort, setTipo } from '../services/effort.js';
-import { state } from '../store.js';
-import { delegate, esc, fmtNum, go, toast } from '../utils/dom.js';
+import { delegate, esc, go, toast } from '../utils/dom.js';
 import { formatLong, formatDuration } from '../utils/dates.js';
 import { icons } from '../utils/icons.js';
 import { effortTag, effortExtra } from '../utils/set-line.js';
 import { askConfirm } from '../utils/confirm-sheet.js';
+import { weightUnit, fmtWeight, fmtVolume } from '../utils/units.js';
 
 let openEffortId = null;
 
@@ -15,7 +15,7 @@ export async function render(el, [id]) {
 
 async function list(el) {
   const items = await listWorkoutSummaries();
-  const unidad = state.settings.unidad;
+  const unidad = weightUnit();
   el.innerHTML = `
     <header class="page-head"><h1>Historial</h1></header>
     ${items.length ? `
@@ -24,7 +24,7 @@ async function list(el) {
           <a class="row" href="#/history/${w.id}">
             <div>
               <strong style="text-transform:capitalize">${esc(formatLong(w.fecha))}</strong>
-              <small>${w.totalSets} series · ${fmtNum(Math.round(w.volumen))} ${esc(unidad)}</small>
+              <small>${w.totalSets} series · ${fmtVolume(w.volumen, unidad)} ${esc(unidad)}</small>
             </div>
             ${w.finishedAt
               ? icons.chevronRight({ size: 18, cls: 'chev' })
@@ -49,7 +49,7 @@ async function detail(el, id) {
       </div>`;
     return;
   }
-  const unidad = state.settings.unidad;
+  const unidad = weightUnit();
   const { workout: w } = d;
 
   el.innerHTML = `
@@ -61,7 +61,7 @@ async function detail(el, id) {
     <div class="stats" style="margin-top:0">
       <div class="stat"><b>${d.totalSets}</b><span>series</span></div>
       <div class="stat"><b>${d.groups.length}</b><span>ejercicios</span></div>
-      <div class="stat"><b>${fmtNum(Math.round(d.volumen))}</b><span>${esc(unidad)} volumen</span></div>
+      <div class="stat"><b>${fmtVolume(d.volumen, unidad)}</b><span>${esc(unidad)} volumen</span></div>
     </div>
 
     ${d.groups.length ? d.groups.map((g) => `
@@ -76,7 +76,7 @@ async function detail(el, id) {
           ${g.sets.map((s, i) => `
             <li>
               <span class="n">Serie ${i + 1}</span>
-              <span class="v">${fmtNum(s.peso)} ${esc(unidad)} × ${s.reps}${effortTag(s)}</span>
+              <span class="v">${fmtWeight(s.peso, unidad)} ${esc(unidad)} × ${s.reps}${effortTag(s)}</span>
               ${effortExtra(s, openEffortId)}
             </li>`).join('')}
         </ul>

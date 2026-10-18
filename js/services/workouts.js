@@ -216,6 +216,7 @@ export async function finishWorkoutSummary(id) {
 }
 
 function setBit(s) {
+  /* Resumen en kg canónicos: la memoria del agente y el historial hablado usan kg. */
   const base = `${s.peso}kg×${s.reps}`;
   if (s.tipo === 'calentamiento') return `${base} calentamiento`;
   if (s.tipo === 'trabajo' && (s.rpe == null || s.rpe === '')) return `${base} sin esfuerzo`;

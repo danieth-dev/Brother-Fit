@@ -13,6 +13,7 @@ import { state } from '../store.js';
 import { now } from '../utils/clock.js';
 import { getActiveWorkout, lastSetFor, saveActiveRest, listExercises, matchExercise } from './workouts.js';
 import { registerSet, anotarRpe, captureSpokenEffort } from './effort.js';
+import { toKg, weightUnit } from '../utils/units.js';
 
 const LIVE_MODEL = 'models/gemini-3.8-live';
 const WS_URL = (apiKey) =>
@@ -170,11 +171,12 @@ export async function executeToolCall(name, args) {
 
     let peso = null;
     const said = Number(args.peso);
-    const hasAdded = Number.isFinite(said) && said > 0 && said <= 600;
+    const saidKg = Number.isFinite(said) ? toKg(said) : NaN;
+    const hasAdded = Number.isFinite(saidKg) && saidKg > 0 && saidKg <= 600;
     if (args.corporal === true) {
-      peso = hasAdded ? said : 0;
-    } else if (args.peso != null && Number.isFinite(said) && said >= 0 && said <= 600) {
-      peso = said;
+      peso = hasAdded ? saidKg : 0;
+    } else if (args.peso != null && Number.isFinite(saidKg) && saidKg >= 0 && saidKg <= 600) {
+      peso = saidKg;
     } else {
       const last = await lastSetFor(ex.id);
       peso = last?.peso ?? 0;
@@ -275,7 +277,7 @@ async function buildSystemInstruction() {
     '- Una sola corrección o foco técnico (cue) por turno, para que pueda aplicarlo en su siguiente serie sin sobrecarga mental.\n' +
     '- Si nombra un ejercicio, llama a usar_ejercicio enseguida con sus palabras, aunque todavía no haya serie. No preguntes si confirmamos el de Entreno y no digas «en pantalla tengo». Si ya lo dijo, no vuelvas a preguntar cuál.\n' +
     '- Si pide anotar una serie, llama a registrar_serie enseguida. Si nombra el ejercicio, envía ese texto en ejercicio. Si no lo nombra, no envíes ejercicio. tipo es trabajo si no dice que es calentamiento. El esfuerzo responde a «¿Cuántas repeticiones más podrías haber hecho?». Si habla en RPE, no lo conviertas: haz esa misma pregunta. 0 es que no salía otra.\n' +
-    '- No preguntes el peso antes de la serie y no digas «lastre». Peso corporal es corporal true y 0 kg añadidos. Si dice un disco o unos kilos, peso es solo ese número.\n' +
+    `- No preguntes el peso antes de la serie y no digas «lastre». Peso corporal es corporal true y 0 añadidos. Si dice un disco o un peso, el número de peso va en ${weightUnit()} (unidad actual de la app).\n` +
     '- Si la herramienta dice que el ejercicio no está o que hay varios, obedécela: no anotes en otro y, si hay varios, pregunta cuál una sola vez.\n' +
     '- Si la herramienta responde preguntar true, haz la pregunta del esfuerzo con la marca que viene y espera. Si preguntar es false, no vuelvas a preguntar el esfuerzo.\n' +
     '- La respuesta del atleta se anota con anotar_rpe: la marca vigente y el rir. 0 y cero son rir 0. Si dice que no sabe, omitir true. Una marca vieja no sirve: pregunta de nuevo y no reutilices la respuesta anterior.\n' +

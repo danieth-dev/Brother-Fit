@@ -5,14 +5,15 @@ import {
 } from '../services/workouts.js';
 import { registerSet, setEffort, setTipo, skipRestClock, AVISO_DUPLICADA } from '../services/effort.js';
 import { getActiveAgent, saveMemory } from '../services/agent.js';
-import { state } from '../store.js';
-import { delegate, forms, changes, toast, esc, num, fmtNum, go } from '../utils/dom.js';
+import { state, saveSettings } from '../store.js';
+import { delegate, forms, changes, toast, esc, num, go } from '../utils/dom.js';
 import { formatDuration, formatShort } from '../utils/dates.js';
 import { now } from '../utils/clock.js';
 import { icons } from '../utils/icons.js';
 import { bindExerciseEdit, openExerciseEditor } from '../utils/exercise-editor.js';
 import { askConfirm } from '../utils/confirm-sheet.js';
 import { effortTag, effortExtra, rirButtons } from '../utils/set-line.js';
+import { weightUnit, toKg, fmtWeight, fmtVolume, unitSegHtml } from '../utils/units.js';
 
 let selectedEx = null;
 let restEnd = 0;
@@ -60,7 +61,7 @@ function restMarkup() {
   </div>`;
 }
 
-function prevSessionMarkup(prev, unidad) {
+function prevSessionMarkup(prev, unidad = weightUnit()) {
   if (!prev) {
     return `<div class="prev-session prev-session--empty">
       <span>${icons.dumbbell({ size: 14, stroke: 'var(--text-dim)' })} Primera vez · ¡sé el primero en marcar un PR!</span>
@@ -70,7 +71,7 @@ function prevSessionMarkup(prev, unidad) {
   const rows = prev.sets.map((s, i) => `
     <div class="prev-row">
       <span class="prev-row-n">S${i + 1}</span>
-      <span class="prev-row-v">${fmtNum(s.peso)} <small>${esc(unidad)}</small> × <strong>${s.reps}</strong>${effortTag(s)}</span>
+      <span class="prev-row-v">${fmtWeight(s.peso, unidad)} <small>${esc(unidad)}</small> × <strong>${s.reps}</strong>${effortTag(s)}</span>
     </div>`).join('');
   return `<div class="prev-session">
     <div class="prev-session-head">
@@ -115,7 +116,7 @@ export async function render(el) {
   } else if (!exs.some((e) => e.id === selectedEx)) {
     selectedEx = exs[0]?.id ?? null;
   }
-  const unidad = state.settings.unidad;
+  const unidad = weightUnit();
 
   state.activeWorkoutId = w.id;
   const currentExObj = exs.find((e) => e.id === selectedEx);
@@ -153,13 +154,13 @@ export async function render(el) {
 
       ${pr && pr.maxPeso > 0 ? `
         <div class="workout-pr-strip">
-          <span class="workout-pr-chip">${icons.trophy({ size: 12 })} PR ${fmtNum(pr.maxPeso)} ${esc(unidad)}</span>
-          <span class="workout-pr-chip workout-pr-chip--muted">${fmtNum(Math.round(pr.e1rmMax * 10) / 10)} 1RM est.</span>
+          <span class="workout-pr-chip">${icons.trophy({ size: 12 })} PR ${fmtWeight(pr.maxPeso, unidad)} ${esc(unidad)}</span>
+          <span class="workout-pr-chip workout-pr-chip--muted">${fmtWeight(pr.e1rmMax, unidad)} 1RM est.</span>
           <span class="workout-pr-chip workout-pr-chip--muted">${pr.maxReps} reps máx.</span>
         </div>` : ''}
 
       <div class="grid-2">
-        <label class="field"><span>Peso (${esc(unidad)})</span>
+        <label class="field"><span>Peso ${unitSegHtml(unidad)}</span>
           <input name="peso" inputmode="decimal" autocomplete="off" required placeholder="0"></label>
         <label class="field"><span>Reps</span>
           <input name="reps" inputmode="numeric" pattern="[0-9]*" autocomplete="off" required placeholder="0"></label>
@@ -185,7 +186,7 @@ export async function render(el) {
           ${g.sets.map((s, i) => `
             <li>
               <span class="n">Serie ${i + 1}</span>
-              <span class="v">${fmtNum(s.peso)} ${esc(unidad)} × ${s.reps}${effortTag(s)}</span>
+              <span class="v">${fmtWeight(s.peso, unidad)} ${esc(unidad)} × ${s.reps}${effortTag(s)}</span>
               <button class="btn-x" data-action="del-set" data-id="${s.id}" type="button" aria-label="Borrar serie ${i + 1}">
                 ${icons.trash({ size: 15 })}
               </button>
@@ -221,6 +222,21 @@ export async function render(el) {
   startTicker(el, w);
 
   delegate(el, {
+    unidad: async (t) => {
+      const next = t.dataset.unidad === 'lb' ? 'lb' : 'kg';
+      const prev = weightUnit();
+      if (next === prev) return;
+      const input = el.querySelector('input[name="peso"]');
+      const raw = num(input?.value);
+      const kg = Number.isFinite(raw) ? toKg(raw, prev) : null;
+      const repsKeep = el.querySelector('input[name="reps"]')?.value ?? '';
+      await saveSettings({ unidad: next });
+      await render(el);
+      const pesoEl = el.querySelector('input[name="peso"]');
+      const repsEl = el.querySelector('input[name="reps"]');
+      if (pesoEl && kg != null) pesoEl.value = fmtWeight(kg, next);
+      if (repsEl && repsKeep !== '') repsEl.value = repsKeep;
+    },
     'del-set': async (t) => {
       const ok = await askConfirm({
         title: 'Borrar serie',
@@ -284,8 +300,10 @@ export async function render(el) {
       const summary = await finishWorkoutSummary(w.id);
       if (summary.totalSets > 0) {
         const fechaStr = new Date().toLocaleDateString('es');
-        await saveMemory(`Sesión completada el ${fechaStr}: ${summary.detalles}. Volumen total: ${summary.volumenTotal} ${state.settings.unidad} en ${summary.totalSets} series.`);
-        getActiveAgent()?.sendContext(`La sesión de entrenamiento ha finalizado. Resumen: ${summary.totalSets} series, volumen total ${summary.volumenTotal} ${state.settings.unidad}.`);
+        const u = weightUnit();
+        const volShow = fmtVolume(summary.volumenTotal, u);
+        await saveMemory(`Sesión completada el ${fechaStr}: ${summary.detalles}. Volumen total: ${volShow} ${u} en ${summary.totalSets} series.`);
+        getActiveAgent()?.sendContext(`La sesión de entrenamiento ha finalizado. Resumen: ${summary.totalSets} series, volumen total ${volShow} ${u}.`);
       }
       await finishWorkout(w.id);
       state.activeWorkoutId = null;
@@ -319,12 +337,13 @@ export async function render(el) {
       // Actualizar panel sin re-render completo
       const [p, prData] = await Promise.all([lastSessionSetsFor(selectedEx), prByExercise(selectedEx)]);
       const panel = el.querySelector('#prev-session-panel');
-      if (panel) panel.innerHTML = prevSessionMarkup(p, unidad);
+      const u = weightUnit();
+      if (panel) panel.innerHTML = prevSessionMarkup(p, u);
       const strip = el.querySelector('.workout-pr-strip');
       if (strip && prData && prData.maxPeso > 0) {
         strip.innerHTML = `
-          <span class="workout-pr-chip">${icons.trophy({ size: 12 })} PR ${fmtNum(prData.maxPeso)} ${esc(unidad)}</span>
-          <span class="workout-pr-chip workout-pr-chip--muted">${fmtNum(Math.round(prData.e1rmMax * 10) / 10)} 1RM est.</span>
+          <span class="workout-pr-chip">${icons.trophy({ size: 12 })} PR ${fmtWeight(prData.maxPeso, u)} ${esc(u)}</span>
+          <span class="workout-pr-chip workout-pr-chip--muted">${fmtWeight(prData.e1rmMax, u)} 1RM est.</span>
           <span class="workout-pr-chip workout-pr-chip--muted">${prData.maxReps} reps máx.</span>`;
       }
       await prefill(el, p);
@@ -334,9 +353,13 @@ export async function render(el) {
   forms(el, {
     set: async (f) => {
       const exerciseId = Number(f.elements.exerciseId.value);
-      const peso = num(f.elements.peso.value);
+      const pesoUi = num(f.elements.peso.value);
+      const peso = toKg(pesoUi);
       const reps = parseInt(f.elements.reps.value, 10);
-      if (!Number.isFinite(peso) || peso < 0 || !(reps > 0)) { toast('Revisa el peso y las repeticiones.'); return; }
+      if (!Number.isFinite(peso) || peso < 0 || peso > 600 || !(reps > 0)) {
+        toast('Revisa el peso y las repeticiones.');
+        return;
+      }
 
       const prevPR = pr?.maxPeso ?? 0;
       const restSecs = state.settings.descansoMode === 'auto'
@@ -365,7 +388,7 @@ export async function render(el) {
       getActiveAgent()?.unmuteMic();
 
       if (saved?.aviso) toast(saved.aviso);
-      else if (peso > prevPR && prevPR > 0) toast(`🏆 ¡Nuevo PR! ${fmtNum(peso)} ${state.settings.unidad}`);
+      else if (peso > prevPR && prevPR > 0) toast(`🏆 ¡Nuevo PR! ${fmtWeight(peso)} ${weightUnit()}`);
 
       await render(el);
     },
@@ -396,7 +419,7 @@ async function prefill(el, prev) {
   // Prellenar con la primera serie de la sesión anterior si los campos están vacíos
   if (prev?.sets?.length) {
     const first = prev.sets[0];
-    if (!f.elements.peso.value) f.elements.peso.value = fmtNum(first.peso);
+    if (!f.elements.peso.value) f.elements.peso.value = fmtWeight(first.peso);
     if (!f.elements.reps.value) f.elements.reps.value = first.reps;
   }
 }
