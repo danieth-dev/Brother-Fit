@@ -33,14 +33,14 @@ export async function render(el) {
 
     <h2 class="section-title">Tus datos y respaldos</h2>
     <p class="muted" style="margin-bottom:12px; font-size:var(--fs-xs)">
-      Todo se guarda únicamente en tu dispositivo. Haz respaldos periódicos para resguardar tu historial.
+      Todo vive solo en este teléfono. Asegura tus PRs compartiendo un respaldo a WhatsApp, Drive o Archivos.
     </p>
     <div class="stack">
       <button class="btn btn-primary btn-block" data-action="export" type="button">
-        ${icons.download({ size: 18 })} Exportar respaldo
+        ${icons.share({ size: 18 })} Asegurar mis PRs
       </button>
       <label class="btn btn-block" style="cursor:pointer">
-        ${icons.upload({ size: 18 })} Importar respaldo
+        ${icons.upload({ size: 18 })} Restaurar respaldo
         <input type="file" accept="application/json,.json" data-change="import" hidden>
       </label>
       <p class="hint">${backupText}<br>Almacenamiento persistente: ${persisted ? 'activo' : 'no confirmado'}.</p>
@@ -91,9 +91,9 @@ export async function render(el) {
       const file = t.files[0];
       if (!file) return;
       const ok = await askConfirm({
-        title: 'Importar respaldo',
+        title: 'Restaurar respaldo',
         body: 'Reemplaza todos los datos actuales. No se puede deshacer.',
-        confirmLabel: 'Importar',
+        confirmLabel: 'Restaurar',
       });
       if (!ok) { t.value = ''; return; }
       try {
@@ -105,8 +105,12 @@ export async function render(el) {
 
   delegate(el, {
     export: async () => {
-      try { await exportData(); toast('Respaldo exportado'); await render(el); }
-      catch (e) { toast('No se pudo exportar: ' + e.message); }
+      try {
+        const r = await exportData();
+        if (r.mode === 'cancelled') return;
+        toast(r.mode === 'share' ? 'Respaldo compartido' : 'Respaldo guardado');
+        await render(el);
+      } catch (e) { toast('No se pudo respaldar: ' + e.message); }
     },
     install: async () => {
       const p = state.installPrompt;

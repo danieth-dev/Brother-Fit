@@ -6,6 +6,7 @@ import { formatLong, todayISO } from '../utils/dates.js';
 import { icons } from '../utils/icons.js';
 import { creatinePlate } from '../utils/components.js';
 import { weightUnit, fmtVolume } from '../utils/units.js';
+import { maybePromptBackup } from '../utils/backup-nudge.js';
 
 function weekGroupLine(week) {
   const groups = (week.porGrupo || [])
@@ -102,6 +103,8 @@ export async function render(el) {
           <p>Todavía no registraste ningún entrenamiento.</p>
         </div>`}
   `;
+
+  queueMicrotask(() => { maybePromptBackup().catch(() => {}); });
 
   delegate(el, {
     creatine: async (btn) => {

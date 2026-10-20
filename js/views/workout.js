@@ -15,6 +15,7 @@ import { askConfirm } from '../utils/confirm-sheet.js';
 import { effortTag, effortExtra, rirButtons } from '../utils/set-line.js';
 import { weightUnit, toKg, fmtWeight, fmtVolume, unitSegHtml } from '../utils/units.js';
 import { syncSegThumb } from '../utils/seg-swipe.js';
+import { maybePromptBackup } from '../utils/backup-nudge.js';
 
 let selectedEx = null;
 let restEnd = 0;
@@ -326,6 +327,7 @@ export async function render(el) {
       state.activeExercise = null;
       restEnd = 0;
       clearActiveRest();
+      await maybePromptBackup();
       go(`/history/${w.id}`);
     },
     discard: async () => {

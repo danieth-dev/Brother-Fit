@@ -11,7 +11,7 @@ todo en el teléfono (IndexedDB).
 - **Historial:** todos los entrenamientos y su detalle.
 - **Progreso:** récord de peso, gráfico (1RM estimado, peso máximo o volumen) y peso corporal.
 - **Creatina:** calendario mensual, rachas, últimos 7 y 30 días, tomas pasadas y borrado.
-- **Ajustes:** descanso, recordatorios de agua, exportar/importar respaldo JSON, instalar, borrar todo. La unidad kg/lb se cambia en Entreno o Progreso.
+- **Ajustes:** descanso, recordatorios de agua, asegurar PRs (compartir o descargar JSON) / restaurar, instalar, borrar todo. La unidad kg/lb se cambia en Entreno o Progreso.
 
 ## Estructura
 
