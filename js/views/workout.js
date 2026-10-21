@@ -193,7 +193,7 @@ export async function render(el) {
       </div>
       <div id="rir-pick" class="stack">
         <span class="effort-label">¿Cuántas repeticiones más podrías haber hecho?</span>
-        <span class="effort-hint" id="effort-hint">${draftTipo === 'trabajo' ? '0 es no salía otra' : 'Los calentamientos no llevan esfuerzo'}</span>
+        <span class="effort-hint" id="effort-hint">${draftTipo === 'trabajo' ? 'Obligatorio · 0 es no salía otra' : 'Los calentamientos no llevan esfuerzo'}</span>
         ${rirButtons('', { action: 'draft-rir', pressed: draftRir, disabled: draftTipo !== 'trabajo' })}
       </div>
       <button class="btn btn-primary btn-block" type="submit">
@@ -282,7 +282,7 @@ export async function render(el) {
         b.setAttribute('aria-pressed', String(!warm && Number(b.dataset.rir) === draftRir));
       });
       const hint = el.querySelector('#effort-hint');
-      if (hint) hint.textContent = warm ? 'Los calentamientos no llevan esfuerzo' : '0 es no salía otra';
+      if (hint) hint.textContent = warm ? 'Los calentamientos no llevan esfuerzo' : 'Obligatorio · 0 es no salía otra';
     },
     'draft-rir': (t) => {
       draftRir = Number(t.dataset.rir);
@@ -297,7 +297,7 @@ export async function render(el) {
     },
     'effort-rir': async (t) => {
       const res = await setEffort(Number(t.dataset.id), Number(t.dataset.rir));
-      if (!res?.ok) { toast('No se pudo anotar el esfuerzo.'); return; }
+      if (!res?.ok) { toast('No se pudo anotar el esfuerzo.', { tone: 'danger' }); return; }
       openEffortId = null;
       await render(el);
     },
@@ -375,7 +375,12 @@ export async function render(el) {
       const peso = toKg(pesoUi);
       const reps = parseInt(f.elements.reps.value, 10);
       if (!Number.isFinite(peso) || peso < 0 || peso > 600 || !(reps > 0)) {
-        toast('Revisa el peso y las repeticiones.');
+        toast('Revisa el peso y las repeticiones.', { tone: 'warn' });
+        return;
+      }
+      if (draftTipo === 'trabajo' && (draftRir == null || !Number.isFinite(draftRir))) {
+        toast('Elige el esfuerzo (0–4).', { tone: 'warn' });
+        el.querySelector('#rir-pick')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
         return;
       }
 

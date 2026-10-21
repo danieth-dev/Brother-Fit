@@ -43,9 +43,11 @@ export function changes(root, handlers) {
 }
 
 let toastTimer;
-export function toast(msg, { actionLabel, onAction, ms = 4000 } = {}) {
+/** @param {'ok'|'warn'|'danger'} [opts.tone] warn se ve como el toast clásico; danger usa borde rojo. */
+export function toast(msg, { actionLabel, onAction, ms = 4000, tone = 'ok' } = {}) {
   const el = document.getElementById('toast');
   const hide = () => { el.hidden = true; };
+  el.className = tone === 'danger' ? 'toast toast--danger' : 'toast';
   el.replaceChildren();
   const span = document.createElement('span');
   span.textContent = msg;

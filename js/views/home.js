@@ -7,6 +7,7 @@ import { icons } from '../utils/icons.js';
 import { creatinePlate } from '../utils/components.js';
 import { weightUnit, fmtVolume } from '../utils/units.js';
 import { maybePromptBackup } from '../utils/backup-nudge.js';
+import { askConfirm } from '../utils/confirm-sheet.js';
 
 function weekGroupLine(week) {
   const groups = (week.porGrupo || [])
@@ -108,6 +109,14 @@ export async function render(el) {
 
   delegate(el, {
     creatine: async (btn) => {
+      if (cr.tomadaHoy) {
+        const ok = await askConfirm({
+          title: '¿Quitar la toma de hoy?',
+          body: 'Vas a romper la racha y cancelar el aviso de agua.',
+          confirmLabel: 'Sí, quitar hoy',
+        });
+        if (!ok) return;
+      }
       el.style.pointerEvents = 'none';
       btn.disabled = true;
 

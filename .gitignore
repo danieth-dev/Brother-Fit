@@ -5,3 +5,7 @@
 node_modules/
 *.log
 test_live_tools.mjs
+
+# Datos reales de prueba (no publicar)
+fixtures/
+

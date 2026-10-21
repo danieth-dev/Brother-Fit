@@ -41,6 +41,13 @@
   font-weight: 600;
   letter-spacing: 0;
 }
+.section-count {
+  font-family: var(--font);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
 
 /* ---------- Botones de Interacción Táctil ---------- */
 .btn {
@@ -850,6 +857,20 @@ body.picker-open {
 .plate.done small {
   color: var(--green);
 }
+/* Señal secundaria: saturación. El CTA sigue siendo Registrar / Tomada. */
+.plate-sat {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.plate.done .plate-sat {
+  color: var(--muted);
+}
 
 .plate-caption {
   margin-top: 16px;
@@ -1011,7 +1032,8 @@ body.picker-open {
   font-size: var(--fs-base);
   color: var(--text);
 }
-.sets .rpe-tag {
+/* Chip de esfuerzo: compartido (series, sesión anterior, historial). No vivir solo bajo .sets. */
+.rpe-tag {
   display: inline-block;
   padding: 2px 6px;
   background: var(--surface-2);
@@ -1021,6 +1043,7 @@ body.picker-open {
   color: var(--muted);
   font-weight: 700;
   margin-left: 6px;
+  vertical-align: 0.05em;
 }
 
 .set-extra {
@@ -1031,8 +1054,7 @@ body.picker-open {
   padding: 2px 0 8px;
 }
 .effort-label,
-.effort-note,
-.week-effort {
+.effort-note {
   color: var(--muted);
   font-size: var(--fs-sm);
   font-weight: 600;
@@ -1054,8 +1076,15 @@ body.picker-open {
 .stats + .stats {
   margin-top: 10px;
 }
+/* Pie de la telemetría semanal: mismo inset que el padding interno de .stats */
 .week-effort {
-  margin: -6px 0 8px;
+  margin: 8px 0 0;
+  padding: 0 16px;
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.4;
 }
 .effort-miss {
   width: 100%;
@@ -1354,26 +1383,37 @@ body.picker-open {
 .toast {
   position: fixed;
   z-index: 20;
-  left: 16px;
-  right: 16px;
+  left: max(16px, env(safe-area-inset-left, 0px));
+  right: max(16px, env(safe-area-inset-right, 0px));
   max-width: 528px;
   margin: 0 auto;
   bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px) + 14px);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 14px 18px;
+  gap: 14px;
+  padding: 15px 18px;
   border-radius: var(--r-md);
   background: var(--surface-elevated);
   border: 1px solid var(--primary);
   color: var(--text);
+  font-size: var(--fs-sm);
   font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+  box-shadow: var(--shadow-lg), var(--primary-glow);
+  animation: toast-in 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.toast--danger {
+  border-color: var(--red);
   box-shadow: var(--shadow-lg);
-  animation: enter 0.2s ease-out;
 }
 .toast[hidden] {
   display: none;
+}
+.toast > span {
+  flex: 1;
+  min-width: 0;
 }
 .toast button {
   border: 0;
@@ -1381,8 +1421,25 @@ body.picker-open {
   color: var(--primary);
   font-weight: 800;
   text-decoration: underline;
+  text-underline-offset: 3px;
   cursor: pointer;
   padding: 6px 8px;
+  flex-shrink: 0;
+}
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: enter 0.01ms linear;
+  }
 }
 
 /* ---------- Panel Científico de Creatina ---------- */
@@ -1483,6 +1540,89 @@ body.picker-open {
   line-height: 1.1;
   color: var(--text);
 }
+.sci-val--primary { color: var(--primary); }
+.sci-val--ok { color: var(--green); }
+.sci-val--bad { color: var(--red); }
+.sci-val--sm {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  line-height: 1.25;
+}
+.sci-key small {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--fs-2xs);
+  font-weight: 600;
+  color: var(--muted);
+}
+.sci-fold {
+  margin-top: 22px;
+}
+.sci-fold > summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 48px;
+  font-weight: 700;
+  color: var(--text);
+}
+.sci-fold > summary::-webkit-details-marker { display: none; }
+.sci-fold-body {
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+.sci-fold-body .sat-panel {
+  margin-top: 14px;
+}
+.creatine-streak {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+.creatine-retro {
+  margin-top: 22px;
+}
+.cal-block {
+  margin-top: 28px;
+}
+.intake-date {
+  text-transform: capitalize;
+}
+.intake-more {
+  margin-top: 12px;
+}
+.intake-more > summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 48px;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--muted);
+}
+.intake-more > summary::-webkit-details-marker { display: none; }
+.intake-more[open] > summary {
+  color: var(--text);
+  margin-bottom: 8px;
+}
+.intake-more-list {
+  margin-top: 0;
+}
+.btn-x:disabled {
+  opacity: 0.35;
+  pointer-events: none;
+}
 .sci-key {
   margin-top: 4px;
   font-size: var(--fs-2xs);
@@ -1494,9 +1634,11 @@ body.picker-open {
 }
 .sci-key small {
   display: block;
+  margin-top: 2px;
   text-transform: none;
-  font-weight: 400;
-  color: var(--text-dim);
+  font-size: var(--fs-2xs);
+  font-weight: 600;
+  color: var(--muted);
 }
 
 .sci-facts {
@@ -1608,6 +1750,9 @@ body.picker-open {
   color: var(--primary-ink);
   font-weight: 800;
   border-color: var(--primary);
+}
+.day.today.taken {
+  box-shadow: inset 0 0 0 2px var(--primary-ink);
 }
 
 /* ---------- Estado Vacío (Empty State) ---------- */
@@ -2112,7 +2257,7 @@ body.picker-open {
 }
 .prev-row-n {
   font-size: var(--fs-xs);
-  color: var(--text-dim);
+  color: var(--muted);
   font-variant-numeric: tabular-nums;
   width: 22px;
   flex-shrink: 0;

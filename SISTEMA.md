@@ -2,7 +2,7 @@
 
 Documento vivo del producto. Describe cómo está armado, dónde vive cada dato y qué no se puede romper. Cuando cambie el comportamiento, el esquema, una pantalla o la forma de publicar, este archivo se actualiza en el mismo cambio.
 
-Última revisión: 20 de octubre de 2026. Base de datos versión 2. Caché de la app `v81`.
+Última revisión: 20 de octubre de 2026. Base de datos versión 2. Caché de la app `v92`.
 
 ## Qué es
 
@@ -89,7 +89,7 @@ El día del peso corporal y el de una toma de creatina usan la misma hoja, con e
 | `#/workout` | Entreno | Una sesión abierta. Si no hay ninguna, el botón la crea. Peso, reps, tipo de serie y cuántas repeticiones más podría haber hecho; descanso; series ya hechas; alta de ejercicio. Los ejercicios del atleta se corrigen o se eliminan desde la lista. |
 | `#/history` y `#/history/:id` | Historial | Lista y detalle. Borrar un entreno borra también sus series. |
 | `#/progress` y `#/progress/:id` | Progreso | Un ejercicio: PR, comparativa, gráfica y tabla. Abajo, el peso corporal. |
-| `#/creatine` | Creatina | Tomas, racha, calendario y saturación. |
+| `#/creatine` | Creatina | Disco + racha, calendario, progreso/ciencia en pliegue, últimas 5 tomas (+ pliegue «Ver todas»). |
 | `#/agent` | Fit AI | Voz en directo. Sin clave, solo pide la clave. La charla se guarda en el teléfono; Nuevo chat la borra tras confirmar. |
 | `#/settings` | Ajustes | Descanso, recordatorios de agua, respaldo, instalar y borrar todo. |
 
@@ -139,6 +139,8 @@ El respaldo es un JSON `{ app: "brother-ft", schema: 1, exportedAt, data }`. Al 
 
 Aviso de respaldo (`js/utils/backup-nudge.js`): al abrir Inicio o al terminar un entreno, si hay al menos un entreno cerrado y nunca respaldó, o el último respaldo tiene ≥7 días, o hay ≥5 entrenos cerrados desde entonces. Copy: «Asegura tus PRs». No más de una vez al día (`backupNudgeDay`).
 
+Toasts (`#toast`): píldora elevada con borde amarillo completo (look clásico Brother Fit). `toast(msg, { tone: 'danger' })` cambia el borde a rojo; `ok`/`warn` comparten el mismo look.
+
 ## Entrenamiento
 
 Una sesión empieza con `startWorkout()`. Si ya hay una abierta, se reutiliza. Al terminar se escribe `finishedAt` y `duracion`, y se suelta `activeWorkoutId`.
@@ -158,7 +160,7 @@ El 1RM estimado es Epley: si hay una repetición, el peso; si hay más, `peso * 
 
 Una serie de trabajo pregunta «¿Cuántas repeticiones más podrías haber hecho?» con cinco botones: 0, 1, 2, 3 y «4 o más». Debajo, «0 es no salía otra». No se copia de la serie anterior. Se guarda `rpe = 10 - rir`, y un 4 o cualquier entero mayor queda en 4, así que el RPE es 6. Ese 6 es un piso, no un punto medio, y no cuenta como serie efectiva. En calentamiento los botones siguen en su sitio, atenuados: «Los calentamientos no llevan esfuerzo». Si había un número elegido, se borra y no vuelve solo al pasar otra vez a trabajo.
 
-La pantalla puede guardar una serie de trabajo sin ese número. Avisa «Serie guardada. Falta esfuerzo» y no abre pregunta: el pendiente significa solo que Fit preguntó en voz alta y espera respuesta. Sí suelta la pregunta que hubiera. Un segundo toque igual, dentro de 8 segundos, no crea otra serie y avisa que ya estaba anotada y que el esfuerzo se añade con «Falta esfuerzo». En el entreno y en el historial esa marca es un botón y abre los cinco. Esos botones sí pisan un esfuerzo ya guardado. Fit no lo pisa.
+En la pantalla, una serie de trabajo **no se guarda** sin elegir el esfuerzo (0–4). El aviso es «Elige el esfuerzo (0–4).» y no se crea la fila. El calentamiento sí se guarda sin RIR. Fit por voz puede seguir anotando sin `rir` y abrir la pregunta pendiente: el pendiente significa solo que Fit preguntó en voz alta y espera respuesta. Un segundo toque igual en pantalla, dentro de 8 segundos, no crea otra serie. En series ya hechas (p. ej. importadas o de Fit sin respuesta), «Falta esfuerzo» sigue abriendo los cinco botones. Esos botones sí pisan un esfuerzo ya guardado. Fit no lo pisa.
 
 Fit, si no lo oyó al anotar, abre una pregunta con marca y hace la misma pregunta que la pantalla. El plazo se escribe en ese momento: fin del descanso más un minuto si hay reloj, o cinco minutos si no hay. Saltar el descanso es el único caso que lo reescribe, a un minuto desde ahora, en la misma operación que apaga el reloj. La respuesta entra con `anotar_rpe` y la marca vigente. Una marca vieja no anota y no gasta intento. Un número inválido gasta un intento; al segundo, la serie se queda sin esfuerzo. «No sé» la suelta sin gastar ese intento. Si no hay pregunta, el plazo venció o la serie ya no está, Fit no vuelve a preguntar.
 
@@ -186,7 +188,7 @@ Corregir un ejercicio del atleta cambia el nombre y el grupo del mismo id: el hi
 
 ## Creatina
 
-Cada toma es una fila de `supplements` con `tipo: "creatina"`. El disco de Inicio y Creatina es un interruptor: un toque registra 5 g hoy; otro quita todas las tomas de hoy. Un día solo cuenta una toma; la ficha retroactiva no deja añadir otra si ese día ya tiene. La saturación que muestra la app es un modelo simple, no un análisis de laboratorio: 28 días con toma cuentan como saturación, un día saltado no vacía el depósito, y por encima de eso la fase pasa a mantenimiento. La racha no se rompe el mismo día si todavía no se tomó: cuenta desde ayer.
+Cada toma es una fila de `supplements` con `tipo: "creatina"`. Registrar hoy es un toque. Quitar la toma de hoy (Inicio o Creatina) pide confirmación fuerte («Sí, quitar hoy») porque rompe racha y cancela el agua; borrar una toma vieja en la lista es confirmación más suave. En `#/creatine` el disco muestra `% sat` como señal secundaria bajo «5 g hoy» (el CTA sigue siendo Registrar/Tomada); el above-the-fold es disco + racha + calendario; stats/saturación/ciencia van en «Progreso y ciencia». Un día solo cuenta una toma; la ficha retroactiva no deja añadir otra si ese día ya tiene. La saturación es un modelo simple, no un análisis de laboratorio: 28 días con toma cuentan como saturación, un día saltado no vacía el depósito, y por encima de eso la fase pasa a mantenimiento. La racha no se rompe el mismo día si todavía no se tomó: cuenta desde ayer.
 
 La ciencia que la pantalla explica, y que no hay que contradecir en los textos: sin carga, 3–5 g al día saturan en unas cuatro semanas; con carga, unos 20 g al día durante 5–7 días y luego mantenimiento. La forma de referencia es el monohidrato.
 
