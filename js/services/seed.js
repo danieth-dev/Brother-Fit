@@ -31,3 +31,20 @@ export async function ensureSeed() {
   }
   await db.put('meta', { key: 'seeded', value: true });
 }
+
+export async function loadFixtures() {
+  try {
+    const res = await fetch('./fixtures/latest-backup.json');
+    if (!res.ok) return false;
+    const payload = await res.json();
+    if (payload?.app !== 'brother-ft' || typeof payload.data !== 'object') {
+      return false;
+    }
+    await db.restoreAll(payload.data);
+    return true;
+  } catch (err) {
+    console.warn('Error cargando fixtures:', err);
+    return false;
+  }
+}
+

@@ -43,6 +43,9 @@ export async function render(el) {
         ${icons.upload({ size: 18 })} Restaurar respaldo
         <input type="file" accept="application/json,.json" data-change="import" hidden>
       </label>
+      <button class="btn btn-block" data-action="loadFixtures" type="button">
+        ${icons.download({ size: 18 })} Cargar datos de prueba
+      </button>
       <p class="hint">${backupText}<br>Almacenamiento persistente: ${persisted ? 'activo' : 'no confirmado'}.</p>
     </div>
 
@@ -119,6 +122,23 @@ export async function render(el) {
       await p.userChoice;
       state.installPrompt = null;
       await render(el);
+    },
+    loadFixtures: async () => {
+      const ok = await askConfirm({
+        title: 'Cargar datos de prueba',
+        body: 'Reemplaza todos los datos actuales con los datos de prueba (fixtures).',
+        confirmLabel: 'Cargar datos',
+      });
+      if (!ok) return;
+      try {
+        const { loadFixtures } = await import('../services/seed.js');
+        const okLoad = await loadFixtures();
+        if (!okLoad) throw new Error('No se encontró el archivo de datos de prueba.');
+        toast('Datos de prueba cargados');
+        location.reload();
+      } catch (e) {
+        toast(e.message || 'Error al cargar los datos');
+      }
     },
     reset: async () => {
       const first = await askConfirm({

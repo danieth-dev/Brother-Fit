@@ -32,7 +32,7 @@ export function rpeFromRir(n) {
 
 export function effortPhrase(rpe) {
   const n = Number(rpe);
-  if (n === 10) return 'ninguna';
+  if (n === 10) return 'ninguna más';
   if (n === 9) return 'sobraba 1';
   if (n === 8) return 'sobraban 2';
   if (n === 7) return 'sobraban 3';

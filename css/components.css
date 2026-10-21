@@ -983,6 +983,93 @@ body.picker-open {
 }
 
 /* ---------- Grupos de Series del Entrenamiento ---------- */
+.set-ref {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  margin: 0;
+  width: 100%;
+  min-height: 1.4em;
+  font-size: var(--fs-base);
+  line-height: 1.35;
+  color: var(--text);
+}
+.set-ref:not(.set-ref--empty) {
+  display: grid;
+  grid-template-columns: 4.75rem minmax(0, 1fr) auto;
+  column-gap: 8px;
+  row-gap: 4px;
+  align-items: baseline;
+}
+.set-ref-head {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  grid-column: 1 / -1;
+  margin: 0;
+}
+.set-ref-head strong {
+  font-weight: 700;
+  text-transform: capitalize;
+}
+.set-ref-row {
+  display: grid;
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
+  align-items: baseline;
+  margin: 0;
+}
+.set-ref .rpe-tag {
+  justify-self: stretch;
+  margin-left: 0;
+  text-align: center;
+}
+.set-ref-note {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--text);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+}
+.set-ref--empty {
+  color: var(--muted);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+.set-ref-k {
+  color: var(--muted);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+.set-ref .num {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.today-log {
+  margin-top: 22px;
+}
+.today-log > summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 48px;
+  font-weight: 700;
+  color: var(--text);
+}
+.today-log > summary::-webkit-details-marker { display: none; }
+.today-log-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.today-log .group:first-child {
+  margin-top: 8px;
+}
+
 .group {
   margin-top: 24px;
   background: var(--surface);
@@ -1862,72 +1949,76 @@ body.picker-open {
   margin-bottom: 16px;
 }
 
-/* Banner de Voz en Tiempo Real (Gemini 3.8 Live) */
+/* Dock interactivo inferior (Voz en vivo + Entrada de texto) */
+.agent-dock {
+  position: fixed;
+  bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px));
+  left: 0;
+  right: 0;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 10px max(16px, env(safe-area-inset-right, 0px)) 12px max(16px, env(safe-area-inset-left, 0px));
+  background: linear-gradient(180deg, rgba(10, 11, 14, 0.88) 0%, rgba(10, 11, 14, 0.98) 28%, #0A0B0E 100%);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 15;
+  box-shadow: 0 -8px 24px -4px rgba(0, 0, 0, 0.65);
+}
+
+/* Fila de voz: un estado y un botón */
 .agent-live-banner {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 14px 16px;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--r-lg);
-  margin-bottom: 20px;
-  transition: border-color 0.2s ease, background-color 0.2s ease;
+  gap: 12px;
+  min-height: 48px;
+  padding: 0 2px;
 }
-.agent-live-banner.active {
-  border-color: var(--primary);
-  background: var(--surface-2);
-}
-.agent-live-banner.speaking {
-  border-color: var(--primary);
-}
-
 .agent-live-pulse {
-  width: 48px;
-  height: 48px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   background: var(--surface-2);
-  border: 1px solid var(--line-strong);
+  border: 1px solid var(--line);
   color: var(--muted);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  transition: transform 0.1s ease, color 0.14s ease, border-color 0.14s ease, background 0.14s ease;
 }
 .agent-live-banner.active .agent-live-pulse {
-  background: var(--surface-elevated);
   border-color: var(--primary);
   color: var(--primary);
-  animation: pulse-ring 1.8s infinite ease-out;
+  background: var(--yellow-dim);
 }
 .agent-live-banner.speaking .agent-live-pulse {
   background: var(--primary);
-  color: var(--primary-ink);
   border-color: var(--primary);
-  animation: pulse-ring 0.9s infinite ease-out;
+  color: var(--primary-ink);
 }
-
-.agent-live-info {
+.agent-live-title {
   flex: 1;
   min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.agent-live-info strong {
+  margin: 0;
   font-size: var(--fs-base);
   font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
   color: var(--text);
-  letter-spacing: -0.01em;
-}
-.agent-live-info span {
-  font-size: var(--fs-xs);
-  color: var(--muted);
-  line-height: 1.35;
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+}
+.agent-live-btn {
+  flex-shrink: 0;
+  min-height: 48px;
+  min-width: 96px;
+  padding: 0 18px;
+  border-radius: var(--r-md);
+  font-weight: 700;
 }
 
 /* Mensajes / Chat Bubbles */
@@ -1935,9 +2026,10 @@ body.picker-open {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  min-height: 48vh;
-  margin-bottom: 84px;
-  padding-bottom: 12px;
+  min-height: 52vh;
+  margin-bottom: 0;
+  padding-top: 8px;
+  padding-bottom: 148px;
 }
 
 .agent-bubble {
@@ -1984,23 +2076,12 @@ body.picker-open {
   border-radius: var(--r-full);
 }
 
-/* Barra inferior de entrada */
+/* Fila de entrada de texto */
 .agent-bar {
-  position: fixed;
-  bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px));
-  left: 0;
-  right: 0;
-  max-width: 560px;
-  margin: 0 auto;
-  padding: 10px max(18px, env(safe-area-inset-right, 0px)) 10px max(18px, env(safe-area-inset-left, 0px));
-  background: rgba(7, 8, 10, 0.95);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-top: 1px solid var(--line);
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   gap: 8px;
-  z-index: 15;
+  width: 100%;
 }
 
 .agent-mic {

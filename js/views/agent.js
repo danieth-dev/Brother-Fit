@@ -92,40 +92,37 @@ async function renderLiveChat(el, apiKey) {
         <p id="agent-status">${isExisting ? 'En línea · Conectado' : 'Conectando con Gemini Live...'}</p>
       </div>
       <div class="agent-head-actions">
-        <button class="agent-head-btn" data-action="new-chat" type="button" aria-label="Nuevo chat" id="btn-new-chat">
+        <button class="agent-head-btn" data-action="new-chat" type="button" aria-label="Nuevo chat" id="btn-new-chat" title="Nuevo chat">
           ${(icons.chat || icons.plus)({ size: 20 })}
         </button>
-        <button class="agent-head-btn" data-action="memories" type="button" aria-label="Ver recuerdos" id="btn-memories">
+        <button class="agent-head-btn" data-action="memories" type="button" aria-label="Ver recuerdos" id="btn-memories" title="Recuerdos">
           ${icons.bolt({ size: 20 })}
         </button>
       </div>
     </header>
 
-    <div class="agent-live-banner" id="agent-live-banner">
-      <div class="agent-live-pulse" id="agent-live-pulse">
-        ${icons.mic({ size: 28 })}
-      </div>
-      <div class="agent-live-info">
-        <strong id="agent-live-title">Voz en tiempo real</strong>
-        <span id="agent-live-desc">Toca "Iniciar" para abrir la voz. En el descanso Fit te hablará; en la serie guarda silencio.</span>
-      </div>
-      <div style="display:flex;gap:6px;align-items:center">
-        <button class="btn btn-primary btn-sm" id="btn-toggle-live" type="button">
+    <div class="agent-msgs" id="agent-msgs" aria-live="polite" aria-label="Conversación"></div>
+
+    <div class="agent-dock" id="agent-dock">
+      <div class="agent-live-banner" id="agent-live-banner">
+        <div class="agent-live-pulse" id="agent-live-pulse" aria-hidden="true">
+          ${icons.mic({ size: 18 })}
+        </div>
+        <p class="agent-live-title" id="agent-live-title">Voz</p>
+        <button class="btn btn-primary btn-sm agent-live-btn" id="btn-toggle-live" type="button">
           Iniciar
         </button>
       </div>
-    </div>
 
-    <div class="agent-msgs" id="agent-msgs" aria-live="polite" aria-label="Conversacion"></div>
-
-    <div class="agent-bar" id="agent-bar">
-      <div class="agent-input-wrap">
-        <textarea id="agent-input" class="agent-input" placeholder="O escribe un mensaje..." rows="1"
-          disabled aria-label="Mensaje de texto"></textarea>
+      <div class="agent-bar" id="agent-bar">
+        <div class="agent-input-wrap">
+          <textarea id="agent-input" class="agent-input" placeholder="Escribe a Fit..." rows="1"
+            disabled aria-label="Mensaje de texto"></textarea>
+        </div>
+        <button class="agent-send" id="agent-send" type="button" aria-label="Enviar mensaje" disabled>
+          ${icons.chevronRight({ size: 22 })}
+        </button>
       </div>
-      <button class="agent-send" id="agent-send" type="button" aria-label="Enviar mensaje" disabled>
-        ${icons.chevronRight({ size: 22 })}
-      </button>
     </div>
   `;
 
@@ -136,7 +133,6 @@ async function renderLiveChat(el, apiKey) {
   const liveBanner = el.querySelector('#agent-live-banner');
   const toggleLiveBtn = el.querySelector('#btn-toggle-live');
   const liveTitle = el.querySelector('#agent-live-title');
-  const liveDesc = el.querySelector('#agent-live-desc');
   const memoriesBtn = el.querySelector('#btn-memories');
   const newChatBtn = el.querySelector('#btn-new-chat');
 
@@ -157,6 +153,7 @@ async function renderLiveChat(el, apiKey) {
 
   function paintHistory(list) {
     msgsEl.replaceChildren();
+    if (!list || list.length === 0) return;
     for (const m of list) {
       appendMsg(m.role, m.text);
     }
@@ -222,40 +219,33 @@ async function renderLiveChat(el, apiKey) {
     .on('live_mode_started', () => {
       liveBanner.classList.add('active');
       toggleLiveBtn.textContent = 'Detener';
-      toggleLiveBtn.className = 'btn btn-danger btn-sm';
-      liveTitle.textContent = 'Fit te esta escuchando...';
-      liveDesc.textContent = 'Hablale claro. Veras lo que dices en pantalla.';
+      toggleLiveBtn.className = 'btn btn-danger btn-sm agent-live-btn';
+      liveTitle.textContent = 'Escuchando';
     })
     .on('live_mode_stopped', () => {
-      liveBanner.classList.remove('active');
-      liveBanner.classList.remove('speaking');
+      liveBanner.classList.remove('active', 'speaking');
       toggleLiveBtn.textContent = 'Iniciar';
-      toggleLiveBtn.className = 'btn btn-primary btn-sm';
-      liveTitle.textContent = 'Hablar en tiempo real';
-      liveDesc.textContent = 'Toca "Iniciar" para hablar directamente por voz con Fit';
+      toggleLiveBtn.className = 'btn btn-primary btn-sm agent-live-btn';
+      liveTitle.textContent = 'Voz';
     })
     .on('listening', () => {
-      if (agent.isLiveMode) {
-        liveTitle.textContent = 'Te estoy escuchando...';
-        liveDesc.textContent = 'Hablale a Fit normalmente.';
+      if (agent.isLiveMode && !liveBanner.classList.contains('speaking')) {
+        liveTitle.textContent = 'Escuchando';
       }
     })
     .on('interim_speech', (text) => {
-      if (agent.isLiveMode) {
-        liveTitle.textContent = 'Escuchando: "' + text.slice(-40) + '"';
+      if (agent.isLiveMode && !liveBanner.classList.contains('speaking')) {
+        const said = String(text || '').trim();
+        liveTitle.textContent = said || 'Escuchando';
       }
     })
     .on('speaking_start', () => {
       liveBanner.classList.add('speaking');
-      liveTitle.textContent = 'Fit te esta respondiendo...';
-      liveDesc.textContent = 'Escuchando la voz en directo...';
+      liveTitle.textContent = 'Fit habla';
     })
     .on('speaking_end', () => {
       liveBanner.classList.remove('speaking');
-      if (agent.isLiveMode) {
-        liveTitle.textContent = 'Fit te esta escuchando...';
-        liveDesc.textContent = 'Puedes responderle cuando quieras.';
-      }
+      if (agent.isLiveMode) liveTitle.textContent = 'Escuchando';
     })
     .on('transcript_chunk', (chunk) => {
       currentBotText += chunk;
@@ -360,9 +350,8 @@ async function renderLiveChat(el, apiKey) {
     if (agent.isLiveMode) {
       liveBanner.classList.add('active');
       toggleLiveBtn.textContent = 'Detener';
-      toggleLiveBtn.className = 'btn btn-danger btn-sm';
-      liveTitle.textContent = 'Fit te está escuchando...';
-      liveDesc.textContent = 'Habla claro. El micro está abierto.';
+      toggleLiveBtn.className = 'btn btn-danger btn-sm agent-live-btn';
+      liveTitle.textContent = 'Escuchando';
     }
   } else {
     agent.connect().catch((err) => {
@@ -385,7 +374,7 @@ async function showMemoriesPanel(parentEl, agent) {
         <button class="agent-sheet-close" id="agent-sheet-close" type="button" aria-label="Cerrar">${icons.close({ size: 20 })}</button>
       </header>
       <p class="agent-sheet-desc">
-        Fit recuerda estos datos sobre vos entre sesiones con <b>gemini-3.8-live</b>. Podes borrarlos cuando quieras.
+        Fit recuerda estos datos sobre ti entre sesiones con <b>gemini-3.8-live</b>. Puedes borrarlos cuando quieras.
       </p>
       <div class="agent-mem-list" id="agent-mem-list">
         ${
@@ -399,7 +388,7 @@ async function showMemoriesPanel(parentEl, agent) {
               </div>`
                 )
                 .join('')
-            : '<p class="agent-mem-empty">Todavia no hay recuerdos guardados.</p>'
+            : '<p class="agent-mem-empty">Todavía no hay recuerdos guardados.</p>'
         }
       </div>
       <button class="btn btn-block" data-action="change-key" type="button" style="margin-top:24px;border-color:var(--red);color:var(--red)">

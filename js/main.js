@@ -1,4 +1,4 @@
-import { openDB } from './db.js';
+import { openDB, db } from './db.js';
 import { ensureSeed } from './services/seed.js';
 import { loadPending } from './services/effort.js';
 import { loadSettings, state } from './store.js';
@@ -73,6 +73,24 @@ async function boot() {
     await openDB();
     await loadPending();
     await ensureSeed();
+
+    const params = new URLSearchParams(window.location.search);
+    const isLocal = ['localhost', '127.0.0.1', ''].includes(window.location.hostname);
+    const wantsFixtures = params.has('fixtures') || params.has('test') || params.has('seed');
+
+    if (wantsFixtures || (isLocal && (await db.getAll('workouts')).length === 0 && (await db.getAll('supplements')).length === 0)) {
+      try {
+        const { loadFixtures } = await import('./services/seed.js');
+        const loaded = await loadFixtures();
+        if (loaded && wantsFixtures) {
+          const cleanUrl = window.location.pathname + window.location.hash;
+          window.history.replaceState({}, document.title, cleanUrl);
+        }
+      } catch (err) {
+        console.warn('No se pudieron cargar los datos de prueba:', err);
+      }
+    }
+
     await loadSettings();
     watchPickers(document.getElementById('app'));
     watchCalendars(document.getElementById('app'));

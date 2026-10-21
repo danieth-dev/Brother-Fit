@@ -2,7 +2,7 @@
 
 Documento vivo del producto. Describe cómo está armado, dónde vive cada dato y qué no se puede romper. Cuando cambie el comportamiento, el esquema, una pantalla o la forma de publicar, este archivo se actualiza en el mismo cambio.
 
-Última revisión: 20 de octubre de 2026. Base de datos versión 2. Caché de la app `v92`.
+Última revisión: 21 de octubre de 2026. Base de datos versión 2. Caché de la app `v93`.
 
 ## Qué es
 
@@ -86,7 +86,7 @@ El día del peso corporal y el de una toma de creatina usan la misma hoja, con e
 | Ruta | Pantalla | Qué hace |
 | --- | --- | --- |
 | `#/` | Inicio | Resumen de la semana, creatina de hoy y últimos entrenos. Cada entreno abre `#/history/:id`. |
-| `#/workout` | Entreno | Una sesión abierta. Si no hay ninguna, el botón la crea. Peso, reps, tipo de serie y cuántas repeticiones más podría haber hecho; descanso; series ya hechas; alta de ejercicio. Los ejercicios del atleta se corrigen o se eliminan desde la lista. |
+| `#/workout` | Entreno | Una sesión abierta. Si no hay ninguna, el botón la crea. Peso, reps, tipo de serie y esfuerzo; encima del peso, la sesión anterior completa, para repetirla o pasarla. Si ya la pasaste, lo dice y parte del último peso. Las series de hoy van en un pliegue. Descanso, alta de ejercicio y corrección desde esa lista. |
 | `#/history` y `#/history/:id` | Historial | Lista y detalle. Borrar un entreno borra también sus series. |
 | `#/progress` y `#/progress/:id` | Progreso | Un ejercicio: PR, comparativa, gráfica y tabla. Abajo, el peso corporal. |
 | `#/creatine` | Creatina | Disco + racha, calendario, progreso/ciencia en pliegue, últimas 5 tomas (+ pliegue «Ver todas»). |

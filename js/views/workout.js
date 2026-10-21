@@ -23,6 +23,7 @@ let lastReps = 0;
 let draftTipo = 'trabajo';
 let draftRir = null;
 let openEffortId = null;
+let todayLogOpen = false;
 
 document.addEventListener('bf-set', (e) => {
   if (!e.detail?.restEnd) return;
@@ -63,25 +64,56 @@ function restMarkup() {
   </div>`;
 }
 
-function prevSessionMarkup(prev, unidad = weightUnit()) {
-  if (!prev) {
-    return `<div class="prev-session prev-session--empty">
-      <span>${icons.dumbbell({ size: 14, stroke: 'var(--text-dim)' })} Primera vez · ¡sé el primero en marcar un PR!</span>
-    </div>`;
+function kgReps(set, unidad) {
+  return `<span data-kg="${set.peso}">${fmtWeight(set.peso, unidad)}</span> <span data-unit>${esc(unidad)}</span> × ${set.reps}`;
+}
+
+/* Sesión anterior completa: lo que hiciste, para repetirlo o pasarlo. */
+function setRefMarkup(prev, curSets, unidad) {
+  const sets = prev?.sets || [];
+  if (!sets.length) {
+    return `<p class="set-ref set-ref--empty" id="set-ref">Primera vez con este ejercicio</p>`;
   }
+  const past = curSets.length >= sets.length;
+  const rows = sets.map((s, i) => `
+    <p class="set-ref-row">
+      <span class="set-ref-k">Serie ${i + 1}</span>
+      <strong class="num">${kgReps(s, unidad)}</strong>
+      ${effortTag(s)}
+    </p>`).join('');
   const fecha = formatShort(prev.workout.fecha);
-  const rows = prev.sets.map((s, i) => `
-    <div class="prev-row">
-      <span class="prev-row-n">S${i + 1}</span>
-      <span class="prev-row-v"><span data-kg="${s.peso}">${fmtWeight(s.peso, unidad)}</span> <small data-unit>${esc(unidad)}</small> × <strong>${s.reps}</strong>${effortTag(s)}</span>
-    </div>`).join('');
-  return `<div class="prev-session">
-    <div class="prev-session-head">
-      ${icons.clock({ size: 13, stroke: 'var(--primary)' })}
-      <span>Sesión anterior <strong>${esc(fecha)}</strong></span>
-    </div>
-    <div class="prev-rows">${rows}</div>
+  const note = past ? `<p class="set-ref-note">Ya pasaste la sesión anterior</p>` : '';
+  return `<div class="set-ref" id="set-ref">
+    <p class="set-ref-head"><span class="set-ref-k">Sesión anterior</span> <strong>${esc(fecha)}</strong></p>
+    ${rows}
+    ${note}
   </div>`;
+}
+
+function todayLogMarkup(groups, unidad) {
+  const n = groups.reduce((sum, g) => sum + g.sets.length, 0);
+  if (!n) return '';
+  return `<details class="today-log"${todayLogOpen ? ' open' : ''}>
+    <summary>
+      <span>Series de hoy</span>
+      <span class="today-log-meta"><span class="section-count">${n}</span>${icons.chevronDown({ size: 18, cls: 'muted' })}</span>
+    </summary>
+    ${groups.map((g) => `
+      <div class="group">
+        <h3><i class="dot" data-g="${esc(g.exercise.grupo)}"></i>${esc(g.exercise.nombre)}${muscleName(g.exercise.grupo) ? `<span class="muscle">${esc(muscleName(g.exercise.grupo))}</span>` : ''}</h3>
+        <ul class="sets">
+          ${g.sets.map((s, i) => `
+            <li>
+              <span class="n">Serie ${i + 1}</span>
+              <span class="v"><span data-kg="${s.peso}">${fmtWeight(s.peso, unidad)}</span> <span data-unit>${esc(unidad)}</span> × ${s.reps}${effortTag(s)}</span>
+              <button class="btn-x" data-action="del-set" data-id="${s.id}" type="button" aria-label="Borrar serie ${i + 1} de ${esc(g.exercise.nombre)}">
+                ${icons.trash({ size: 15 })}
+              </button>
+              ${effortExtra(s, openEffortId)}
+            </li>`).join('')}
+        </ul>
+      </div>`).join('')}
+  </details>`;
 }
 
 /* Cambia kg/lb sin repintar Entreno (si no, parpadea Trabajo/Calentamiento). */
@@ -107,6 +139,7 @@ export async function render(el) {
 
   if (!w) {
     restEnd = 0;
+    todayLogOpen = false;
     clearActiveRest();
     el.innerHTML = `
       <header class="page-head"><h1>Entreno</h1></header>
@@ -170,14 +203,7 @@ export async function render(el) {
         </select>
       </label>
 
-      <div id="prev-session-panel">${prevSessionMarkup(prev, unidad)}</div>
-
-      ${pr && pr.maxPeso > 0 ? `
-        <div class="workout-pr-strip">
-          <span class="workout-pr-chip">${icons.trophy({ size: 12 })} PR <span data-kg="${pr.maxPeso}">${fmtWeight(pr.maxPeso, unidad)}</span> <span data-unit>${esc(unidad)}</span></span>
-          <span class="workout-pr-chip workout-pr-chip--muted"><span data-kg="${pr.e1rmMax}">${fmtWeight(pr.e1rmMax, unidad)}</span> 1RM est.</span>
-          <span class="workout-pr-chip workout-pr-chip--muted">${pr.maxReps} reps máx.</span>
-        </div>` : ''}
+      ${setRefMarkup(prev, curExSets, unidad)}
 
       <div class="grid-2">
         <div class="field">
@@ -193,7 +219,7 @@ export async function render(el) {
       </div>
       <div id="rir-pick" class="stack">
         <span class="effort-label">¿Cuántas repeticiones más podrías haber hecho?</span>
-        <span class="effort-hint" id="effort-hint">${draftTipo === 'trabajo' ? 'Obligatorio · 0 es no salía otra' : 'Los calentamientos no llevan esfuerzo'}</span>
+        <span class="effort-hint" id="effort-hint">${draftTipo === 'trabajo' ? '0 es no salía otra' : 'Los calentamientos no llevan esfuerzo'}</span>
         ${rirButtons('', { action: 'draft-rir', pressed: draftRir, disabled: draftTipo !== 'trabajo' })}
       </div>
       <button class="btn btn-primary btn-block" type="submit">
@@ -201,21 +227,7 @@ export async function render(el) {
       </button>
     </form>
 
-    ${detail.groups.map((g) => `
-      <div class="group">
-        <h3><i class="dot" data-g="${esc(g.exercise.grupo)}"></i>${esc(g.exercise.nombre)}${muscleName(g.exercise.grupo) ? `<span class="muscle">${esc(muscleName(g.exercise.grupo))}</span>` : ''}</h3>
-        <ul class="sets">
-          ${g.sets.map((s, i) => `
-            <li>
-              <span class="n">Serie ${i + 1}</span>
-              <span class="v"><span data-kg="${s.peso}">${fmtWeight(s.peso, unidad)}</span> <span data-unit>${esc(unidad)}</span> × ${s.reps}${effortTag(s)}</span>
-              <button class="btn-x" data-action="del-set" data-id="${s.id}" type="button" aria-label="Borrar serie ${i + 1}">
-                ${icons.trash({ size: 15 })}
-              </button>
-              ${effortExtra(s, openEffortId)}
-            </li>`).join('')}
-        </ul>
-      </div>`).join('')}
+    ${todayLogMarkup(detail.groups, unidad)}
 
     <details class="form-card" style="margin-top:26px">
       <summary>
@@ -240,7 +252,12 @@ export async function render(el) {
     </div>
   `;
 
-  await prefill(el, prev);
+  el.querySelector('.today-log')?.addEventListener('toggle', (e) => {
+    todayLogOpen = e.currentTarget.open;
+  });
+
+  let sessionPr = pr;
+  await prefill(el, prev, curExSets);
   startTicker(el, w);
 
   delegate(el, {
@@ -282,7 +299,7 @@ export async function render(el) {
         b.setAttribute('aria-pressed', String(!warm && Number(b.dataset.rir) === draftRir));
       });
       const hint = el.querySelector('#effort-hint');
-      if (hint) hint.textContent = warm ? 'Los calentamientos no llevan esfuerzo' : 'Obligatorio · 0 es no salía otra';
+      if (hint) hint.textContent = warm ? 'Los calentamientos no llevan esfuerzo' : '0 es no salía otra';
     },
     'draft-rir': (t) => {
       draftRir = Number(t.dataset.rir);
@@ -354,17 +371,11 @@ export async function render(el) {
       getActiveAgent()?.sendContext(`Ejercicio seleccionado: ${curEx?.nombre} (${curEx?.grupo}).`);
       // Actualizar panel sin re-render completo
       const [p, prData] = await Promise.all([lastSessionSetsFor(selectedEx), prByExercise(selectedEx)]);
-      const panel = el.querySelector('#prev-session-panel');
-      const u = weightUnit();
-      if (panel) panel.innerHTML = prevSessionMarkup(p, u);
-      const strip = el.querySelector('.workout-pr-strip');
-      if (strip && prData && prData.maxPeso > 0) {
-        strip.innerHTML = `
-          <span class="workout-pr-chip">${icons.trophy({ size: 12 })} PR <span data-kg="${prData.maxPeso}">${fmtWeight(prData.maxPeso, u)}</span> <span data-unit>${esc(u)}</span></span>
-          <span class="workout-pr-chip workout-pr-chip--muted"><span data-kg="${prData.e1rmMax}">${fmtWeight(prData.e1rmMax, u)}</span> 1RM est.</span>
-          <span class="workout-pr-chip workout-pr-chip--muted">${prData.maxReps} reps máx.</span>`;
-      }
-      await prefill(el, p);
+      sessionPr = prData;
+      const sets = detail?.groups?.find((g) => g.exercise.id === selectedEx)?.sets || [];
+      const ref = el.querySelector('#set-ref');
+      if (ref) ref.outerHTML = setRefMarkup(p, sets, weightUnit());
+      await prefill(el, p, sets);
     }
   });
 
@@ -384,7 +395,7 @@ export async function render(el) {
         return;
       }
 
-      const prevPR = pr?.maxPeso ?? 0;
+      const prevPR = sessionPr?.maxPeso ?? 0;
       const restSecs = state.settings.descansoMode === 'auto'
         ? smartRest(reps)
         : state.settings.descanso;
@@ -436,15 +447,14 @@ export async function render(el) {
   });
 }
 
-async function prefill(el, prev) {
+async function prefill(el, prev, curSets = []) {
   const f = el.querySelector('form[data-form="set"]');
   if (!f || selectedEx == null) return;
-  // Prellenar con la primera serie de la sesión anterior si los campos están vacíos
-  if (prev?.sets?.length) {
-    const first = prev.sets[0];
-    if (!f.elements.peso.value) f.elements.peso.value = fmtWeight(first.peso);
-    if (!f.elements.reps.value) f.elements.reps.value = first.reps;
-  }
+  const sets = prev?.sets || [];
+  const target = sets[curSets.length] || sets[sets.length - 1];
+  if (!target) return;
+  if (!f.elements.peso.value) f.elements.peso.value = fmtWeight(target.peso);
+  if (!f.elements.reps.value) f.elements.reps.value = target.reps;
 }
 
 function startTicker(el, w) {
