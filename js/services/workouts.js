@@ -1,7 +1,7 @@
 /* Lógica de entrenamientos, ejercicios y progreso. Las vistas solo llaman a estas funciones. */
 import { db } from '../db.js';
 import { now } from '../utils/clock.js';
-import { todayISO, startOfWeekISO } from '../utils/dates.js';
+import { todayISO, startOfWeekISO, addDays } from '../utils/dates.js';
 import { isCatalogExercise } from './seed.js';
 import { PENDING_KEY, effortPhrase } from './effort.js';
 
@@ -320,8 +320,10 @@ export async function listWorkoutSummaries(limit = Infinity) {
 
 export async function weekStats() {
   const start = startOfWeekISO();
+  const end = addDays(start, 7);
   const [ws, sets, exs] = await Promise.all([db.getAll('workouts'), db.getAll('sets'), db.getAll('exercises')]);
-  const ids = new Set(ws.filter((w) => w.fecha >= start).map((w) => w.id));
+  const inWeek = ws.filter((w) => w.fecha >= start && w.fecha < end);
+  const ids = new Set(inWeek.map((w) => w.id));
   const weekSets = sets.filter((s) => ids.has(s.workoutId));
   const byEx = new Map(exs.map((e) => [e.id, e]));
   const porGrupo = new Map();
@@ -340,6 +342,7 @@ export async function weekStats() {
   }
   return {
     entrenos: ids.size,
+    dias: [...new Set(inWeek.map((w) => w.fecha))],
     volumen: volume(weekSets),
     efectivas,
     sinEsfuerzo,

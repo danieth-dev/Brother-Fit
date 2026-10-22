@@ -8,10 +8,42 @@
 .page-head {
   margin-bottom: 24px;
 }
+.page-head-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
 .page-head h1 {
   display: flex;
   align-items: center;
   gap: 10px;
+  min-width: 0;
+}
+.head-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  margin-right: -10px;
+  color: var(--text);
+  -webkit-touch-callout: none;
+}
+.home-creatine-more {
+  margin: 2px 0 0;
+  text-align: center;
+}
+.home-creatine-more a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  color: var(--text);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  -webkit-touch-callout: none;
 }
 .page-head p {
   margin-top: 6px;
@@ -712,6 +744,59 @@ body.picker-open {
   transform: translateX(2px);
 }
 
+/* Semana en Inicio: mismo alfabeto que el calendario de creatina. */
+.week-strip {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+  margin-top: 22px;
+}
+.week-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.week-day-name {
+  color: var(--muted);
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+  line-height: 1;
+}
+.week-day-n {
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-full);
+  background: var(--surface-2);
+  border: 1px solid transparent;
+  color: var(--text);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.week-day.is-future .week-day-n {
+  background: transparent;
+  color: var(--muted);
+}
+.week-day.is-today .week-day-name {
+  color: var(--primary);
+}
+.week-day.is-today .week-day-n {
+  border-color: var(--primary);
+}
+.week-day.is-trained .week-day-n {
+  background: var(--primary);
+  color: var(--primary-ink);
+  border-color: var(--primary);
+  font-weight: 800;
+}
+.week-day.is-today.is-trained .week-day-n {
+  box-shadow: inset 0 0 0 2px var(--primary-ink);
+}
+
 /* ---------- Telemetría de Estadísticas (.stats) ---------- */
 .stats {
   display: grid;
@@ -1159,6 +1244,9 @@ body.picker-open {
 }
 .rir-pick button:disabled {
   opacity: 0.38;
+}
+.stats--2 {
+  grid-template-columns: 1fr 1fr;
 }
 .stats + .stats {
   margin-top: 10px;

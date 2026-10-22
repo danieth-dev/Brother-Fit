@@ -2,12 +2,36 @@ import { creatineSummary, toggleTodayIntake, DOSE_G } from '../services/creatine
 import { getActiveWorkout, startWorkout, listWorkoutSummaries, weekStats, muscleName } from '../services/workouts.js';
 import { scheduleAfterCreatine, cancelWaterReminders } from '../services/water-reminders.js';
 import { delegate, toast, esc, fmtNum, go } from '../utils/dom.js';
-import { formatLong, todayISO } from '../utils/dates.js';
+import { formatLong, todayISO, startOfWeekISO, addDays } from '../utils/dates.js';
 import { icons } from '../utils/icons.js';
 import { creatinePlate } from '../utils/components.js';
 import { weightUnit, fmtVolume } from '../utils/units.js';
 import { maybePromptBackup } from '../utils/backup-nudge.js';
 import { askConfirm } from '../utils/confirm-sheet.js';
+
+const WEEK_LETTERS = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
+const WEEK_NAMES = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'];
+
+function weekStrip(dias) {
+  const start = startOfWeekISO();
+  const today = todayISO();
+  const trained = new Set(dias || []);
+  const cells = [];
+  for (let i = 0; i < 7; i++) {
+    const iso = addDays(start, i);
+    const n = Number(iso.slice(8));
+    const did = trained.has(iso);
+    const isToday = iso === today;
+    const future = iso > today;
+    const estado = did ? 'entrenaste' : future ? 'aún no llega' : 'sin entreno';
+    const cls = ['week-day', did ? 'is-trained' : '', isToday ? 'is-today' : '', future && !did ? 'is-future' : ''].filter(Boolean).join(' ');
+    cells.push(`<div class="${cls}" role="listitem" aria-label="${esc(WEEK_NAMES[i])} ${n}, ${estado}">
+      <span class="week-day-name" aria-hidden="true">${WEEK_LETTERS[i]}</span>
+      <span class="week-day-n" aria-hidden="true">${n}</span>
+    </div>`);
+  }
+  return `<div class="week-strip" role="list" aria-label="Esta semana">${cells.join('')}</div>`;
+}
 
 function weekGroupLine(week) {
   const groups = (week.porGrupo || [])
@@ -42,7 +66,10 @@ export async function render(el) {
 
   el.innerHTML = `
     <header class="page-head">
-      <h1>Brother Fit</h1>
+      <div class="page-head-row">
+        <h1>Brother Fit</h1>
+        <a class="head-link" href="#/settings" aria-label="Ajustes">${icons.sliders({ size: 22 })}</a>
+      </div>
       <p>${esc(formatLong(todayISO()))}</p>
     </header>
 
@@ -54,6 +81,7 @@ export async function render(el) {
         <span class="home-creatine-sat">${icons.bolt({ size: 14, stroke: 'var(--primary)' })} ${esc(satMsg)}</span>
       </p>
     `)}
+    <p class="home-creatine-more"><a href="#/creatine">Ver creatina</a></p>
 
     <!-- ═══ DIVISOR TÉCNICO (SEPARA SUPLEMENTO DE SESIÓN) ═══ -->
     <div class="home-divider" role="separator">
@@ -68,8 +96,9 @@ export async function render(el) {
     </div>
 
     <!-- ═══ TELEMETRÍA SEMANAL ═══ -->
-    <div class="stats">
-      <div class="stat"><b>${week.entrenos}</b><span>entrenos<br>esta semana</span></div>
+    ${weekStrip(week.dias)}
+
+    <div class="stats stats--2">
       <div class="stat"><b>${fmtVolume(week.volumen, unidad)}</b><span>${esc(unidad)} de<br>volumen</span></div>
       <div class="stat"><b>${cr.dias7}/7</b><span>días con<br>creatina</span></div>
     </div>

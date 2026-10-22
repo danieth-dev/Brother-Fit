@@ -2,7 +2,7 @@
 import { icons } from './icons.js';
 import { formatDay, formatMonth, parseISO, todayISO, toISO } from './dates.js';
 
-const WEEK = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
+const WEEK = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
 
 let sheet;
 let titleEl;

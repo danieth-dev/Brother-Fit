@@ -2,7 +2,7 @@
 
 Documento vivo del producto. Describe cómo está armado, dónde vive cada dato y qué no se puede romper. Cuando cambie el comportamiento, el esquema, una pantalla o la forma de publicar, este archivo se actualiza en el mismo cambio.
 
-Última revisión: 21 de octubre de 2026. Base de datos versión 2. Caché de la app `v93`.
+Última revisión: 21 de octubre de 2026. Base de datos versión 2. Caché de la app `v95`.
 
 ## Qué es
 
@@ -77,7 +77,7 @@ flowchart TD
 
 ## Pantallas
 
-La barra es una isla fija abajo. El historial no tiene icono propio: cuelga de Inicio. Una pulsación larga en cualquier vínculo o botón **nunca** debe abrir el menú del navegador (copiar vínculo, compartir, abrir en Brave): `main.js` cancela `contextmenu` y `dragstart` en captura (salvo campos de texto), marca `draggable=false` en los `<a>` también tras cada repintado, y `base.css` aplica `-webkit-touch-callout: none` a botones, filas, disco, chips y `[data-action]`. Regla de agente: `.cursor/rules/no-browser-link-menu.mdc`.
+La barra es una isla fija abajo con Inicio, Entreno y Progreso. Historial, creatina y ajustes cuelgan de Inicio. Fit cuelga de Entreno. Una pulsación larga en cualquier vínculo o botón **nunca** debe abrir el menú del navegador (copiar vínculo, compartir, abrir en Brave): `main.js` cancela `contextmenu` y `dragstart` en captura (salvo campos de texto), marca `draggable=false` en los `<a>` también tras cada repintado, y `base.css` aplica `-webkit-touch-callout: none` a botones, filas, disco, chips y `[data-action]`. Regla de agente: `.cursor/rules/no-browser-link-menu.mdc`.
 
 Los `<select>` de ejercicio, grupo muscular y descanso no usan el menú del sistema. Un botón abre una hoja inferior con la misma paleta. El `<select>` real sigue en el formulario: al elegir, se escribe su valor y se dispara `change`, así que las vistas no saben que la lista es propia. La hoja vive en `document.body`, fuera de `#app`, y se cierra al elegir, al cambiar de ruta o si el control desaparece.
 
@@ -85,7 +85,7 @@ El día del peso corporal y el de una toma de creatina usan la misma hoja, con e
 
 | Ruta | Pantalla | Qué hace |
 | --- | --- | --- |
-| `#/` | Inicio | Resumen de la semana, creatina de hoy y últimos entrenos. Cada entreno abre `#/history/:id`. |
+| `#/` | Inicio | Creatina de hoy, la semana en siete días (amarillo si hubo entreno) y últimos entrenos. Cada entreno abre `#/history/:id`. |
 | `#/workout` | Entreno | Una sesión abierta. Si no hay ninguna, el botón la crea. Peso, reps, tipo de serie y esfuerzo; encima del peso, la sesión anterior completa, para repetirla o pasarla. Si ya la pasaste, lo dice y parte del último peso. Las series de hoy van en un pliegue. Descanso, alta de ejercicio y corrección desde esa lista. |
 | `#/history` y `#/history/:id` | Historial | Lista y detalle. Borrar un entreno borra también sus series. |
 | `#/progress` y `#/progress/:id` | Progreso | Un ejercicio: PR, comparativa, gráfica y tabla. Abajo, el peso corporal. |

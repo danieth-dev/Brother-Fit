@@ -142,7 +142,12 @@ export async function render(el) {
     todayLogOpen = false;
     clearActiveRest();
     el.innerHTML = `
-      <header class="page-head"><h1>Entreno</h1></header>
+      <header class="page-head">
+        <div class="page-head-row">
+          <h1>Entreno</h1>
+          <a class="head-link" href="#/agent" aria-label="Fit">${icons.bot({ size: 22 })}</a>
+        </div>
+      </header>
       <div class="empty">
         ${icons.dumbbell({ size: 42, stroke: 'var(--line-strong)' })}
         <p>No hay un entrenamiento en curso. Inicia una sesión cuando estés listo para levantar.</p>
@@ -189,7 +194,10 @@ export async function render(el) {
 
   el.innerHTML = `
     <header class="page-head">
-      <h1>Entreno</h1>
+      <div class="page-head-row">
+        <h1>Entreno</h1>
+        <a class="head-link" href="#/agent" aria-label="Fit">${icons.bot({ size: 22 })}</a>
+      </div>
       <p class="elapsed" id="elapsed">${formatDuration(now() - w.startedAt)}</p>
     </header>
 

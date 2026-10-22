@@ -174,7 +174,7 @@ export async function render(el) {
         <button class="btn-x" data-action="next" type="button" aria-label="Mes siguiente" ${isCurrent ? 'disabled' : ''}>${icons.chevronRight({ size: 20 })}</button>
       </div>
       <div class="cal">
-        ${['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((d) => `<span class="dow">${d}</span>`).join('')}
+        ${['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((d) => `<span class="dow">${d}</span>`).join('')}
         ${monthCells(view.y, view.m, cr.map)}
       </div>
     </div>

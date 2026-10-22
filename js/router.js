@@ -10,7 +10,7 @@ import * as agent from './views/agent.js';
 import { esc } from './utils/dom.js';
 
 const routes = { '': home, workout, history, progress, creatine, settings, agent };
-const tabOf = { history: '' }; // el historial cuelga de Inicio
+const tabOf = { history: '', creatine: '', settings: '', agent: 'workout' };
 let token = 0;
 
 export async function renderRoute() {
