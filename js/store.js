@@ -6,7 +6,16 @@ export const DEFAULTS = {
   descansoMode: 'auto',
   unidad: 'kg',
   aguaRecordatorios: true,
+  tema: 'amarillo',
 };
+
+const TEMAS = new Set(['amarillo', 'azul', 'rosado']);
+
+export function applyTema(tema) {
+  const name = TEMAS.has(tema) ? tema : 'amarillo';
+  if (name === 'amarillo') document.documentElement.removeAttribute('data-tema');
+  else document.documentElement.dataset.tema = name;
+}
 
 export const state = {
   settings: { ...DEFAULTS },
@@ -18,9 +27,11 @@ export const state = {
 export async function loadSettings() {
   const row = await db.get('meta', 'settings');
   state.settings = { ...DEFAULTS, ...(row?.value || {}) };
+  applyTema(state.settings.tema);
 }
 
 export async function saveSettings(patch) {
   state.settings = { ...state.settings, ...patch };
+  applyTema(state.settings.tema);
   await db.put('meta', { key: 'settings', value: state.settings });
 }

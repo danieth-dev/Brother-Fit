@@ -5,6 +5,7 @@ import {
 } from '../services/workouts.js';
 import { registerSet, setEffort, setTipo, skipRestClock, AVISO_DUPLICADA } from '../services/effort.js';
 import { getActiveAgent, saveMemory } from '../services/agent.js';
+import { creatineSummary } from '../services/creatine.js';
 import { state, saveSettings } from '../store.js';
 import { delegate, forms, changes, toast, esc, num, go } from '../utils/dom.js';
 import { formatDuration, formatShort } from '../utils/dates.js';
@@ -187,6 +188,13 @@ export async function render(el) {
 
   const curExSets = detail?.groups?.find((g) => g.exercise.id === selectedEx)?.sets || [];
   const nextSetNum = curExSets.length + 1;
+  const todayRank = new Map((detail?.groups || []).map((g, i) => [g.exercise.id, i]));
+  const orderedExs = exs.map((e, i) => ({ e, i })).sort((a, b) => {
+    const ra = todayRank.has(a.e.id) ? todayRank.get(a.e.id) : 1e9;
+    const rb = todayRank.has(b.e.id) ? todayRank.get(b.e.id) : 1e9;
+    if (ra !== rb) return ra - rb;
+    return a.i - b.i;
+  }).map(({ e }) => e);
 
   getActiveAgent()?.sendContext(
     `Si no nombra otro, la serie abierta es ${currentExObj?.nombre}, número ${nextSetNum}. No lo digas. Si nombra un ejercicio, usa ese.`
@@ -207,7 +215,7 @@ export async function render(el) {
       <label class="field">
         <span>Ejercicio</span>
         <select name="exerciseId" data-change="exercise">
-          ${exs.map((e) => `<option value="${e.id}" data-grupo="${esc(e.grupo)}" ${muscleFocus(e.nombre) ? `data-foco="${esc(muscleFocus(e.nombre))}"` : ''} ${isOwnExercise(e) ? 'data-propio="1"' : ''} ${e.id === selectedEx ? 'selected' : ''}>${esc(e.nombre)}</option>`).join('')}
+          ${orderedExs.map((e) => `<option value="${e.id}" data-grupo="${esc(e.grupo)}" ${todayRank.has(e.id) ? 'data-hoy="1"' : ''} ${muscleFocus(e.nombre) ? `data-foco="${esc(muscleFocus(e.nombre))}"` : ''} ${isOwnExercise(e) ? 'data-propio="1"' : ''} ${e.id === selectedEx ? 'selected' : ''}>${esc(e.nombre)}</option>`).join('')}
         </select>
       </label>
 
@@ -345,7 +353,12 @@ export async function render(el) {
         const u = weightUnit();
         const volShow = fmtVolume(summary.volumenTotal, u);
         await saveMemory(`Sesión completada el ${fechaStr}: ${summary.detalles}. Volumen total: ${volShow} ${u} en ${summary.totalSets} series.`);
-        getActiveAgent()?.sendContext(`La sesión de entrenamiento ha finalizado. Resumen: ${summary.totalSets} series, volumen total ${volShow} ${u}.`);
+        let cierre = `La sesión de entrenamiento ha finalizado. Resumen: ${summary.totalSets} series, volumen total ${volShow} ${u}.`;
+        const cr = await creatineSummary();
+        if (!cr.tomadaHoy) {
+          cierre += ' Creatina de hoy: no tomada. Al despedirte, dilo en una sola frase y no lo repitas.';
+        }
+        getActiveAgent()?.sendContext(cierre);
       }
       await finishWorkout(w.id);
       state.activeWorkoutId = null;

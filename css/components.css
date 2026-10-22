@@ -463,8 +463,71 @@ body.picker-open {
   outline: none;
   box-shadow: 0 0 0 3px rgba(255, 230, 0, 0.2);
 }
+.picker-find {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-bottom: 8px;
+}
+.picker-search {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: var(--fs-base);
+  font-weight: 600;
+}
+.picker-search:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(255, 230, 0, 0.12);
+}
+.picker-search::placeholder {
+  color: var(--text-dim);
+  font-weight: 600;
+}
+.picker-groups {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-x;
+  padding-bottom: 2px;
+}
+.picker-groups button {
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-full);
+  background: transparent;
+  color: var(--text);
+  font-family: var(--font);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  cursor: pointer;
+}
+.picker-groups button[aria-pressed="true"] {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-ink);
+}
+.picker-groups button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255, 230, 0, 0.28);
+}
+.picker-empty {
+  margin: 12px 8px;
+  color: var(--muted);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
 .picker-list {
-  max-height: min(58vh, 460px);
+  max-height: min(46vh, 420px);
   overflow-y: auto;
   overscroll-behavior: contain;
   touch-action: pan-y;
@@ -1403,6 +1466,31 @@ body.picker-open {
   color: var(--primary-ink);
   box-shadow: var(--shadow-sm);
 }
+.tema-pick {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.tema-pick button {
+  min-height: 48px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: transparent;
+  color: var(--text);
+  font-weight: 800;
+  font-size: var(--fs-xs);
+  text-transform: capitalize;
+  -webkit-touch-callout: none;
+}
+.tema-pick button[data-tema="amarillo"] { color: #ffe600; border-color: #ffe600; }
+.tema-pick button[data-tema="azul"] { color: #5ec4ff; border-color: #5ec4ff; }
+.tema-pick button[data-tema="rosado"] { color: #ff7ad1; border-color: #ff7ad1; }
+.tema-pick button[aria-pressed="true"] {
+  color: #07080a;
+}
+.tema-pick button[data-tema="amarillo"][aria-pressed="true"] { background: #ffe600; }
+.tema-pick button[data-tema="azul"][aria-pressed="true"] { background: #5ec4ff; }
+.tema-pick button[data-tema="rosado"][aria-pressed="true"] { background: #ff7ad1; }
 .seg.seg--swipeable button[aria-pressed="true"] {
   background: transparent;
   box-shadow: none;
@@ -1497,22 +1585,26 @@ body.picker-open {
   width: max-content;
   max-width: 100%;
   display: flex;
-  align-items: center;
-  gap: 2px;
-  padding: 5px;
-  border-radius: var(--r-full);
+  align-items: stretch;
+  gap: 4px;
+  padding: 6px;
+  border-radius: 28px;
   background: rgba(16, 18, 23, 0.94);
   border: 1px solid var(--line-strong);
   box-shadow: 0 10px 28px -8px rgba(0, 0, 0, 0.75);
 }
 .tabbar a {
   position: relative;
-  flex: 0 0 44px;
-  width: 44px;
-  height: 44px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
+  flex: 1 0 auto;
+  min-width: 4.75rem;
+  min-height: 44px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 6px 8px 5px;
+  border-radius: 22px;
   color: var(--muted);
   text-decoration: none;
   -webkit-touch-callout: none;
@@ -1520,15 +1612,10 @@ body.picker-open {
   user-select: none;
 }
 .tabbar a span {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: 0.01em;
 }
 .tabbar a:hover {
   color: var(--text);
@@ -2813,15 +2900,14 @@ body.picker-open {
 
 @media (max-height: 480px) and (orientation: landscape) {
   :root {
-    --tabbar-h: 64px;
+    --tabbar-h: 80px;
   }
   .tabbar {
     padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
   }
   .tabbar a {
-    flex-basis: 40px;
-    width: 40px;
-    height: 40px;
+    min-width: 4.25rem;
+    padding: 4px 6px 3px;
   }
   .plate {
     width: min(34vh, 168px);

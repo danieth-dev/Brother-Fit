@@ -168,3 +168,39 @@ export async function creatineSummary() {
     saturacion,
   };
 }
+
+const FASE_FRASE = {
+  inicio: 'primeros días: empieza a acumularse',
+  cargando: 'cargando, por debajo de la mitad',
+  saturando: 'cerca de saturarse',
+  mantenimiento: 'en mantenimiento',
+};
+
+/* Lo que Fit puede decir. Sin la lista cruda de tomas. */
+export async function creatineForFit() {
+  const cr = await creatineSummary();
+  const today = todayISO();
+  const fallos7 = [];
+  for (let i = 1; i <= 6; i++) {
+    const day = addDays(today, -i);
+    if (!cr.map.has(day)) fallos7.push(day);
+  }
+  const last = cr.intakes[0];
+  return {
+    tomadaHoy: cr.tomadaHoy,
+    gramosHoy: cr.hoy.gramos,
+    dosisHabitualG: DOSE_G,
+    racha: cr.racha,
+    rachaNota: cr.tomadaHoy
+      ? 'Hoy ya cuenta en la racha.'
+      : 'Hoy todavía no está tomada. Eso no corta la racha: sigue contando desde ayer.',
+    dias7: cr.dias7,
+    dias30: cr.dias30,
+    fase: cr.saturacion.fase,
+    faseFrase: FASE_FRASE[cr.saturacion.fase] || cr.saturacion.fase,
+    porcentajeSaturacion: cr.saturacion.porcentajeSaturacion,
+    ultima: last ? { fecha: last.fecha, hora: last.hora, gramos: last.cantidad } : null,
+    fallos7,
+    mensaje: 'Contesta con una sola frase usando estos datos. No des una clase ni hables del agua salvo que lo pregunten.',
+  };
+}

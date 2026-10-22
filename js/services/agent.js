@@ -14,6 +14,7 @@ import { now } from '../utils/clock.js';
 import { getActiveWorkout, lastSetFor, saveActiveRest, listExercises, matchExercise } from './workouts.js';
 import { registerSet, anotarRpe, captureSpokenEffort } from './effort.js';
 import { toKg, weightUnit } from '../utils/units.js';
+import { creatineForFit } from './creatine.js';
 
 const LIVE_MODEL = 'models/gemini-3.8-live';
 const WS_URL = (apiKey) =>
@@ -64,9 +65,15 @@ const TOOL_DECLARATIONS = [
     },
   },
   {
+    name: 'consultar_creatina',
+    description:
+      'Lee el registro real de creatina en el teléfono. Úsala antes de contestar si el atleta pregunta por la toma de hoy, la racha, la saturación o qué día falló. No anota ni borra tomas.',
+    parameters: { type: 'OBJECT', properties: {} },
+  },
+  {
     name: 'guardar_recuerdo',
     description:
-      'Guarda un dato relevante sobre el usuario (peso, marcas, objetivos, suplementación, lesiones, etc.) en su memoria permanente. Llama a esta función inmediatamente cuando el usuario comparta datos personales.',
+      'Guarda una preferencia o un dato personal (peso, marcas, objetivos, molestias, cuándo le sienta la creatina). La toma de hoy no se guarda aquí: está en consultar_creatina.',
     parameters: {
       type: 'OBJECT',
       properties: {
@@ -217,6 +224,9 @@ export async function executeToolCall(name, args) {
   if (name === 'anotar_rpe') {
     return anotarRpe({ rir: args.rir, mark: args.marca, omitir: args.omitir === true });
   }
+  if (name === 'consultar_creatina') {
+    return creatineForFit();
+  }
   if (name === 'guardar_recuerdo') {
     const raw = (args.contenido || '').trim();
     if (!raw) return { error: 'Contenido vacío.' };
@@ -285,7 +295,8 @@ async function buildSystemInstruction() {
     '- La respuesta del atleta se anota con anotar_rpe: la marca vigente y el rir. 0 y cero son rir 0. Si dice que no sabe, omitir true. Una marca vieja no sirve: pregunta de nuevo y no reutilices la respuesta anterior.\n' +
     '- No sugieras pesos, no cambies el descanso y no inventes el esfuerzo.\n' +
     '- El atleta manda el tema: tus objetivos de registro jamás pisan lo que él decida consultar.\n' +
-    '- Si menciona datos personales (peso, marcas, objetivos, molestias, suplementación), llama inmediatamente a guardar_recuerdo.\n' +
+    '- Si menciona datos personales (peso, marcas, objetivos, molestias o una preferencia, como cuándo toma la creatina), llama inmediatamente a guardar_recuerdo. La toma del día no es un recuerdo.\n' +
+    '- Si pregunta por la creatina, si ya la tomó, la racha, la saturación o un día que falló, llama a consultar_creatina y contesta con una sola frase. Entre series y durante el descanso no la menciones.\n' +
     '- Usa los recuerdos guardados de forma natural, sin recitarlos como un informe.\n' +
     '- Nunca escribas HTML, comentarios, inglés ni instrucciones internas. Si no hay nada que decir, no generes texto. Tu única salida es la frase hablada al atleta, en español, en 1 o 2 oraciones.' +
     currentCtx +

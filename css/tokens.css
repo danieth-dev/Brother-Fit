@@ -80,7 +80,7 @@
   --r-full: 9999px;
 
   /* Dimensiones y Tipografías */
-  --tabbar-h: 78px;
+  --tabbar-h: 92px;
   --font-display: "Fugaz One", ui-rounded, "SF Pro Rounded", system-ui, sans-serif;
   --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: ui-monospace, "SF Mono", "Roboto Mono", monospace;
@@ -112,4 +112,28 @@
     --primary-ink: #07080a;
     color-scheme: dark;
   }
+}
+
+/* El fondo sigue negro. Solo cambia el color de la acción. */
+html[data-tema="azul"] {
+  --primary: #5ec4ff;
+  --primary-hover: #8ed6ff;
+  --primary-active: #2eaae8;
+  --primary-ink: #07080a;
+  --primary-glow: 0 0 24px rgba(94, 196, 255, 0.28);
+  --yellow: #5ec4ff;
+  --yellow-dim: rgba(94, 196, 255, 0.14);
+  --yellow-ink: #07080a;
+  --line-accent: rgba(94, 196, 255, 0.28);
+}
+html[data-tema="rosado"] {
+  --primary: #ff7ad1;
+  --primary-hover: #ffa3e0;
+  --primary-active: #f25cbe;
+  --primary-ink: #07080a;
+  --primary-glow: 0 0 24px rgba(255, 122, 209, 0.28);
+  --yellow: #ff7ad1;
+  --yellow-dim: rgba(255, 122, 209, 0.14);
+  --yellow-ink: #07080a;
+  --line-accent: rgba(255, 122, 209, 0.28);
 }

@@ -15,6 +15,15 @@ export async function render(el) {
     <header class="page-head"><h1>Ajustes</h1></header>
 
     <div class="form-card stack">
+      <div class="field">
+        <span id="tema-label">Color</span>
+        <div class="tema-pick" role="group" aria-labelledby="tema-label">
+          ${['amarillo', 'azul', 'rosado'].map((tema) => `
+            <button type="button" data-action="tema" data-tema="${tema}" aria-pressed="${(s.tema || 'amarillo') === tema}">
+              ${tema}
+            </button>`).join('')}
+        </div>
+      </div>
       <label class="field"><span>Descanso entre series</span>
         <select data-change="descansoMode">
           <option value="auto" ${s.descansoMode === 'auto' ? 'selected' : ''}>Automático (según reps)</option>
@@ -43,9 +52,6 @@ export async function render(el) {
         ${icons.upload({ size: 18 })} Restaurar respaldo
         <input type="file" accept="application/json,.json" data-change="import" hidden>
       </label>
-      <button class="btn btn-block" data-action="loadFixtures" type="button">
-        ${icons.download({ size: 18 })} Cargar datos de prueba
-      </button>
       <p class="hint">${backupText}<br>Almacenamiento persistente: ${persisted ? 'activo' : 'no confirmado'}.</p>
     </div>
 
@@ -107,6 +113,14 @@ export async function render(el) {
   });
 
   delegate(el, {
+    tema: async (t) => {
+      const next = t.dataset.tema === 'azul' || t.dataset.tema === 'rosado' ? t.dataset.tema : 'amarillo';
+      if (next === (state.settings.tema || 'amarillo')) return;
+      await saveSettings({ tema: next });
+      el.querySelectorAll('[data-action="tema"]').forEach((b) => {
+        b.setAttribute('aria-pressed', String(b.dataset.tema === next));
+      });
+    },
     export: async () => {
       try {
         const r = await exportData();
@@ -122,23 +136,6 @@ export async function render(el) {
       await p.userChoice;
       state.installPrompt = null;
       await render(el);
-    },
-    loadFixtures: async () => {
-      const ok = await askConfirm({
-        title: 'Cargar datos de prueba',
-        body: 'Reemplaza todos los datos actuales con los datos de prueba (fixtures).',
-        confirmLabel: 'Cargar datos',
-      });
-      if (!ok) return;
-      try {
-        const { loadFixtures } = await import('../services/seed.js');
-        const okLoad = await loadFixtures();
-        if (!okLoad) throw new Error('No se encontró el archivo de datos de prueba.');
-        toast('Datos de prueba cargados');
-        location.reload();
-      } catch (e) {
-        toast(e.message || 'Error al cargar los datos');
-      }
     },
     reset: async () => {
       const first = await askConfirm({

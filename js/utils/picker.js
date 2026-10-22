@@ -6,6 +6,18 @@ let list;
 let titleEl;
 let lastTrigger;
 let openSelect;
+let findEl;
+let searchEl;
+let groupsEl;
+let emptyEl;
+let findQuery = '';
+let findGrupo = '';
+
+const GRUPO_ORDER = ['Pecho', 'Espalda', 'Piernas', 'Hombros', 'Bíceps', 'Tríceps', 'Core', 'Cardio', 'Otro'];
+
+function fold(value) {
+  return String(value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
 
 function ensureSheet() {
   if (sheet) return;
@@ -19,12 +31,23 @@ function ensureSheet() {
         <p class="picker-title" id="picker-title"></p>
         <button type="button" class="picker-close" aria-label="Cerrar">${icons.x({ size: 18 })}</button>
       </div>
+      <div class="picker-find" hidden>
+        <input class="picker-search" type="search" enterkeyhint="search" autocomplete="off" autocapitalize="off" aria-label="Buscar ejercicio" placeholder="Buscar">
+        <div class="picker-groups" role="group" aria-label="Grupo muscular"></div>
+      </div>
       <div class="picker-list" role="listbox"></div>
     </div>
   `;
   document.body.append(sheet);
   list = sheet.querySelector('.picker-list');
   titleEl = sheet.querySelector('.picker-title');
+  findEl = sheet.querySelector('.picker-find');
+  searchEl = sheet.querySelector('.picker-search');
+  groupsEl = sheet.querySelector('.picker-groups');
+  searchEl.addEventListener('input', () => {
+    findQuery = searchEl.value;
+    applyFind();
+  });
   sheet.querySelector('.picker-backdrop').addEventListener('click', closePicker);
   sheet.querySelector('.picker-close').addEventListener('click', closePicker);
   sheet.addEventListener('keydown', onKey);
@@ -56,13 +79,62 @@ function muscleNode(grupo, foco) {
   return meta;
 }
 
+function entryOf(btn) {
+  return btn.parentElement?.classList.contains('picker-row') ? btn.parentElement : btn;
+}
+
+function paintGroups(select) {
+  const present = new Set([...select.options].map((opt) => opt.dataset.grupo).filter(Boolean));
+  const order = GRUPO_ORDER.filter((g) => present.has(g));
+  for (const g of present) if (!order.includes(g)) order.push(g);
+  const chips = [];
+  if ([...select.options].some((opt) => opt.dataset.hoy === '1')) chips.push(['Hoy', '__hoy__']);
+  chips.push(['Todos', '']);
+  for (const g of order) chips.push([g, g]);
+  groupsEl.replaceChildren();
+  for (const [label, value] of chips) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = label;
+    btn.dataset.grupo = value;
+    btn.setAttribute('aria-pressed', value === findGrupo ? 'true' : 'false');
+    btn.addEventListener('click', () => {
+      findGrupo = value;
+      for (const chip of groupsEl.children) {
+        chip.setAttribute('aria-pressed', chip.dataset.grupo === findGrupo ? 'true' : 'false');
+      }
+      applyFind();
+    });
+    groupsEl.append(btn);
+  }
+}
+
+function applyFind() {
+  const q = fold(findQuery);
+  let shown = 0;
+  list.querySelectorAll('.picker-option').forEach((btn) => {
+    const grupo = btn.dataset.grupo || '';
+    const groupOk = !findGrupo || (findGrupo === '__hoy__' ? btn.dataset.hoy === '1' : grupo === findGrupo);
+    const ok = groupOk && (!q || (btn.dataset.find || '').includes(q));
+    entryOf(btn).hidden = !ok;
+    if (ok) shown += 1;
+  });
+  if (emptyEl) emptyEl.hidden = shown > 0;
+}
+
 function onKey(e) {
-  const options = [...list.querySelectorAll('.picker-option')];
-  const i = options.indexOf(document.activeElement);
   if (e.key === 'Escape') {
     e.preventDefault();
     closePicker();
-  } else if (e.key === 'ArrowDown') {
+    return;
+  }
+  if (e.target.closest?.('.picker-search')) return;
+  const options = [...list.querySelectorAll('.picker-option')].filter((btn) => {
+    const entry = btn.parentElement?.classList.contains('picker-row') ? btn.parentElement : btn;
+    return !entry.hidden;
+  });
+  const i = options.indexOf(document.activeElement);
+  if (e.key === 'ArrowDown') {
     e.preventDefault();
     options[Math.min(i + 1, options.length - 1)]?.focus();
   } else if (e.key === 'ArrowUp') {
@@ -114,7 +186,21 @@ function openPicker(select, label, trigger) {
   openSelect = select;
   lastTrigger = trigger;
   titleEl.textContent = label;
+  const catalog = [...select.options].some((opt) => opt.dataset.grupo);
+  findQuery = '';
+  findGrupo = '';
+  searchEl.value = '';
+  findEl.hidden = !catalog;
+  if (catalog) paintGroups(select);
   list.replaceChildren();
+  emptyEl = null;
+  if (catalog) {
+    emptyEl = document.createElement('p');
+    emptyEl.className = 'picker-empty';
+    emptyEl.hidden = true;
+    emptyEl.textContent = 'Nada que coincida';
+    list.append(emptyEl);
+  }
   [...select.options].forEach((opt) => {
     const selected = opt.value === select.value;
     const own = opt.dataset.propio === '1';
@@ -124,6 +210,9 @@ function openPicker(select, label, trigger) {
     btn.setAttribute('role', 'option');
     btn.setAttribute('aria-selected', selected ? 'true' : 'false');
     const name = opt.textContent.trim();
+    btn.dataset.find = fold(name);
+    btn.dataset.grupo = opt.dataset.grupo || '';
+    if (opt.dataset.hoy === '1') btn.dataset.hoy = '1';
     const grupo = muscleOf(opt);
     const foco = focusOf(opt);
     const copy = document.createElement('span');
@@ -165,8 +254,13 @@ function openPicker(select, label, trigger) {
   document.body.classList.add('picker-open');
   requestAnimationFrame(() => sheet.classList.add('open'));
   const current = list.querySelector('[aria-selected="true"]') || list.querySelector('.picker-option');
-  current?.focus();
-  current?.scrollIntoView({ block: 'nearest' });
+  if (catalog) {
+    list.scrollTop = 0;
+    (groupsEl.querySelector('button') || current)?.focus();
+  } else {
+    current?.focus();
+    current?.scrollIntoView({ block: 'nearest' });
+  }
 }
 
 function labelOf(select) {
