@@ -32,6 +32,47 @@ function sameStem(a, b) {
   return a === b || a + 's' === b || b + 's' === a || a + 'es' === b || b + 'es' === a;
 }
 
+/* Palabras que no distinguen un ejercicio de otro. */
+const RELLENO = new Set(['de', 'del', 'al', 'a', 'con', 'en', 'el', 'la', 'los', 'las', 'y', 'para', 'un', 'una']);
+
+/* Lo único que puede sobrar en la frase: el músculo. «búlgara», «mancuernas» o «martillo» no sobran: cambian el ejercicio. */
+const MUSCULO = new Set([
+  'pecho', 'pectoral', 'pectorales', 'espalda', 'dorsal', 'dorsales', 'pierna', 'piernas',
+  'cuadriceps', 'femoral', 'femorales', 'isquios', 'isquiotibiales', 'gluteo', 'gluteos',
+  'hombro', 'hombros', 'deltoides', 'biceps', 'triceps', 'core', 'abdomen', 'abdominal', 'abdominales',
+  'gemelo', 'gemelos', 'pantorrilla', 'pantorrillas', 'trapecio', 'trapecios', 'lumbar', 'lumbares',
+  'brazo', 'brazos', 'antebrazo', 'antebrazos',
+]);
+
+function palabras(folded) {
+  return folded.split(/[^a-z0-9]+/).filter((w) => w && !RELLENO.has(w));
+}
+
+/* Tercera regla: todas las palabras del nombre guardado están en la frase y lo que sobra es solo músculo.
+ * «aperturas de pecho» → Aperturas. «sentadilla búlgara» no es Sentadilla. Gana el nombre con más palabras; si empatan, son varios. */
+function matchByWords(q, list) {
+  const dichas = palabras(q);
+  if (!dichas.length) return [];
+  const hits = [];
+  for (const e of list) {
+    const suyas = palabras(foldName(e.nombre));
+    if (!suyas.length) continue;
+    const usadas = new Set();
+    const todas = suyas.every((p) => {
+      const i = dichas.findIndex((d, k) => !usadas.has(k) && sameStem(d, p));
+      if (i < 0) return false;
+      usadas.add(i);
+      return true;
+    });
+    if (!todas) continue;
+    const sobran = dichas.filter((_, k) => !usadas.has(k));
+    if (sobran.every((d) => MUSCULO.has(d))) hits.push({ e, n: suyas.length });
+  }
+  if (!hits.length) return [];
+  const max = Math.max(...hits.map((h) => h.n));
+  return hits.filter((h) => h.n === max).map((h) => h.e);
+}
+
 /* El modelo dice el texto. La app elige la fila. Vacío: no nombró ninguno. */
 export function matchExercise(spoken, exercises) {
   const q = foldName(spoken);
@@ -44,6 +85,9 @@ export function matchExercise(spoken, exercises) {
   const partial = list.filter((e) => foldName(e.nombre).includes(q));
   if (partial.length === 1) return { status: 'one', exercise: partial[0] };
   if (partial.length > 1) return { status: 'many', exercises: partial };
+  const byWords = matchByWords(q, list);
+  if (byWords.length === 1) return { status: 'one', exercise: byWords[0] };
+  if (byWords.length > 1) return { status: 'many', exercises: byWords };
   return { status: 'none' };
 }
 

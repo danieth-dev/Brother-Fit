@@ -6,11 +6,12 @@ import * as history from './views/history.js';
 import * as progress from './views/progress.js';
 import * as creatine from './views/creatine.js';
 import * as settings from './views/settings.js';
+import * as appearance from './views/appearance.js';
 import * as agent from './views/agent.js';
 import { esc } from './utils/dom.js';
 
-const routes = { '': home, workout, history, progress, creatine, settings, agent };
-const tabOf = { history: '', creatine: '', settings: '', agent: 'workout' };
+const routes = { '': home, workout, history, progress, creatine, settings, appearance, agent };
+const tabOf = { history: '', creatine: '', settings: '', appearance: '', agent: 'workout' };
 let token = 0;
 
 export async function renderRoute() {

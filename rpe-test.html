@@ -471,6 +471,49 @@
         await workouts.finishWorkout(w.id);
       });
 
+      await check('Fit encuentra el ejercicio aunque añadas el músculo', async () => {
+        const nombres = [
+          'Press banca', 'Press inclinado con mancuernas', 'Aperturas', 'Press en poleas', 'Press Hammer', 'Flexiones',
+          'Dominadas', 'Remo con barra', 'Jalón al pecho', 'Peso muerto',
+          'Sentadilla', 'Prensa de piernas', 'Peso muerto rumano', 'Zancadas', 'Extensión de pierna', 'Sentadilla péndulo',
+          'Press militar', 'Elevaciones laterales', 'Curl de bíceps', 'Curl martillo',
+          'Fondos', 'Extensión de tríceps', 'Copa', 'Plancha', 'Crunch en polea',
+        ];
+        const cat = nombres.map((nombre, i) => ({ id: i + 1, nombre }));
+        const m = (dicho, list = cat) => workouts.matchExercise(dicho, list);
+        const is = (dicho, nombre) => {
+          const r = m(dicho);
+          assert(r.status === 'one' && r.exercise.nombre === nombre, `«${dicho}» → ${r.status} ${r.exercise?.nombre || (r.exercises || []).map((e) => e.nombre).join(', ')}`);
+        };
+        const none = (dicho) => {
+          const r = m(dicho);
+          assert(r.status === 'none', `«${dicho}» no debía encontrar nada: ${r.status} ${r.exercise?.nombre || ''}`);
+        };
+
+        is('aperturas de pecho', 'Aperturas');
+        is('Apertura de pecho', 'Aperturas');
+        is('flexiones de pecho', 'Flexiones');
+        is('copa de tríceps', 'Copa');
+        is('Jalón al pecho', 'Jalón al pecho');
+        is('jalon pecho', 'Jalón al pecho');
+        is('sentadilla en péndulo', 'Sentadilla péndulo');
+        is('curl martillo de bíceps', 'Curl martillo');
+        is('dominadas de espalda', 'Dominadas');
+
+        none('sentadilla búlgara');
+        none('press de pecho');
+        none('peso muerto rumano con mancuernas');
+        none('aperturas en máquina');
+
+        const propio = [{ id: 1, nombre: 'Aperturas' }, { id: 2, nombre: 'Aperturas pecho alto' }, { id: 3, nombre: 'Aperturas pecho' }];
+        const largo = m('aperturas de pecho', propio);
+        assert(largo.status === 'one' && largo.exercise.id === 3, 'gana el nombre con más palabras');
+
+        const empate = [{ id: 1, nombre: 'Press pecho' }, { id: 2, nombre: 'Press hombro' }];
+        const both = m('press de pecho y hombro', empate);
+        assert(both.status === 'many' && both.exercises.length === 2, 'si empatan, Fit pregunta cuál');
+      });
+
       await check('nombrar el ejercicio no anota, y un comentario no se muestra', async () => {
         assert(agent.visibleFitText('<!-- No input required during the rest period -->') === '', 'el comentario no se ve');
         assert(agent.visibleFitText('Hola <!-- nota --> ¿sigues?') === 'Hola ¿sigues?', 'queda la frase');

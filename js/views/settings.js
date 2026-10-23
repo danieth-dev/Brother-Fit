@@ -15,15 +15,16 @@ export async function render(el) {
     <header class="page-head"><h1>Ajustes</h1></header>
 
     <div class="form-card stack">
-      <div class="field">
-        <span id="tema-label">Color</span>
-        <div class="tema-pick" role="group" aria-labelledby="tema-label">
-          ${['amarillo', 'azul', 'rosado'].map((tema) => `
-            <button type="button" data-action="tema" data-tema="${tema}" aria-pressed="${(s.tema || 'amarillo') === tema}">
-              ${tema}
-            </button>`).join('')}
+      <a class="row row--compact" href="#/appearance" style="padding:10px 0; border-bottom:1px solid var(--line); margin-bottom:8px">
+        <div>
+          <strong style="display:flex; align-items:center; gap:8px">
+            ${icons.sliders({ size: 18, stroke: 'var(--primary)' })} Aspecto
+          </strong>
+          <small class="muted">Tema, modo oscuro/claro y color de acento</small>
         </div>
-      </div>
+        ${icons.chevronRight({ size: 18, cls: 'chev' })}
+      </a>
+
       <label class="field"><span>Descanso entre series</span>
         <select data-change="descansoMode">
           <option value="auto" ${s.descansoMode === 'auto' ? 'selected' : ''}>Automático (según reps)</option>

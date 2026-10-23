@@ -94,28 +94,40 @@
   color-scheme: dark;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    --bg: #07080a;
-    --surface: #101217;
-    --surface-2: #171b22;
-    --surface-elevated: #202530;
-    --line: #252b36;
-    --line-strong: #384152;
-    --line-accent: rgba(255, 230, 0, 0.28);
-    --text: #f8fafc;
-    --muted: #94a3b8;
-    --text-dim: #64748b;
-    --primary: #ffe600;
-    --primary-hover: #f5dc00;
-    --primary-active: #d6c000;
-    --primary-ink: #07080a;
-    color-scheme: dark;
-  }
+/* Modo Claro Técnico (Alto Rendimiento / Titanio Glaciar) */
+html[data-modo="claro"] {
+  --bg: #edf0f5;
+  --surface: #ffffff;
+  --surface-2: #e2e7f0;
+  --surface-elevated: #ffffff;
+  --line: #cbd5e1;
+  --line-strong: #94a3b8;
+  --line-accent: rgba(217, 119, 6, 0.35);
+
+  --text: #090b0f;
+  --muted: #475569;
+  --text-dim: #64748b;
+
+  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.08);
+  --shadow-md: 0 4px 16px -2px rgba(15, 23, 42, 0.12);
+  --shadow-lg: 0 10px 28px -4px rgba(15, 23, 42, 0.16);
+  --shadow-primary: 0 2px 8px rgba(217, 119, 6, 0.25);
+
+  /* Amarillo de alto contraste sobre fondo blanco (Ámbar Dorado atlético) */
+  --primary: #d97706;
+  --primary-hover: #b45309;
+  --primary-active: #92400e;
+  --primary-ink: #ffffff;
+  --primary-glow: 0 0 20px rgba(217, 119, 6, 0.2);
+  --yellow: #d97706;
+  --yellow-dim: rgba(217, 119, 6, 0.14);
+  --yellow-ink: #ffffff;
+
+  color-scheme: light;
 }
 
-/* El fondo sigue negro. Solo cambia el color de la acción. */
-html[data-tema="azul"] {
+/* Colores de acento: Oscuro */
+html:not([data-modo="claro"])[data-tema="azul"] {
   --primary: #5ec4ff;
   --primary-hover: #8ed6ff;
   --primary-active: #2eaae8;
@@ -126,7 +138,7 @@ html[data-tema="azul"] {
   --yellow-ink: #07080a;
   --line-accent: rgba(94, 196, 255, 0.28);
 }
-html[data-tema="rosado"] {
+html:not([data-modo="claro"])[data-tema="rosado"] {
   --primary: #ff7ad1;
   --primary-hover: #ffa3e0;
   --primary-active: #f25cbe;
@@ -136,4 +148,28 @@ html[data-tema="rosado"] {
   --yellow-dim: rgba(255, 122, 209, 0.14);
   --yellow-ink: #07080a;
   --line-accent: rgba(255, 122, 209, 0.28);
+}
+
+/* Colores de acento: Claro */
+html[data-modo="claro"][data-tema="azul"] {
+  --primary: #0284c7;
+  --primary-hover: #0369a1;
+  --primary-active: #075985;
+  --primary-ink: #ffffff;
+  --primary-glow: 0 0 20px rgba(2, 132, 199, 0.22);
+  --yellow: #0284c7;
+  --yellow-dim: rgba(2, 132, 199, 0.14);
+  --yellow-ink: #ffffff;
+  --line-accent: rgba(2, 132, 199, 0.35);
+}
+html[data-modo="claro"][data-tema="rosado"] {
+  --primary: #db2777;
+  --primary-hover: #be185d;
+  --primary-active: #9d174d;
+  --primary-ink: #ffffff;
+  --primary-glow: 0 0 20px rgba(219, 39, 119, 0.22);
+  --yellow: #db2777;
+  --yellow-dim: rgba(219, 39, 119, 0.14);
+  --yellow-ink: #ffffff;
+  --line-accent: rgba(219, 39, 119, 0.35);
 }

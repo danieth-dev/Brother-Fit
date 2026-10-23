@@ -7,9 +7,37 @@ export const DEFAULTS = {
   unidad: 'kg',
   aguaRecordatorios: true,
   tema: 'amarillo',
+  modo: 'oscuro',
+  creatinaCompacta: false,
 };
 
 const TEMAS = new Set(['amarillo', 'azul', 'rosado']);
+const MODOS = new Set(['oscuro', 'claro', 'sistema']);
+
+let mediaQueryListener = null;
+
+function resolveSystemModo() {
+  return window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'claro' : 'oscuro';
+}
+
+export function applyModo(modo) {
+  const name = MODOS.has(modo) ? modo : 'oscuro';
+  if (name === 'sistema') {
+    const effective = resolveSystemModo();
+    document.documentElement.dataset.modo = effective;
+    if (!mediaQueryListener && window.matchMedia) {
+      const mq = window.matchMedia('(prefers-color-scheme: light)');
+      mediaQueryListener = (e) => {
+        if (state.settings.modo === 'sistema') {
+          document.documentElement.dataset.modo = e.matches ? 'claro' : 'oscuro';
+        }
+      };
+      mq.addEventListener('change', mediaQueryListener);
+    }
+  } else {
+    document.documentElement.dataset.modo = name;
+  }
+}
 
 export function applyTema(tema) {
   const name = TEMAS.has(tema) ? tema : 'amarillo';
@@ -28,10 +56,12 @@ export async function loadSettings() {
   const row = await db.get('meta', 'settings');
   state.settings = { ...DEFAULTS, ...(row?.value || {}) };
   applyTema(state.settings.tema);
+  applyModo(state.settings.modo);
 }
 
 export async function saveSettings(patch) {
   state.settings = { ...state.settings, ...patch };
   applyTema(state.settings.tema);
+  applyModo(state.settings.modo);
   await db.put('meta', { key: 'settings', value: state.settings });
 }
