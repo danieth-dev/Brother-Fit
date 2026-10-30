@@ -363,6 +363,214 @@
   color: var(--text);
 }
 
+/* Encabezado de la serie y meta «A superar» */
+.workout-set-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0 2px;
+}
+
+.workout-set-header .workout-set-title {
+  display: block;
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1.15;
+  color: var(--text);
+}
+
+.workout-set-header .workout-set-target {
+  margin: 3px 0 0;
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  line-height: 1.25;
+}
+
+.workout-set-header .workout-set-target strong {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.set-tipo-seg {
+  display: inline-flex;
+  padding: 3px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.set-tipo-seg button {
+  height: 36px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 6px;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  font-family: inherit;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.set-tipo-seg button[aria-pressed="true"] {
+  background: var(--line-strong);
+  color: var(--text);
+}
+
+/* Tarjetas ergonómicas de Peso y Repeticiones */
+.workout-inputs-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.workout-input-card {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 10px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  box-sizing: border-box;
+}
+
+.input-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 26px;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.input-card-display {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 4px;
+  padding: 4px 0 2px;
+}
+
+.big-num-input {
+  width: 100% !important;
+  height: auto !important;
+  border: none !important;
+  outline: none !important;
+  background: transparent !important;
+  text-align: center;
+  font-size: 2.15rem !important;
+  font-weight: 800 !important;
+  color: var(--text) !important;
+  font-variant-numeric: tabular-nums;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-shadow: none !important;
+  line-height: 1.15;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.big-num-input:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.input-card-unit {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.input-card-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.stepper-step-btn {
+  height: 44px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.98rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.12s ease, border-color 0.12s ease, transform 0.08s ease;
+}
+
+.stepper-step-btn:hover {
+  background: var(--line-strong);
+}
+
+.stepper-step-btn:active {
+  background: var(--line-strong);
+  transform: scale(0.96);
+}
+
+/* Guía visual del RIR */
+.rir-head-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.rir-optional-tag {
+  font-size: 11px;
+  color: var(--muted);
+  background: var(--surface-2);
+  padding: 2px 8px;
+  border-radius: var(--r-full);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.rir-scale-legend {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
+  padding: 0 4px;
+}
+
+.rir-legend-left {
+  color: var(--muted);
+}
+
+.rir-legend-right {
+  color: var(--text-dim);
+  font-weight: 600;
+}
+
+.btn-lg {
+  height: 52px;
+  font-size: var(--fs-md);
+  font-weight: 700;
+  border-radius: var(--r-md);
+}
+
 /* El <select> nativo del teléfono no hereda la paleta. El disparador y la hoja sí. */
 .field {
   position: relative;
@@ -1397,6 +1605,121 @@ html[data-modo="claro"] .plate {
 }
 
 /* ---------- Grupos de Series del Entrenamiento ---------- */
+.set-ref-card-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 10px 12px 12px;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+.set-ref-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.set-ref-card-head strong {
+  color: var(--text);
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.set-ref-badge-done {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--primary);
+  background: rgba(255, 230, 0, 0.1);
+  padding: 2px 8px;
+  border-radius: var(--r-full);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.set-ref-cards {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(84px, 1fr);
+  gap: 8px;
+  overflow-x: auto;
+  padding: 2px 1px 4px;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+
+.set-ref-card {
+  box-sizing: border-box;
+  background: var(--surface);
+  border: 1.5px solid transparent;
+  border-radius: var(--r-sm);
+  padding: 8px 6px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  scroll-snap-align: start;
+  min-width: 80px;
+  transition: border-color 0.14s ease, background-color 0.14s ease;
+}
+
+.set-ref-card.is-target {
+  border-color: var(--primary);
+  background: rgba(255, 230, 0, 0.06);
+}
+
+.ref-card-num {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.ref-card-reps {
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1.15;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.ref-card-reps.text-primary {
+  color: var(--primary);
+}
+
+.ref-card-detail {
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.ref-card-detail.muted {
+  color: var(--text-dim);
+}
+
+.set-ref-note {
+  margin: 2px 0 0;
+  font-size: var(--fs-xs);
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.set-ref--empty {
+  color: var(--muted);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  margin: 0;
+}
+
 .set-ref {
   display: flex;
   flex-direction: column;
@@ -1438,18 +1761,6 @@ html[data-modo="claro"] .plate {
   justify-self: stretch;
   margin-left: 0;
   text-align: center;
-}
-.set-ref-note {
-  grid-column: 1 / -1;
-  margin: 0;
-  color: var(--text);
-  font-size: var(--fs-sm);
-  font-weight: 700;
-}
-.set-ref--empty {
-  color: var(--muted);
-  font-size: var(--fs-sm);
-  font-weight: 600;
 }
 .set-ref-k {
   color: var(--muted);

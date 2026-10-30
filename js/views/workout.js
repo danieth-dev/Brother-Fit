@@ -69,24 +69,39 @@ function kgReps(set, unidad) {
   return `<span data-kg="${set.peso}">${fmtWeight(set.peso, unidad)}</span> <span data-unit>${esc(unidad)}</span> × ${set.reps}`;
 }
 
-/* Sesión anterior completa: lo que hiciste, para repetirlo o pasarlo. */
+/* Sesión anterior completa: lo que hiciste en tarjetas horizontales compactas. */
 function setRefMarkup(prev, curSets, unidad) {
   const sets = prev?.sets || [];
   if (!sets.length) {
-    return `<p class="set-ref set-ref--empty" id="set-ref">Primera vez con este ejercicio</p>`;
+    return `<div class="set-ref-card-wrap set-ref-card-wrap--empty" id="set-ref">
+      <p class="set-ref--empty">Primera vez con este ejercicio · ¡Establece tu marca!</p>
+    </div>`;
   }
   const past = curSets.length >= sets.length;
-  const rows = sets.map((s, i) => `
-    <p class="set-ref-row">
-      <span class="set-ref-k">Serie ${i + 1}</span>
-      <strong class="num">${kgReps(s, unidad)}</strong>
-      ${effortTag(s)}
-    </p>`).join('');
+  const targetIndex = curSets.length;
   const fecha = formatShort(prev.workout.fecha);
-  const note = past ? `<p class="set-ref-note">Ya pasaste la sesión anterior</p>` : '';
-  return `<div class="set-ref" id="set-ref">
-    <p class="set-ref-head"><span class="set-ref-k">Sesión anterior</span> <strong>${esc(fecha)}</strong></p>
-    ${rows}
+  const note = past ? `<p class="set-ref-note">🏆 Ya pasaste la sesión anterior (${sets.length} series)</p>` : '';
+  return `<div class="set-ref-card-wrap" id="set-ref">
+    <div class="set-ref-card-head">
+      <span>Última vez · <strong>${esc(fecha)}</strong></span>
+      ${past ? '<span class="set-ref-badge-done">Completada</span>' : ''}
+    </div>
+    <div class="set-ref-cards">
+      ${sets.map((s, i) => {
+        const isTarget = i === targetIndex;
+        const effortText = s.tipo === 'calentamiento' ? 'calentamiento' : (s.rir != null ? (s.rir === 0 ? 'al límite' : `sobraba ${s.rir}`) : '');
+        return `
+          <div class="set-ref-card ${isTarget ? 'is-target' : ''}">
+            <span class="ref-card-num">Serie ${i + 1}</span>
+            <span class="ref-card-reps ${isTarget ? 'text-primary' : ''}">${s.reps}</span>
+            <span class="ref-card-detail">
+              <span data-kg="${s.peso}">${fmtWeight(s.peso, unidad)}</span> <span data-unit>${esc(unidad)}</span>
+            </span>
+            ${effortText ? `<span class="ref-card-detail muted">${effortText}</span>` : ''}
+          </div>
+        `;
+      }).join('')}
+    </div>
     ${note}
   </div>`;
 }
@@ -133,6 +148,10 @@ function applyUnitLive(root, next, pesoKg) {
     if (Number.isFinite(k)) n.textContent = fmtWeight(k, next);
   });
   root.querySelectorAll('[data-unit]').forEach((n) => { n.textContent = next; });
+  const stepDown = root.querySelector('[data-step-peso-down]');
+  if (stepDown) stepDown.textContent = `−${next === 'lb' ? '5' : '2,5'}`;
+  const stepUp = root.querySelector('[data-step-peso-up]');
+  if (stepUp) stepUp.textContent = `+${next === 'lb' ? '5' : '2,5'}`;
 }
 
 export async function render(el) {
@@ -188,6 +207,8 @@ export async function render(el) {
 
   const curExSets = detail?.groups?.find((g) => g.exercise.id === selectedEx)?.sets || [];
   const nextSetNum = curExSets.length + 1;
+  const prevSets = prev?.sets || [];
+  const targetSet = prevSets[curExSets.length] || prevSets[prevSets.length - 1];
   const todayRank = new Map((detail?.groups || []).map((g, i) => [g.exercise.id, i]));
   const orderedExs = exs.map((e, i) => ({ e, i })).sort((a, b) => {
     const ra = todayRank.has(a.e.id) ? todayRank.get(a.e.id) : 1e9;
@@ -219,37 +240,72 @@ export async function render(el) {
         </select>
       </label>
 
+      <div class="workout-set-header">
+        <div>
+          <span class="workout-set-title">Serie ${nextSetNum}</span>
+          ${targetSet ? `
+            <p class="workout-set-target">A superar: <strong><span data-kg="${targetSet.peso}">${fmtWeight(targetSet.peso, unidad)}</span> <span data-unit>${esc(unidad)}</span> × ${targetSet.reps}</strong></p>
+          ` : `
+            <p class="workout-set-target">Primera sesión · <span class="muted">Establece tu marca</span></p>
+          `}
+        </div>
+        <div class="set-tipo-seg" role="group" aria-label="Tipo de serie">
+          <button type="button" data-action="draft-tipo" data-tipo="trabajo" aria-pressed="${draftTipo === 'trabajo'}">Trabajo</button>
+          <button type="button" data-action="draft-tipo" data-tipo="calentamiento" aria-pressed="${draftTipo === 'calentamiento'}">Calentamiento</button>
+        </div>
+      </div>
+
       ${setRefMarkup(prev, curExSets, unidad)}
 
-      <div class="grid-2">
-        <div class="field">
-          <span>Peso ${unitSegHtml(unidad)}</span>
-          <div class="stepper">
-            <button type="button" class="stepper-btn" data-action="step-peso" data-dir="-1" aria-label="Bajar peso">−</button>
-            <input name="peso" inputmode="decimal" autocomplete="off" required placeholder="0" aria-label="Peso">
-            <button type="button" class="stepper-btn" data-action="step-peso" data-dir="1" aria-label="Subir peso">+</button>
+      <div class="workout-inputs-grid">
+        <div class="workout-input-card">
+          <div class="input-card-head">
+            <span>Peso</span>
+            ${unitSegHtml(unidad)}
+          </div>
+          <div class="input-card-display">
+            <input name="peso" class="big-num-input" inputmode="decimal" autocomplete="off" required placeholder="0" aria-label="Peso">
+            <span class="input-card-unit" data-unit>${esc(unidad)}</span>
+          </div>
+          <div class="input-card-actions">
+            <button type="button" class="stepper-step-btn" data-action="step-peso" data-dir="-1" aria-label="Bajar peso">
+              <span data-step-peso-down>−${unidad === 'lb' ? '5' : '2,5'}</span>
+            </button>
+            <button type="button" class="stepper-step-btn" data-action="step-peso" data-dir="1" aria-label="Subir peso">
+              <span data-step-peso-up>+${unidad === 'lb' ? '5' : '2,5'}</span>
+            </button>
           </div>
         </div>
-        <div class="field">
-          <span>Reps</span>
-          <div class="stepper">
-            <button type="button" class="stepper-btn" data-action="step-reps" data-dir="-1" aria-label="Bajar repeticiones">−</button>
-            <input name="reps" inputmode="numeric" pattern="[0-9]*" autocomplete="off" required placeholder="0" aria-label="Repeticiones">
-            <button type="button" class="stepper-btn" data-action="step-reps" data-dir="1" aria-label="Subir repeticiones">+</button>
+
+        <div class="workout-input-card">
+          <div class="input-card-head">
+            <span>Repeticiones</span>
+          </div>
+          <div class="input-card-display">
+            <input name="reps" class="big-num-input" inputmode="numeric" pattern="[0-9]*" autocomplete="off" required placeholder="0" aria-label="Repeticiones">
+            <span class="input-card-unit">reps</span>
+          </div>
+          <div class="input-card-actions">
+            <button type="button" class="stepper-step-btn" data-action="step-reps" data-dir="-1" aria-label="Bajar repeticiones">−1</button>
+            <button type="button" class="stepper-step-btn" data-action="step-reps" data-dir="1" aria-label="Subir repeticiones">+1</button>
           </div>
         </div>
       </div>
-      <div class="seg" role="group" aria-label="Tipo de serie">
-        <button type="button" data-action="draft-tipo" data-tipo="trabajo" aria-pressed="${draftTipo === 'trabajo'}">Trabajo</button>
-        <button type="button" data-action="draft-tipo" data-tipo="calentamiento" aria-pressed="${draftTipo === 'calentamiento'}">Calentamiento</button>
-      </div>
+
       <div id="rir-pick" class="stack">
-        <span class="effort-label">¿Cuántas repeticiones más podrías haber hecho?</span>
-        <span class="effort-hint" id="effort-hint">${draftTipo === 'trabajo' ? '0 es no salía otra' : 'Los calentamientos no llevan esfuerzo'}</span>
+        <div class="rir-head-row">
+          <span class="effort-label">¿Cuántas más podrías haber hecho?</span>
+          <span class="rir-optional-tag">${draftTipo === 'trabajo' ? 'Opcional' : 'No aplica'}</span>
+        </div>
         ${rirButtons('', { action: 'draft-rir', pressed: draftRir, disabled: draftTipo !== 'trabajo' })}
+        <div class="rir-scale-legend" id="rir-scale-legend" ${draftTipo !== 'trabajo' ? 'hidden' : ''}>
+          <span class="rir-legend-left">0 = al límite, no salía otra</span>
+          <span class="rir-legend-right">Sobrado</span>
+        </div>
       </div>
-      <button class="btn btn-primary btn-block" type="submit">
-        ${icons.plus({ size: 18 })} Añadir serie
+
+      <button class="btn btn-primary btn-block btn-lg" type="submit">
+        ${icons.plus({ size: 18 })} Guardar serie ${nextSetNum}
       </button>
     </form>
 
@@ -334,8 +390,10 @@ export async function render(el) {
         b.disabled = warm;
         b.setAttribute('aria-pressed', String(!warm && Number(b.dataset.rir) === draftRir));
       });
-      const hint = el.querySelector('#effort-hint');
-      if (hint) hint.textContent = warm ? 'Los calentamientos no llevan esfuerzo' : '0 es no salía otra';
+      const legend = el.querySelector('#rir-scale-legend');
+      if (legend) legend.hidden = warm;
+      const opt = el.querySelector('.rir-optional-tag');
+      if (opt) opt.textContent = warm ? 'No aplica' : 'Opcional';
     },
     'draft-rir': (t) => {
       draftRir = Number(t.dataset.rir);
