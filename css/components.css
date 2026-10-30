@@ -284,9 +284,9 @@
 }
 
 .stepper:focus-within {
-  border-color: var(--primary);
+  border-color: var(--line-strong);
   background: var(--surface);
-  box-shadow: 0 0 0 3px rgba(255, 230, 0, 0.12);
+  box-shadow: none;
 }
 
 .stepper input {
@@ -300,10 +300,17 @@
   background: transparent !important;
   text-align: center;
   box-shadow: none !important;
+  outline: none !important;
   font-weight: 700;
   font-size: var(--fs-lg);
   color: var(--text);
   font-variant-numeric: tabular-nums;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.stepper input:focus {
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 .stepper-btn {
@@ -323,17 +330,18 @@
   cursor: pointer;
   user-select: none;
   touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
   transition: background-color 0.12s ease, color 0.12s ease, transform 0.08s ease;
 }
 
 .stepper-btn:hover {
   background: rgba(255, 255, 255, 0.06);
-  color: var(--primary);
+  color: var(--text);
 }
 
 .stepper-btn:active {
-  background: rgba(255, 230, 0, 0.16);
-  color: var(--primary);
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text);
   transform: scale(0.92);
 }
 
