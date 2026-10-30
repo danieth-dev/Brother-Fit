@@ -1,7 +1,7 @@
 import { creatineSummary, logIntake, deleteIntake, toggleTodayIntake, intakesForDate, DOSE_G } from '../services/creatine.js';
 import { scheduleAfterCreatine, cancelWaterReminders } from '../services/water-reminders.js';
 import { delegate, forms, toast, esc, num, fmtNum } from '../utils/dom.js';
-import { formatMonth, formatLong, todayISO, nowHM, toISO } from '../utils/dates.js';
+import { formatMonth, formatLong, todayISO, toISO } from '../utils/dates.js';
 import { icons } from '../utils/icons.js';
 import { creatinePlate } from '../utils/components.js';
 import { askConfirm } from '../utils/confirm-sheet.js';
@@ -144,7 +144,7 @@ function intakeRow(i) {
     <div class="row">
       <div>
         <strong class="intake-date">${esc(formatLong(i.fecha))}</strong>
-        <small class="num">${esc(i.hora)} · ${fmtNum(i.cantidad)} g</small>
+        <small class="num">${fmtNum(i.cantidad)} g</small>
       </div>
       <button class="btn-x" data-action="del" data-id="${i.id}" type="button" aria-label="Borrar toma del ${esc(formatLong(i.fecha))}">
         ${icons.trash({ size: 16 })}
@@ -201,9 +201,8 @@ export async function render(el) {
         ${icons.plus({ size: 18, cls: 'muted' })}
       </summary>
       <form class="stack" data-form="manual">
-        <div class="grid-3">
+        <div class="grid-2">
           <label class="field"><span>Día</span><input type="date" name="fecha" value="${todayISO()}" max="${todayISO()}" required></label>
-          <label class="field"><span>Hora</span><input data-time name="hora" value="${nowHM()}" inputmode="none" readonly required></label>
           <label class="field"><span>Gramos</span><input name="cantidad" inputmode="decimal" value="${fmtNum(g)}" required></label>
         </div>
         <button class="btn btn-primary btn-block" type="submit">Guardar toma</button>
@@ -291,7 +290,7 @@ export async function render(el) {
         toast('Ese día ya tiene una toma. Bórrala de la lista si quieres cambiarla.', { tone: 'warn' });
         return;
       }
-      await logIntake({ cantidad, fecha, hora: f.elements.hora.value });
+      await logIntake({ cantidad, fecha });
       if (fecha === todayISO()) await scheduleAfterCreatine(fecha);
       await render(el);
       toast('Creatina registrada');
