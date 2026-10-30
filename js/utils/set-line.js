@@ -1,7 +1,7 @@
 import { esc, fmtNum } from './dom.js';
 import { effortPhrase, needsEffortMark } from '../services/effort.js';
 
-const RIR = [[0, '0'], [1, '1'], [2, '2'], [3, '3'], [4, '4 o más']];
+const RIR = [[0, '0'], [1, '1'], [2, '2'], [3, '3'], [4, '4+']];
 
 export function effortTag(set) {
   if (set?.tipo === 'calentamiento') return '<span class="rpe-tag">calentamiento</span>';

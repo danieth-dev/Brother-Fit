@@ -368,8 +368,15 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 4px 0 2px;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 2px 0;
+  min-width: 0;
+}
+
+.workout-set-title-wrap {
+  flex: 1 1 auto;
+  min-width: 110px;
 }
 
 .workout-set-header .workout-set-title {
@@ -404,29 +411,32 @@
 
 .tipo-seg button {
   flex: 0 0 auto;
-  min-height: 36px;
-  height: 36px;
-  padding: 0 12px;
-  font-size: var(--fs-xs);
+  min-height: 34px;
+  height: 34px;
+  padding: 0 10px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.02em;
+  text-transform: capitalize;
 }
 
 /* Tarjetas ergonómicas de Peso y Repeticiones */
 .workout-inputs-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap: 8px;
+  min-width: 0;
 }
 
 .workout-input-card {
   background: var(--surface-2);
   border: 1px solid var(--line);
   border-radius: var(--r-md);
-  padding: 10px 12px 12px;
+  padding: 8px 10px 10px;
   display: flex;
   flex-direction: column;
   gap: 4px;
+  min-width: 0;
   box-sizing: border-box;
 }
 
@@ -435,11 +445,12 @@
   align-items: center;
   justify-content: space-between;
   height: 26px;
-  font-size: var(--fs-xs);
+  font-size: 11px;
   font-weight: 700;
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.03em;
+  min-width: 0;
 }
 
 .input-card-display {
@@ -447,17 +458,22 @@
   align-items: baseline;
   justify-content: center;
   gap: 4px;
-  padding: 4px 0 2px;
+  padding: 2px 0;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .big-num-input {
   width: 100% !important;
+  max-width: 100%;
+  flex: 1 1 auto;
+  min-width: 0;
   height: auto !important;
   border: none !important;
   outline: none !important;
   background: transparent !important;
   text-align: center;
-  font-size: 2.15rem !important;
+  font-size: 1.85rem !important;
   font-weight: 800 !important;
   color: var(--text) !important;
   font-variant-numeric: tabular-nums;
@@ -474,32 +490,34 @@
 }
 
 .input-card-unit {
-  font-size: var(--fs-sm);
+  font-size: var(--fs-xs);
   font-weight: 700;
   color: var(--muted);
-  flex-shrink: 0;
+  flex: 0 0 auto;
 }
 
 .input-card-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  gap: 6px;
   margin-top: 4px;
 }
 
 .stepper-step-btn {
-  height: 44px;
+  height: 42px;
   border: 1px solid var(--line);
   border-radius: var(--r-sm);
   background: var(--surface);
   color: var(--text);
-  font-size: 0.98rem;
+  font-size: 0.92rem;
   font-weight: 700;
   font-family: inherit;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 0 2px;
+  white-space: nowrap;
   touch-action: manipulation;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
@@ -512,7 +530,7 @@
 
 .stepper-step-btn:active {
   background: var(--line-strong);
-  transform: scale(0.96);
+  transform: scale(0.95);
 }
 
 /* Guía visual del RIR */
@@ -1617,12 +1635,18 @@ html[data-modo="claro"] .plate {
 .set-ref-cards {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: minmax(84px, 1fr);
-  gap: 8px;
+  grid-auto-columns: minmax(76px, 1fr);
+  gap: 6px;
   overflow-x: auto;
   padding: 2px 1px 4px;
   scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.set-ref-cards::-webkit-scrollbar {
+  display: none;
 }
 
 .set-ref-card {
@@ -1630,14 +1654,14 @@ html[data-modo="claro"] .plate {
   background: var(--surface);
   border: 1.5px solid transparent;
   border-radius: var(--r-sm);
-  padding: 8px 6px;
+  padding: 6px 4px;
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 2px;
   scroll-snap-align: start;
-  min-width: 80px;
+  min-width: 72px;
   transition: border-color 0.14s ease, background-color 0.14s ease;
 }
 
@@ -1885,24 +1909,29 @@ html[data-modo="claro"] .plate {
   width: 100%;
 }
 .rir-pick {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
 }
 .rir-pick button {
-  flex: 1 1 52px;
-  min-width: 52px;
-  min-height: 52px;
+  width: 100%;
+  min-width: 0;
+  min-height: 46px;
+  height: 46px;
   border: 1px solid var(--line);
-  border-radius: var(--r-md);
+  border-radius: var(--r-sm);
   background: var(--surface-2);
   color: var(--text);
   font-weight: 800;
-  font-size: var(--fs-sm);
+  font-size: var(--fs-md);
+  padding: 0;
   cursor: pointer;
-}
-.rir-pick button[data-rir="4"] {
-  flex: 1.4 1 96px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.12s ease, border-color 0.12s ease, transform 0.08s ease;
 }
 .rir-pick button[aria-pressed="true"] {
   background: var(--primary);
@@ -3428,9 +3457,41 @@ html[data-modo="claro"] .plate {
     letter-spacing: 0.01em;
     padding: 0 4px;
   }
+  .form-card {
+    padding: 16px 12px;
+  }
+  .workout-inputs-grid {
+    gap: 6px;
+  }
+  .workout-input-card {
+    padding: 8px 8px 10px;
+  }
+  .big-num-input {
+    font-size: 1.65rem !important;
+  }
+  .stepper-step-btn {
+    height: 40px;
+    font-size: 0.88rem;
+  }
 }
 
 @media (max-width: 360px) {
+  .form-card {
+    padding: 14px 10px;
+  }
+  .workout-inputs-grid {
+    gap: 6px;
+  }
+  .workout-input-card {
+    padding: 6px 6px 8px;
+  }
+  .big-num-input {
+    font-size: 1.5rem !important;
+  }
+  .stepper-step-btn {
+    height: 38px;
+    font-size: 0.82rem;
+  }
   .workout-actions {
     grid-template-columns: minmax(0, 1fr);
   }

@@ -241,7 +241,7 @@ export async function render(el) {
       </label>
 
       <div class="workout-set-header">
-        <div>
+        <div class="workout-set-title-wrap">
           <span class="workout-set-title">Serie ${nextSetNum}</span>
           ${targetSet ? `
             <p class="workout-set-target">A superar: <strong><span data-kg="${targetSet.peso}">${fmtWeight(targetSet.peso, unidad)}</span> <span data-unit>${esc(unidad)}</span> × ${targetSet.reps}</strong></p>
