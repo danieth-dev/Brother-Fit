@@ -6,9 +6,11 @@ const BASE = [
   ['Press banca', 'Pecho'], ['Press inclinado con mancuernas', 'Pecho'], ['Aperturas', 'Pecho'],
   ['Press en poleas', 'Pecho'], ['Press Hammer', 'Pecho'], ['Flexiones', 'Pecho'],
   ['Dominadas', 'Espalda'], ['Remo con barra', 'Espalda'], ['Jalón al pecho', 'Espalda'], ['Peso muerto', 'Espalda'],
-  ['Sentadilla', 'Piernas'], ['Prensa de piernas', 'Piernas'], ['Peso muerto rumano', 'Piernas'], ['Zancadas', 'Piernas'],
+  ['Remo unilateral', 'Espalda'], ['Remo T', 'Espalda'], ['Jalón a la cara', 'Espalda'],
+  ['Sentadilla', 'Piernas'], ['Prensa de piernas', 'Piernas'], ['Prensa de piernas vertical', 'Piernas'],
+  ['Peso muerto rumano', 'Piernas'], ['Zancadas', 'Piernas'],
   ['Extensión de pierna', 'Piernas'], ['Sentadilla péndulo', 'Piernas'],
-  ['Press militar', 'Hombros'], ['Elevaciones laterales', 'Hombros'],
+  ['Press militar', 'Hombros'], ['Elevaciones laterales', 'Hombros'], ['Elevaciones frontales', 'Hombros'],
   ['Curl de bíceps', 'Bíceps'], ['Curl martillo', 'Bíceps'],
   ['Fondos', 'Tríceps'], ['Extensión de tríceps', 'Tríceps'], ['Copa', 'Tríceps'],
   ['Plancha', 'Core'], ['Crunch en polea', 'Core']

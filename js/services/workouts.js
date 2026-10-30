@@ -18,6 +18,11 @@ export function muscleName(grupo) {
 /* Parte concreta, cuando el grupo se queda corto. El nombre tiene que coincidir exactamente. */
 const FOCO = {
   'Sentadilla péndulo': 'cuádriceps y glúteo',
+  'Prensa de piernas vertical': 'cuádriceps y glúteo',
+  'Elevaciones frontales': 'deltoides anterior',
+  'Jalón a la cara': 'deltoides posterior y trapecio',
+  'Remo unilateral': 'dorsal ancho',
+  'Remo T': 'espalda media',
 };
 
 export function muscleFocus(nombre) {
