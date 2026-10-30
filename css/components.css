@@ -372,13 +372,13 @@ body.picker-open {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 22px;
-  margin: -8px -16px 0;
+  height: 28px;
+  margin: -4px -16px 4px;
   cursor: grab;
   touch-action: none;
 }
 .picker-grabber span {
-  width: 40px;
+  width: 44px;
   height: 5px;
   border-radius: var(--r-full);
   background: var(--line-strong);
@@ -554,11 +554,11 @@ body.picker-open {
   padding: 4px;
 }
 
-/* ---------- Catálogo de ejercicios: se ajusta al alto visible (sobre el teclado) ---------- */
+/* Catálogo de ejercicios: se ajusta al alto visible (sobre el teclado), dejando margen superior */
 .picker-sheet--catalog {
   inset: auto 0;
-  top: var(--vvt, 0px);
-  height: var(--vvh, 100dvh);
+  top: calc(var(--vvt, 0px) + max(env(safe-area-inset-top, 0px), 16px));
+  height: calc(var(--vvh, 100dvh) - max(env(safe-area-inset-top, 0px), 16px));
 }
 .picker-sheet--catalog .picker-panel {
   display: flex;
@@ -569,12 +569,12 @@ body.picker-open {
   min-height: 0;
   flex: 0 1 auto;
 }
-/* Modo búsqueda: pantalla completa, la lista llena el espacio libre entre buscador y teclado */
+/* Modo búsqueda: conserva el margen superior de protección del sistema y esquinas redondeadas */
 .picker-sheet.is-searching .picker-panel {
   height: 100%;
-  border: 0;
-  border-radius: 0;
-  padding-top: calc(env(safe-area-inset-top, 0px) + 8px);
+  border-bottom: 0;
+  border-radius: var(--r-xl) var(--r-xl) 0 0;
+  padding-top: 10px;
   padding-bottom: 8px;
 }
 .picker-sheet.is-searching .picker-list {
