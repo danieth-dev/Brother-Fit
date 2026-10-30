@@ -101,7 +101,7 @@ function todayLogMarkup(groups, unidad) {
     </summary>
     ${groups.map((g) => `
       <div class="group">
-        <h3><i class="dot" data-g="${esc(g.exercise.grupo)}"></i>${esc(g.exercise.nombre)}${muscleName(g.exercise.grupo) ? `<span class="muscle">${esc(muscleName(g.exercise.grupo))}</span>` : ''}</h3>
+        <h3><i class="dot" data-g="${esc(muscleName(g.exercise.grupo) || g.exercise.grupo)}"></i>${esc(g.exercise.nombre)}${muscleName(g.exercise.grupo) ? `<span class="muscle">${esc(muscleName(g.exercise.grupo))}</span>` : ''}</h3>
         <ul class="sets">
           ${g.sets.map((s, i) => `
             <li>
@@ -215,7 +215,7 @@ export async function render(el) {
       <label class="field">
         <span>Ejercicio</span>
         <select name="exerciseId" data-change="exercise">
-          ${orderedExs.map((e) => `<option value="${e.id}" data-grupo="${esc(e.grupo)}" ${todayRank.has(e.id) ? 'data-hoy="1"' : ''} ${muscleFocus(e.nombre) ? `data-foco="${esc(muscleFocus(e.nombre))}"` : ''} ${isOwnExercise(e) ? 'data-propio="1"' : ''} ${e.id === selectedEx ? 'selected' : ''}>${esc(e.nombre)}</option>`).join('')}
+          ${orderedExs.map((e) => `<option value="${e.id}" data-grupo="${esc(muscleName(e.grupo) || e.grupo)}" ${todayRank.has(e.id) ? 'data-hoy="1"' : ''} ${muscleFocus(e.nombre) ? `data-foco="${esc(muscleFocus(e.nombre))}"` : ''} ${isOwnExercise(e) ? 'data-propio="1"' : ''} ${e.id === selectedEx ? 'selected' : ''}>${esc(e.nombre)}</option>`).join('')}
         </select>
       </label>
 

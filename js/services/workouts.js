@@ -2,20 +2,43 @@
 import { db } from '../db.js';
 import { now } from '../utils/clock.js';
 import { todayISO, startOfWeekISO, addDays } from '../utils/dates.js';
-import { isCatalogExercise } from './seed.js';
+import { isCatalogExercise, BASE } from './seed.js';
 import { PENDING_KEY, effortPhrase } from './effort.js';
 
 export { isCatalogExercise };
 
 export const GRUPOS = ['Pecho', 'Espalda', 'Piernas', 'Hombros', 'Bíceps', 'Tríceps', 'Core', 'Cardio', 'Otro'];
 
-/* "Otro" no nombra un músculo: no se muestra. Si viene con caracteres rotos se normaliza. */
-export function muscleName(grupo) {
+export function normalizeGrupo(grupo) {
   let g = String(grupo || '').trim();
-  if (g.includes('?')) {
-    if (/b\?ceps/i.test(g)) g = 'Bíceps';
-    else if (/tr\?ceps/i.test(g)) g = 'Tríceps';
-  }
+  if (!g) return 'Otro';
+  if (/b[\?íi\uFFFD]ceps/i.test(g)) return 'Bíceps';
+  if (/tr[\?íi\uFFFD]ceps/i.test(g)) return 'Tríceps';
+  if (/pecho|pectoral/i.test(g)) return 'Pecho';
+  if (/espalda|dorsal/i.test(g)) return 'Espalda';
+  if (/pierna|cuadriceps|femoral|gluteo/i.test(g)) return 'Piernas';
+  if (/hombro|deltoid/i.test(g)) return 'Hombros';
+  if (/core|abdomen|abdominal/i.test(g)) return 'Core';
+  if (/cardio/i.test(g)) return 'Cardio';
+  const match = GRUPOS.find((v) => v.toLowerCase() === g.toLowerCase());
+  return match || (GRUPOS.includes(g) ? g : 'Otro');
+}
+
+export function cleanExerciseName(nombre) {
+  let n = String(nombre || '').trim();
+  if (!n) return '';
+  n = n.replace(/Jal[\?\uFFFD]n/gi, 'Jalón')
+       .replace(/b[\?\uFFFD]ceps/gi, 'bíceps')
+       .replace(/tr[\?\uFFFD]ceps/gi, 'tríceps')
+       .replace(/Extensi[\?\uFFFD]n/gi, 'Extensión')
+       .replace(/p[\?\uFFFD]ndulo/gi, 'péndulo')
+       .replace(/[\?\uFFFD]n\b/gi, 'ón');
+  return n;
+}
+
+/* "Otro" no nombra un músculo: no se muestra. Si viene con caracteres rotos o mayúsculas se normaliza. */
+export function muscleName(grupo) {
+  const g = normalizeGrupo(grupo);
   return g && g !== 'Otro' ? g : '';
 }
 
@@ -118,27 +141,51 @@ export function adjusted1RM(peso, reps, rpe) {
 }
 
 export async function sanitizeExercises() {
-  const all = await db.getAll('exercises');
-  for (const ex of all) {
-    let changed = false;
-    let n = ex.nombre;
-    let g = ex.grupo;
-    if (n.includes('?')) {
-      n = n.replace(/Jal\?n/g, 'Jalón')
-           .replace(/b\?ceps/g, 'bíceps')
-           .replace(/tr\?ceps/g, 'tríceps')
-           .replace(/Extensi\?n/g, 'Extensión')
-           .replace(/p\?ndulo/g, 'péndulo');
-      changed = true;
+  try {
+    const all = await db.getAll('exercises').catch(() => []);
+    if (!all.length) return;
+
+    const byName = new Map();
+    for (const ex of all) {
+      let cleanName = cleanExerciseName(ex.nombre);
+      const baseMatch = BASE.find(([bName]) => foldName(bName) === foldName(cleanName));
+      if (baseMatch) cleanName = baseMatch[0];
+      const cleanGrupo = baseMatch ? baseMatch[1] : normalizeGrupo(ex.grupo);
+      const key = foldName(cleanName);
+      if (!byName.has(key)) byName.set(key, []);
+      byName.get(key).push({ ex, cleanName, cleanGrupo });
     }
-    if (g.includes('?')) {
-      if (/b\?ceps/i.test(g)) g = 'Bíceps';
-      else if (/tr\?ceps/i.test(g)) g = 'Tríceps';
-      changed = true;
+
+    for (const [, list] of byName) {
+      try {
+        const canonical = list.find((item) => item.ex.nombre === item.cleanName) || list[0];
+        const duplicates = list.filter((item) => item.ex.id !== canonical.ex.id);
+
+        for (const dup of duplicates) {
+          try {
+            const sets = await db.byIndex('sets', 'exerciseId', dup.ex.id);
+            for (const s of sets) {
+              await db.put('sets', { ...s, exerciseId: canonical.ex.id });
+            }
+            await db.remove('exercises', dup.ex.id);
+          } catch (dupErr) {
+            console.warn('Error fusionando ejercicio duplicado:', dup.ex, dupErr);
+          }
+        }
+
+        if (canonical.ex.nombre !== canonical.cleanName || canonical.ex.grupo !== canonical.cleanGrupo) {
+          await db.put('exercises', {
+            ...canonical.ex,
+            nombre: canonical.cleanName,
+            grupo: canonical.cleanGrupo,
+          });
+        }
+      } catch (itemErr) {
+        console.warn('Error sanitizando ejercicio:', itemErr);
+      }
     }
-    if (changed) {
-      await db.put('exercises', { ...ex, nombre: n, grupo: g });
-    }
+  } catch (e) {
+    console.warn('Error en sanitizeExercises:', e);
   }
 }
 
@@ -150,10 +197,16 @@ export async function listExercises() {
 export async function addExercise(nombre, grupo = 'Otro') {
   nombre = String(nombre || '').trim();
   if (!nombre) throw new Error('Escribe el nombre del ejercicio.');
+  grupo = normalizeGrupo(grupo);
+  const all = await db.getAll('exercises').catch(() => []);
+  const dup = all.find((e) => e.nombre.toLowerCase() === nombre.toLowerCase());
+  if (dup) throw new Error('Ese ejercicio ya existe.');
   try {
     return await db.add('exercises', { nombre, grupo });
   } catch (e) {
-    if (e?.name === 'ConstraintError') throw new Error('Ese ejercicio ya existe.');
+    if (e?.name === 'ConstraintError' || (e?.message && e.message.toLowerCase().includes('constraint'))) {
+      throw new Error('Ese ejercicio ya existe.');
+    }
     throw e;
   }
 }
@@ -178,11 +231,16 @@ export async function updateExercise(id, nombre, grupo = 'Otro') {
   nombre = String(nombre || '').trim();
   if (!nombre) throw new Error('Escribe el nombre del ejercicio.');
   if (isCatalogExercise(nombre)) throw new Error('Ese nombre es del catálogo.');
-  grupo = GRUPOS.includes(grupo) ? grupo : 'Otro';
+  grupo = normalizeGrupo(grupo);
+  const all = await db.getAll('exercises').catch(() => []);
+  const dup = all.find((e) => e.id !== ex.id && e.nombre.toLowerCase() === nombre.toLowerCase());
+  if (dup) throw new Error('Ese ejercicio ya existe.');
   try {
     await db.put('exercises', { ...ex, nombre, grupo });
   } catch (e) {
-    if (e?.name === 'ConstraintError') throw new Error('Ese ejercicio ya existe.');
+    if (e?.name === 'ConstraintError' || (e?.message && e.message.toLowerCase().includes('constraint'))) {
+      throw new Error('Ese ejercicio ya existe.');
+    }
     throw e;
   }
   return ex.id;

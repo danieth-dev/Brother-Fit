@@ -1,4 +1,4 @@
-import { listExercises, progressForExercise, lastTrainedExerciseId, prByExercise, isOwnExercise, muscleFocus } from '../services/workouts.js';
+import { listExercises, progressForExercise, lastTrainedExerciseId, prByExercise, isOwnExercise, muscleFocus, muscleName } from '../services/workouts.js';
 import { addBodyWeight, listBodyWeights, deleteBodyMetric } from '../services/body.js';
 import { saveSettings } from '../store.js';
 import { delegate, forms, changes, toast, esc, num, fmtNum, go } from '../utils/dom.js';
@@ -250,7 +250,7 @@ export async function render(el, [idParam] = []) {
     <label class="field">
       <span>Ejercicio seleccionado</span>
       <select data-change="exercise">
-        ${exs.map((e) => `<option value="${e.id}" data-grupo="${esc(e.grupo)}" ${muscleFocus(e.nombre) ? `data-foco="${esc(muscleFocus(e.nombre))}"` : ''} ${isOwnExercise(e) ? 'data-propio="1"' : ''} ${e.id === exId ? 'selected' : ''}>${esc(e.nombre)}</option>`).join('')}
+        ${exs.map((e) => `<option value="${e.id}" data-grupo="${esc(muscleName(e.grupo) || e.grupo)}" ${muscleFocus(e.nombre) ? `data-foco="${esc(muscleFocus(e.nombre))}"` : ''} ${isOwnExercise(e) ? 'data-propio="1"' : ''} ${e.id === exId ? 'selected' : ''}>${esc(e.nombre)}</option>`).join('')}
       </select>
     </label>
 

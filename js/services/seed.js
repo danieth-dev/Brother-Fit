@@ -2,7 +2,7 @@
 import { db } from '../db.js';
 import { addExercise } from './workouts.js';
 
-const BASE = [
+export const BASE = [
   ['Press banca', 'Pecho'], ['Press inclinado con mancuernas', 'Pecho'], ['Aperturas', 'Pecho'],
   ['Press en poleas', 'Pecho'], ['Press Hammer', 'Pecho'], ['Flexiones', 'Pecho'],
   ['Dominadas', 'Espalda'], ['Remo con barra', 'Espalda'], ['Jalón al pecho', 'Espalda'], ['Peso muerto', 'Espalda'],
@@ -24,14 +24,19 @@ export function isCatalogExercise(nombre) {
 }
 
 export async function ensureSeed() {
+  const all = await db.getAll('exercises').catch(() => []);
+  const existing = new Set(all.map((e) => e.nombre.toLowerCase().trim()));
   for (const [nombre, grupo] of BASE) {
-    try {
-      await addExercise(nombre, grupo);
-    } catch (e) {
-      if (e?.message !== 'Ese ejercicio ya existe.') throw e;
+    if (!existing.has(nombre.toLowerCase().trim())) {
+      try {
+        await addExercise(nombre, grupo);
+        existing.add(nombre.toLowerCase().trim());
+      } catch (e) {
+        /* Si ya existe o falla por restricción, se ignora */
+      }
     }
   }
-  await db.put('meta', { key: 'seeded', value: true });
+  await db.put('meta', { key: 'seeded', value: true }).catch(() => {});
 }
 
 export async function loadFixtures() {

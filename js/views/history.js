@@ -76,7 +76,7 @@ async function detail(el, id) {
     ${d.groups.length ? d.groups.map((g) => `
       <div class="group">
         <h3>
-          <i class="dot" data-g="${esc(g.exercise.grupo)}"></i>
+          <i class="dot" data-g="${esc(muscleName(g.exercise.grupo) || g.exercise.grupo)}"></i>
           ${esc(g.exercise.nombre)}
           ${muscleName(g.exercise.grupo) ? `<span class="muscle">${esc(muscleName(g.exercise.grupo))}</span>` : ''}
           <a href="#/progress/${g.exercise.id}" class="btn-link-sm" title="Ver progreso de ${esc(g.exercise.nombre)}">Ver progreso →</a>

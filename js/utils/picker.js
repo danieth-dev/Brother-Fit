@@ -139,12 +139,23 @@ function bindDragToClose() {
   }
 }
 
+function normalizeGrupoPicker(grupo) {
+  let g = String(grupo || '').trim();
+  if (!g) return '';
+  if (/b[\?íi\uFFFD]ceps/i.test(g)) return 'Bíceps';
+  if (/tr[\?íi\uFFFD]ceps/i.test(g)) return 'Tríceps';
+  if (/pecho|pectoral/i.test(g)) return 'Pecho';
+  if (/espalda|dorsal/i.test(g)) return 'Espalda';
+  if (/pierna|cuadriceps|femoral|gluteo/i.test(g)) return 'Piernas';
+  if (/hombro|deltoid/i.test(g)) return 'Hombros';
+  if (/core|abdomen|abdominal/i.test(g)) return 'Core';
+  if (/cardio/i.test(g)) return 'Cardio';
+  const match = GRUPO_ORDER.find((v) => v.toLowerCase() === g.toLowerCase());
+  return match || g;
+}
+
 function muscleOf(opt) {
-  let g = opt?.dataset?.grupo?.trim() || '';
-  if (g.includes('?')) {
-    if (/b\?ceps/i.test(g)) g = 'Bíceps';
-    else if (/tr\?ceps/i.test(g)) g = 'Tríceps';
-  }
+  let g = normalizeGrupoPicker(opt?.dataset?.grupo);
   return g && g !== 'Otro' ? g : '';
 }
 
