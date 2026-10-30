@@ -27,6 +27,7 @@ function ensureSheet() {
   sheet.innerHTML = `
     <button type="button" class="picker-backdrop" aria-label="Cerrar"></button>
     <div class="picker-panel" role="dialog" aria-modal="true" aria-labelledby="picker-title">
+      <div class="picker-grabber" aria-hidden="true"><span></span></div>
       <div class="picker-head">
         <p class="picker-title" id="picker-title"></p>
         <button type="button" class="picker-close" aria-label="Cerrar">${icons.x({ size: 18 })}</button>
@@ -47,10 +48,84 @@ function ensureSheet() {
   searchEl.addEventListener('input', () => {
     findQuery = searchEl.value;
     applyFind();
+    list.scrollTop = 0;
+    syncSearching();
+  });
+  // Modo búsqueda: la hoja ocupa todo el alto visible para que el teclado no tape los resultados.
+  searchEl.addEventListener('focus', syncSearching);
+  searchEl.addEventListener('blur', () => setTimeout(syncSearching, 0));
+  searchEl.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    firstVisible()?.click();
   });
   sheet.querySelector('.picker-backdrop').addEventListener('click', closePicker);
   sheet.querySelector('.picker-close').addEventListener('click', closePicker);
   sheet.addEventListener('keydown', onKey);
+  bindDragToClose();
+}
+
+/* Deslizar hacia abajo desde la barrita (o el encabezado) para cerrar, como una hoja nativa. */
+function bindDragToClose() {
+  const panel = sheet.querySelector('.picker-panel');
+  const backdrop = sheet.querySelector('.picker-backdrop');
+  const zones = [sheet.querySelector('.picker-grabber'), sheet.querySelector('.picker-head')];
+  let startY = 0, lastY = 0, lastT = 0, velocity = 0, dragging = false, pointerId = null;
+
+  const reset = () => {
+    panel.style.transition = '';
+    panel.style.transform = '';
+    backdrop.style.transition = '';
+    backdrop.style.opacity = '';
+  };
+
+  const onDown = (e) => {
+    if (e.button > 0 || e.target.closest('.picker-close')) return;
+    dragging = true;
+    pointerId = e.pointerId;
+    startY = lastY = e.clientY;
+    lastT = e.timeStamp;
+    velocity = 0;
+    e.currentTarget.setPointerCapture(pointerId);
+    if (document.activeElement === searchEl) searchEl.blur();
+    panel.style.transition = 'none';
+    backdrop.style.transition = 'none';
+  };
+
+  const onMove = (e) => {
+    if (!dragging || e.pointerId !== pointerId) return;
+    const raw = e.clientY - startY;
+    // Hacia arriba solo cede un poco (resistencia); hacia abajo sigue al dedo.
+    const dy = raw > 0 ? raw : raw / 6;
+    const dt = Math.max(1, e.timeStamp - lastT);
+    velocity = (e.clientY - lastY) / dt;
+    lastY = e.clientY;
+    lastT = e.timeStamp;
+    panel.style.transform = `translateY(${dy}px)`;
+    const h = panel.offsetHeight || 1;
+    backdrop.style.opacity = String(Math.max(0, 1 - Math.max(0, dy) / h));
+  };
+
+  const onUp = (e) => {
+    if (!dragging || e.pointerId !== pointerId) return;
+    dragging = false;
+    const dy = e.clientY - startY;
+    const h = panel.offsetHeight || 1;
+    const shouldClose = dy > Math.min(120, h * 0.25) || (velocity > 0.6 && dy > 20);
+    if (!shouldClose) { reset(); return; }
+    // El panel sigue bajando desde donde lo soltaste; el fondo no vuelve a oscurecerse.
+    panel.style.transition = '';
+    panel.style.transform = '';
+    closePicker();
+    setTimeout(() => { backdrop.style.transition = ''; backdrop.style.opacity = ''; }, 320);
+  };
+
+  for (const z of zones) {
+    z.addEventListener('pointerdown', onDown);
+    z.addEventListener('pointermove', onMove);
+    z.addEventListener('pointerup', onUp);
+    z.addEventListener('pointercancel', onUp);
+  }
 }
 
 function muscleOf(opt) {
@@ -109,17 +184,87 @@ function paintGroups(select) {
   }
 }
 
+/* ---------- Alto visible real (el teclado en Android no achica la página) ---------- */
+function syncViewport() {
+  const vv = window.visualViewport;
+  if (!vv || !sheet) return;
+  sheet.style.setProperty('--vvh', `${vv.height}px`);
+  sheet.style.setProperty('--vvt', `${vv.offsetTop}px`);
+}
+
+function watchViewport(on) {
+  const vv = window.visualViewport;
+  if (!vv) return;
+  const fn = on ? 'addEventListener' : 'removeEventListener';
+  vv[fn]('resize', syncViewport);
+  vv[fn]('scroll', syncViewport);
+  if (on) syncViewport();
+}
+
+function syncSearching() {
+  if (!sheet) return;
+  const active = document.activeElement === searchEl || findQuery.trim() !== '';
+  sheet.classList.toggle('is-searching', !findEl.hidden && active);
+}
+
+function firstVisible() {
+  return [...list.querySelectorAll('.picker-option')].find((btn) => !entryOf(btn).hidden);
+}
+
+/* Puntuación: 0 = el nombre empieza así · 1 = una palabra empieza así · 2 = aparece en medio */
+function scoreOf(find, q) {
+  if (find.startsWith(q)) return 0;
+  if (find.includes(` ${q}`)) return 1;
+  return 2;
+}
+
+/* Resalta la coincidencia en el nombre original (con tildes), mapeando carácter a carácter. */
+function paintName(btn, q) {
+  const title = btn.querySelector('.picker-name');
+  const name = btn.dataset.name || '';
+  if (!title) return;
+  if (!q) { title.textContent = name; return; }
+  const chars = [...name];
+  const folded = chars.map((c) => fold(c));
+  const flat = folded.join('');
+  const at = flat.indexOf(q);
+  if (at < 0) { title.textContent = name; return; }
+  let pos = 0, start = -1, end = chars.length;
+  for (let i = 0; i < chars.length; i++) {
+    if (start < 0 && pos >= at) start = i;
+    pos += folded[i].length;
+    if (pos >= at + q.length) { end = i + 1; break; }
+  }
+  if (start < 0) start = 0;
+  const mark = document.createElement('mark');
+  mark.textContent = chars.slice(start, end).join('');
+  title.replaceChildren(
+    document.createTextNode(chars.slice(0, start).join('')),
+    mark,
+    document.createTextNode(chars.slice(end).join(''))
+  );
+}
+
 function applyFind() {
-  const q = fold(findQuery);
-  let shown = 0;
+  const q = fold(findQuery).trim();
+  const entries = [];
   list.querySelectorAll('.picker-option').forEach((btn) => {
     const grupo = btn.dataset.grupo || '';
     const groupOk = !findGrupo || (findGrupo === '__hoy__' ? btn.dataset.hoy === '1' : grupo === findGrupo);
-    const ok = groupOk && (!q || (btn.dataset.find || '').includes(q));
-    entryOf(btn).hidden = !ok;
-    if (ok) shown += 1;
+    const find = btn.dataset.find || '';
+    const ok = groupOk && (!q || find.includes(q));
+    const entry = entryOf(btn);
+    entry.hidden = !ok;
+    btn.classList.remove('is-first');
+    paintName(btn, ok ? q : '');
+    entries.push({ entry, btn, ok, idx: Number(btn.dataset.idx), score: q && ok ? scoreOf(find, q) : 0 });
   });
-  if (emptyEl) emptyEl.hidden = shown > 0;
+  // Mejores coincidencias primero; sin búsqueda, orden original del catálogo.
+  entries.sort((a, b) => (q ? a.score - b.score : 0) || a.idx - b.idx);
+  for (const { entry } of entries) list.append(entry);
+  const shown = entries.filter((e) => e.ok);
+  if (q && shown[0]) shown[0].btn.classList.add('is-first');
+  if (emptyEl) emptyEl.hidden = shown.length > 0;
 }
 
 function onKey(e) {
@@ -158,6 +303,8 @@ function closePicker({ immediate = false } = {}) {
   openSelect = null;
   const trigger = lastTrigger;
   sheet.classList.remove('open');
+  watchViewport(false);
+  if (document.activeElement === searchEl) searchEl.blur();
   if (!scrollStillLocked()) document.body.classList.remove('picker-open');
   const hide = () => {
     sheet.hidden = true;
@@ -191,6 +338,9 @@ function openPicker(select, label, trigger) {
   findGrupo = '';
   searchEl.value = '';
   findEl.hidden = !catalog;
+  sheet.classList.toggle('picker-sheet--catalog', catalog);
+  sheet.classList.remove('is-searching');
+  watchViewport(true);
   if (catalog) paintGroups(select);
   list.replaceChildren();
   emptyEl = null;
@@ -211,6 +361,8 @@ function openPicker(select, label, trigger) {
     btn.setAttribute('aria-selected', selected ? 'true' : 'false');
     const name = opt.textContent.trim();
     btn.dataset.find = fold(name);
+    btn.dataset.name = name;
+    btn.dataset.idx = String(opt.index);
     btn.dataset.grupo = opt.dataset.grupo || '';
     if (opt.dataset.hoy === '1') btn.dataset.hoy = '1';
     const grupo = muscleOf(opt);
