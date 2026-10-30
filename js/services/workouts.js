@@ -42,18 +42,62 @@ export function muscleName(grupo) {
   return g && g !== 'Otro' ? g : '';
 }
 
-/* Parte concreta, cuando el grupo se queda corto. El nombre tiene que coincidir exactamente. */
+/* Músculo o enfoque específico de cada ejercicio. */
 const FOCO = {
-  'Sentadilla péndulo': 'cuádriceps y glúteo',
-  'Prensa de piernas vertical': 'cuádriceps y glúteo',
-  'Elevaciones frontales': 'deltoides anterior',
-  'Jalón a la cara': 'deltoides posterior y trapecio',
+  // Pecho
+  'Press banca': 'pectoral mayor y tríceps',
+  'Press inclinado con mancuernas': 'pectoral superior (clavicular)',
+  'Aperturas': 'pectoral (estiramiento y aislamiento)',
+  'Press en poleas': 'pectoral (tensión constante)',
+  'Press Hammer': 'pectoral medio e inferior',
+  'Flexiones': 'pectoral y core',
+
+  // Espalda
+  'Dominadas': 'dorsal ancho y bíceps',
+  'Remo con barra': 'espalda media y dorsal',
+  'Jalón al pecho': 'dorsal ancho',
+  'Peso muerto': 'cadena posterior y lumbar',
   'Remo unilateral': 'dorsal ancho',
-  'Remo T': 'espalda media',
+  'Remo T': 'espalda media y romboides',
+  'Jalón a la cara': 'deltoides posterior y trapecio',
+
+  // Piernas
+  'Sentadilla': 'cuádriceps y glúteo',
+  'Prensa de piernas': 'cuádriceps y glúteo (inclinada)',
+  'Prensa de piernas vertical': 'cuádriceps y glúteo (90°)',
+  'Peso muerto rumano': 'isquios y glúteo',
+  'Zancadas': 'glúteo y cuádriceps',
+  'Extensión de pierna': 'cuádriceps (aislamiento)',
+  'Sentadilla péndulo': 'cuádriceps y glúteo',
+
+  // Hombros
+  'Press militar': 'deltoides anterior',
+  'Elevaciones laterales': 'deltoides lateral',
+  'Elevaciones frontales': 'deltoides anterior',
+
+  // Bíceps
+  'Curl de bíceps': 'bíceps braquial',
+  'Curl martillo': 'braquial y antebrazo',
+
+  // Tríceps
+  'Fondos': 'tríceps y pectoral inferior',
+  'Extensión de tríceps': 'tríceps (cabeza lateral/medial)',
+  'Copa': 'tríceps (cabeza larga)',
+
+  // Core
+  'Plancha': 'estabilidad y transverso',
+  'Crunch en polea': 'recto abdominal',
 };
 
 export function muscleFocus(nombre) {
-  return FOCO[String(nombre || '').trim()] || '';
+  const n = String(nombre || '').trim();
+  if (!n) return '';
+  if (FOCO[n]) return FOCO[n];
+  const target = foldName(n);
+  for (const [key, val] of Object.entries(FOCO)) {
+    if (foldName(key) === target) return val;
+  }
+  return '';
 }
 
 function foldName(value) {

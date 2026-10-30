@@ -101,7 +101,7 @@ function todayLogMarkup(groups, unidad) {
     </summary>
     ${groups.map((g) => `
       <div class="group">
-        <h3><i class="dot" data-g="${esc(muscleName(g.exercise.grupo) || g.exercise.grupo)}"></i>${esc(g.exercise.nombre)}${muscleName(g.exercise.grupo) ? `<span class="muscle">${esc(muscleName(g.exercise.grupo))}</span>` : ''}</h3>
+        <h3><i class="dot" data-g="${esc(muscleName(g.exercise.grupo) || g.exercise.grupo)}"></i>${esc(g.exercise.nombre)}${muscleName(g.exercise.grupo) ? `<span class="muscle">${esc(muscleName(g.exercise.grupo))}${muscleFocus(g.exercise.nombre) ? `<span class="muscle-focus">${esc(muscleFocus(g.exercise.nombre))}</span>` : ''}</span>` : ''}</h3>
         <ul class="sets">
           ${g.sets.map((s, i) => `
             <li>
