@@ -399,27 +399,6 @@
   font-weight: 700;
 }
 
-.tipo-seg {
-  display: inline-flex;
-  width: auto;
-  flex: 0 0 auto;
-  gap: 2px;
-  padding: 3px;
-  border-radius: var(--r-sm);
-  background: var(--surface-2);
-}
-
-.tipo-seg button {
-  flex: 0 0 auto;
-  min-height: 34px;
-  height: 34px;
-  padding: 0 10px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  text-transform: capitalize;
-}
-
 /* Tarjetas ergonómicas de Peso y Repeticiones */
 .workout-inputs-grid {
   display: grid;
@@ -2107,6 +2086,35 @@ html[data-modo="claro"] .plate {
   letter-spacing: 0.02em;
 }
 
+/* Pastilla compacta de tipo en la cabecera (Trabajo / Calentamiento) */
+.seg.tipo-seg {
+  display: inline-flex !important;
+  width: auto !important;
+  max-width: 100%;
+  flex: 0 0 auto !important;
+  gap: 2px !important;
+  padding: 3px !important;
+  border-radius: var(--r-sm) !important;
+  background: var(--surface-2) !important;
+  box-sizing: border-box !important;
+  overflow: visible !important;
+}
+
+.seg.tipo-seg button {
+  flex: 0 0 auto !important;
+  width: auto !important;
+  min-width: 0 !important;
+  min-height: 34px !important;
+  height: 34px !important;
+  padding: 0 10px !important;
+  font-size: 11.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.01em !important;
+  text-transform: capitalize !important;
+  white-space: nowrap !important;
+  box-sizing: border-box !important;
+}
+
 /* ---------- Gráfico SVG de Progresión ---------- */
 .chart {
   display: block;
@@ -3452,7 +3460,7 @@ html[data-modo="claro"] .plate {
     flex: 1 1 auto;
     min-width: 0;
   }
-  .seg button {
+  .seg:not(.tipo-seg):not(.unit-seg) button {
     font-size: 0.6875rem;
     letter-spacing: 0.01em;
     padding: 0 4px;
