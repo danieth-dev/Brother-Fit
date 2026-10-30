@@ -118,9 +118,10 @@ export const db = {
   /* Restauración atómica: si algo falla, no se cambia nada. clearAll() = restoreAll({}). */
   async restoreAll(data) {
     const conn = await openDB();
+    const availableStores = STORES.filter((s) => conn.objectStoreNames.contains(s));
     return new Promise((resolve, reject) => {
-      const tx = conn.transaction(STORES, 'readwrite');
-      for (const name of STORES) {
+      const tx = conn.transaction(availableStores, 'readwrite');
+      for (const name of availableStores) {
         const st = tx.objectStore(name);
         st.clear();
         const rows = Array.isArray(data?.[name]) ? data[name] : [];

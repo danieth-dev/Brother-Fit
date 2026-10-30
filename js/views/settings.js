@@ -151,9 +151,15 @@ export async function render(el) {
         confirmLabel: 'Borrar todo',
       });
       if (!second) return;
-      await db.clearAll();
-      location.hash = '#/';
-      location.reload();
+      try {
+        localStorage.setItem('brother_fit_cleared', '1');
+        await db.clearAll();
+        location.hash = '#/';
+        location.reload();
+      } catch (err) {
+        console.error('Error al borrar datos:', err);
+        toast('No se pudieron borrar los datos: ' + (err?.message || err));
+      }
     }
   });
 }

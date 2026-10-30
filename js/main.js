@@ -77,8 +77,13 @@ async function boot() {
     const params = new URLSearchParams(window.location.search);
     const isLocal = ['localhost', '127.0.0.1', ''].includes(window.location.hostname);
     const wantsFixtures = params.has('fixtures') || params.has('test') || params.has('seed');
+    const wasCleared = localStorage.getItem('brother_fit_cleared') === '1';
 
-    if (wantsFixtures || (isLocal && (await db.getAll('workouts')).length === 0 && (await db.getAll('supplements')).length === 0)) {
+    if (wantsFixtures) {
+      localStorage.removeItem('brother_fit_cleared');
+    }
+
+    if (!wasCleared && (wantsFixtures || (isLocal && (await db.getAll('workouts')).length === 0 && (await db.getAll('supplements')).length === 0))) {
       try {
         const { loadFixtures } = await import('./services/seed.js');
         const loaded = await loadFixtures();

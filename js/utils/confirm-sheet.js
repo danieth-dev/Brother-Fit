@@ -7,9 +7,22 @@ let bodyEl;
 let cancelBtn;
 let confirmBtn;
 let settle;
+let hideTimer = null;
+let panelTransitionHandler = null;
 
 function otherPickerOpen() {
   return !!document.querySelector('.picker-sheet.open:not(.confirm-sheet)');
+}
+
+function cleanupHide() {
+  if (hideTimer) {
+    clearTimeout(hideTimer);
+    hideTimer = null;
+  }
+  if (panelTransitionHandler && sheet) {
+    sheet.querySelector('.picker-panel')?.removeEventListener('transitionend', panelTransitionHandler);
+    panelTransitionHandler = null;
+  }
 }
 
 function ensureSheet() {
@@ -52,20 +65,27 @@ function ensureSheet() {
 }
 
 function close(ok) {
-  if (!sheet || sheet.hidden) return;
+  if (!settle) return;
   const done = settle;
   settle = null;
+  cleanupHide();
+
   sheet.classList.remove('open');
   const hide = () => {
+    cleanupHide();
+    if (!sheet) return;
     sheet.hidden = true;
     if (!otherPickerOpen()) document.body.classList.remove('picker-open');
   };
-  if (matchMedia('(prefers-reduced-motion: reduce)').matches) hide();
-  else {
-    sheet.querySelector('.picker-panel').addEventListener('transitionend', hide, { once: true });
-    setTimeout(hide, 280);
+
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    hide();
+  } else {
+    panelTransitionHandler = hide;
+    sheet.querySelector('.picker-panel')?.addEventListener('transitionend', hide, { once: true });
+    hideTimer = setTimeout(hide, 280);
   }
-  done?.(!!ok);
+  done(!!ok);
 }
 
 /**
@@ -80,17 +100,23 @@ export function askConfirm({
   danger = true,
 } = {}) {
   ensureSheet();
-  if (settle) close(false);
+  cleanupHide();
+  if (settle) {
+    const prev = settle;
+    settle = null;
+    prev(false);
+  }
+
   titleEl.textContent = title || '¿Seguro?';
   bodyEl.textContent = body;
   bodyEl.hidden = !body;
   cancelBtn.textContent = cancelLabel;
   confirmBtn.textContent = confirmLabel;
   confirmBtn.className = danger ? 'btn btn-danger btn-confirm' : 'btn btn-primary btn-confirm';
-  document.body.append(sheet);
+
   sheet.hidden = false;
   document.body.classList.add('picker-open');
-  requestAnimationFrame(() => sheet.classList.add('open'));
+  sheet.classList.add('open');
   confirmBtn.focus();
   return new Promise((resolve) => { settle = resolve; });
 }
