@@ -260,7 +260,7 @@ export async function render(el, [idParam] = []) {
 
       <div class="seg metric-seg" role="group" aria-label="Métrica del gráfico" style="margin:16px 0 10px">
         ${Object.entries(METRICS).map(([k, label]) =>
-          `<button type="button" data-action="metric" data-metric="${k}" aria-pressed="${k === metric}">${label}</button>`).join('')}
+    `<button type="button" data-action="metric" data-metric="${k}" aria-pressed="${k === metric}">${label}</button>`).join('')}
       </div>
       <div id="metric-chart">${lineChart(points, { desc: `${METRICS[metric]} por sesión` })}</div>
       <p class="muted effort-note" id="adj-note" ${metric === 'adj' ? '' : 'hidden'}>${esc(adjNote)}</p>
@@ -338,5 +338,11 @@ export async function render(el, [idParam] = []) {
       else await render(el, [String(exId)]);
       toast(result.deleted ? 'Ejercicio eliminado' : 'Ejercicio guardado');
     });
+  });
+
+  el.addEventListener('exercise-created', async (e) => {
+    const { id, nombre } = e.detail;
+    await render(el, [String(id)]);
+    toast(`Ejercicio creado: «${nombre}»`);
   });
 }

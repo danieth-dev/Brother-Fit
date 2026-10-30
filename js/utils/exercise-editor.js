@@ -1,6 +1,6 @@
 /* Ficha para corregir o eliminar un ejercicio del atleta. Vive fuera de #app. */
 import {
-  getExercise, updateExercise, deleteExercise, countSetsForExercise, GRUPOS, isOwnExercise
+  getExercise, updateExercise, deleteExercise, countSetsForExercise, GRUPOS, isOwnExercise, addExercise
 } from '../services/workouts.js';
 import { dismissPicker, mountPickers } from './picker.js';
 import { askConfirm } from './confirm-sheet.js';
@@ -81,13 +81,22 @@ function busy(on) {
 
 async function save() {
   if (saving) return;
-  const id = Number(form.dataset.id);
+  const isCreate = form.dataset.mode === 'create';
+  const nombre = form.elements.nombre.value.trim();
+  const grupo = form.elements.grupo.value;
   const done = onDone;
   busy(true);
   try {
-    await updateExercise(id, form.elements.nombre.value, form.elements.grupo.value);
-    closeEditor({ immediate: true });
-    await done?.({ id, deleted: false });
+    if (isCreate) {
+      const id = await addExercise(nombre, grupo);
+      closeEditor({ immediate: true });
+      await done?.({ id, nombre, grupo, created: true });
+    } else {
+      const id = Number(form.dataset.id);
+      await updateExercise(id, nombre, grupo);
+      closeEditor({ immediate: true });
+      await done?.({ id, nombre, grupo, deleted: false });
+    }
   } catch (e) {
     toast(e.message || 'No se pudo guardar.');
     busy(false);
@@ -122,6 +131,29 @@ async function remove() {
   }
 }
 
+export function openExerciseCreator({ name = '', grupo = 'Pecho' } = {}, done) {
+  ensureSheet();
+  dismissPicker();
+  onDone = done;
+  saving = false;
+  form.dataset.mode = 'create';
+  delete form.dataset.id;
+  form.elements.nombre.value = name;
+  form.elements.grupo.value = GRUPOS.includes(grupo) ? grupo : 'Pecho';
+  titleEl.textContent = 'Crear nuevo ejercicio';
+  form.querySelector('.editor-delete').hidden = true;
+  busy(false);
+  mountPickers(sheet);
+  form.elements.grupo.dispatchEvent(new Event('change'));
+  document.body.append(sheet);
+  sheet.hidden = false;
+  document.body.classList.add('picker-open');
+  requestAnimationFrame(() => {
+    sheet.classList.add('open');
+    if (!name) form.elements.nombre.focus();
+  });
+}
+
 export async function openExerciseEditor(id, done) {
   const ex = await getExercise(id);
   if (!isOwnExercise(ex)) return;
@@ -129,10 +161,12 @@ export async function openExerciseEditor(id, done) {
   dismissPicker();
   onDone = done;
   saving = false;
+  form.dataset.mode = 'edit';
   form.dataset.id = String(ex.id);
   form.elements.nombre.value = ex.nombre;
   form.elements.grupo.value = GRUPOS.includes(ex.grupo) ? ex.grupo : 'Otro';
   titleEl.textContent = 'Editar ejercicio';
+  form.querySelector('.editor-delete').hidden = false;
   busy(false);
   mountPickers(sheet);
   form.elements.grupo.dispatchEvent(new Event('change'));

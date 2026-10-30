@@ -638,6 +638,81 @@ body.picker-open {
   font-size: var(--fs-sm);
   font-weight: 600;
 }
+
+/* Creación rápida de ejercicio dentro del buscador */
+.picker-create-wrap {
+  padding: 6px 4px;
+}
+
+.picker-create-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--r-md);
+  background: rgba(255, 230, 0, 0.04);
+  color: var(--text);
+  font-family: inherit;
+  font-size: var(--fs-sm);
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.14s ease, border-color 0.14s ease;
+}
+
+.picker-create-btn:hover,
+.picker-create-btn:active {
+  background: rgba(255, 230, 0, 0.1);
+  border-color: var(--primary);
+  border-style: solid;
+}
+
+.picker-create-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: var(--primary-ink);
+  flex-shrink: 0;
+}
+
+.picker-create-text {
+  flex: 1;
+  min-width: 0;
+  line-height: 1.3;
+}
+
+.picker-create-text strong {
+  color: var(--primary);
+}
+
+.picker-create-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: var(--r-full);
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+
+.picker-create-badge[data-g="Pecho"] { color: var(--red); }
+.picker-create-badge[data-g="Espalda"] { color: var(--primary); }
+.picker-create-badge[data-g="Piernas"] { color: var(--blue); }
+.picker-create-badge[data-g="Hombros"] { color: var(--green); }
+.picker-create-badge[data-g="Bíceps"],
+.picker-create-badge[data-g="Tríceps"] { color: var(--orange); }
+.picker-create-badge[data-g="Core"] { color: var(--purple); }
 .picker-list {
   max-height: min(46vh, 420px);
   overflow-y: auto;

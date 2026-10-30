@@ -504,6 +504,13 @@ export async function render(el) {
       toast(result.deleted ? 'Ejercicio eliminado' : 'Ejercicio guardado');
     });
   });
+
+  el.addEventListener('exercise-created', async (e) => {
+    const { id, nombre } = e.detail;
+    selectedEx = id;
+    await render(el);
+    toast(`Ejercicio creado: «${nombre}»`);
+  });
 }
 
 async function prefill(el, prev, curSets = []) {

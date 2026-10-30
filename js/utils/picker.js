@@ -10,10 +10,44 @@ let findEl;
 let searchEl;
 let groupsEl;
 let emptyEl;
+let createEl;
 let findQuery = '';
 let findGrupo = '';
 
 const GRUPO_ORDER = ['Pecho', 'Espalda', 'Piernas', 'Hombros', 'Bíceps', 'Tríceps', 'Core', 'Cardio', 'Otro'];
+
+export function inferMuscleGroup(name, activeFilter = '') {
+  if (activeFilter && activeFilter !== '__hoy__' && GRUPO_ORDER.includes(activeFilter)) {
+    return activeFilter;
+  }
+  const q = fold(name);
+  if (!q) return 'Pecho';
+  if (/sentadill|hack|squat|prensa|femoral|isquio|cuadric|glute|bulgar|búlgara|zancad|lunge|gemel|pantorril|abduct|aduct|hip\s*thrust|puente|patada/i.test(q)) {
+    return 'Piernas';
+  }
+  if (/press\s*banc|banca|pecho|pectoral|apertur|fly|cruce|flexion|push\s*up/i.test(q)) {
+    return 'Pecho';
+  }
+  if (/remo|jalon|jalón|dominad|pull\s*up|chin\s*up|dorsal|trapeci|espalda|pullover|deadlift|peso\s*muert/i.test(q)) {
+    return 'Espalda';
+  }
+  if (/militar|overhead|hombro|deltoid|lateral|frontal|pajaro|pájaro|face\s*pull|arnold|encogimi/i.test(q)) {
+    return 'Hombros';
+  }
+  if (/biceps|bíceps|curl|martillo|predicador|braquial/i.test(q)) {
+    return 'Bíceps';
+  }
+  if (/triceps|tríceps|copa|frances|francés|extension|pushdown/i.test(q)) {
+    return 'Tríceps';
+  }
+  if (/plancha|crunch|abdom|core|rueda/i.test(q)) {
+    return 'Core';
+  }
+  if (/cinta|bici|biciclet|correr|eliptic|cardio/i.test(q)) {
+    return 'Cardio';
+  }
+  return 'Pecho';
+}
 
 function fold(value) {
   return String(value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -57,7 +91,12 @@ function ensureSheet() {
   searchEl.addEventListener('keydown', (e) => {
     if (e.key !== 'Enter') return;
     e.preventDefault();
-    firstVisible()?.click();
+    const first = firstVisible();
+    if (first) {
+      first.click();
+    } else if (createEl && !createEl.hidden) {
+      createEl.querySelector('.picker-create-btn')?.click();
+    }
   });
   sheet.querySelector('.picker-backdrop').addEventListener('click', closePicker);
   sheet.querySelector('.picker-close').addEventListener('click', closePicker);
@@ -291,6 +330,27 @@ function applyFind() {
   const shown = entries.filter((e) => e.ok);
   if (q && shown[0]) shown[0].btn.classList.add('is-first');
   if (emptyEl) emptyEl.hidden = shown.length > 0;
+
+  if (createEl) {
+    const rawQ = findQuery.trim();
+    const hasExact = entries.some((e) => (e.btn.dataset.name || '').toLowerCase() === rawQ.toLowerCase());
+    if (rawQ.length >= 2 && !hasExact) {
+      createEl.hidden = false;
+      const detected = inferMuscleGroup(rawQ, findGrupo);
+      const nameEl = createEl.querySelector('.picker-create-name');
+      if (nameEl) nameEl.textContent = rawQ;
+      const badge = createEl.querySelector('.picker-create-badge');
+      if (badge) {
+        badge.textContent = detected;
+        badge.dataset.g = detected;
+      }
+      createEl.dataset.name = rawQ;
+      createEl.dataset.grupo = detected;
+      list.append(createEl);
+    } else {
+      createEl.hidden = true;
+    }
+  }
 }
 
 function onKey(e) {
@@ -370,12 +430,42 @@ function openPicker(select, label, trigger) {
   if (catalog) paintGroups(select);
   list.replaceChildren();
   emptyEl = null;
+  createEl = null;
   if (catalog) {
     emptyEl = document.createElement('p');
     emptyEl.className = 'picker-empty';
     emptyEl.hidden = true;
     emptyEl.textContent = 'Nada que coincida';
     list.append(emptyEl);
+
+    createEl = document.createElement('div');
+    createEl.className = 'picker-create-wrap';
+    createEl.hidden = true;
+    createEl.innerHTML = `
+      <button type="button" class="picker-create-btn">
+        <span class="picker-create-icon">${icons.plus({ size: 16 })}</span>
+        <span class="picker-create-text">Crear «<strong class="picker-create-name"></strong>»</span>
+        <span class="picker-create-badge"></span>
+      </button>
+    `;
+    const createBtn = createEl.querySelector('.picker-create-btn');
+    createBtn.addEventListener('click', async () => {
+      const name = createEl.dataset.name;
+      const grupo = createEl.dataset.grupo;
+      const select = openSelect;
+      closePicker({ immediate: true });
+      const { openExerciseCreator } = await import('./exercise-editor.js');
+      openExerciseCreator({ name, grupo }, (result) => {
+        if (!result || !result.created) return;
+        if (select && select.isConnected) {
+          select.dispatchEvent(new CustomEvent('exercise-created', {
+            bubbles: true,
+            detail: { id: result.id, nombre: result.nombre, grupo: result.grupo }
+          }));
+        }
+      });
+    });
+    list.append(createEl);
   }
   [...select.options].forEach((opt) => {
     const selected = opt.value === select.value;
