@@ -322,17 +322,10 @@ export async function render(el) {
       const dir = Number(t.dataset.dir || 1);
       const input = el.querySelector('input[name="reps"]');
       if (!input) return;
-      const curSets = detail?.groups?.find((g) => g.exercise.id === selectedEx)?.sets || [];
-      const sets = prev?.sets || [];
-      const target = sets[curSets.length] || sets[sets.length - 1];
-      const baseReps = target?.reps || 10;
       let curr = parseInt(input.value, 10);
-      if (isNaN(curr) || curr <= 0) {
-        curr = dir > 0 ? baseReps : Math.max(1, baseReps - 1);
-      } else {
-        curr = Math.max(1, curr + dir);
-      }
-      input.value = curr;
+      if (isNaN(curr) || curr < 0) curr = 0;
+      let next = Math.max(0, curr + dir);
+      input.value = next === 0 ? '' : next;
       input.dispatchEvent(new Event('input', { bubbles: true }));
       input.dispatchEvent(new Event('change', { bubbles: true }));
     },
