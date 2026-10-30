@@ -140,7 +140,11 @@ function bindDragToClose() {
 }
 
 function muscleOf(opt) {
-  const g = opt?.dataset?.grupo?.trim() || '';
+  let g = opt?.dataset?.grupo?.trim() || '';
+  if (g.includes('?')) {
+    if (/b\?ceps/i.test(g)) g = 'Bíceps';
+    else if (/tr\?ceps/i.test(g)) g = 'Tríceps';
+  }
   return g && g !== 'Otro' ? g : '';
 }
 

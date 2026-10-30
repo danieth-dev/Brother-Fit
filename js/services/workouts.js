@@ -9,9 +9,13 @@ export { isCatalogExercise };
 
 export const GRUPOS = ['Pecho', 'Espalda', 'Piernas', 'Hombros', 'Bíceps', 'Tríceps', 'Core', 'Cardio', 'Otro'];
 
-/* "Otro" no nombra un músculo: no se muestra. */
+/* "Otro" no nombra un músculo: no se muestra. Si viene con caracteres rotos se normaliza. */
 export function muscleName(grupo) {
-  const g = String(grupo || '').trim();
+  let g = String(grupo || '').trim();
+  if (g.includes('?')) {
+    if (/b\?ceps/i.test(g)) g = 'Bíceps';
+    else if (/tr\?ceps/i.test(g)) g = 'Tríceps';
+  }
   return g && g !== 'Otro' ? g : '';
 }
 
@@ -113,8 +117,33 @@ export function adjusted1RM(peso, reps, rpe) {
   return { value: peso * (1 + eff / 30), reliable: eff <= 12, floor: r === 6 };
 }
 
-/* ---------- Ejercicios ---------- */
+export async function sanitizeExercises() {
+  const all = await db.getAll('exercises');
+  for (const ex of all) {
+    let changed = false;
+    let n = ex.nombre;
+    let g = ex.grupo;
+    if (n.includes('?')) {
+      n = n.replace(/Jal\?n/g, 'Jalón')
+           .replace(/b\?ceps/g, 'bíceps')
+           .replace(/tr\?ceps/g, 'tríceps')
+           .replace(/Extensi\?n/g, 'Extensión')
+           .replace(/p\?ndulo/g, 'péndulo');
+      changed = true;
+    }
+    if (g.includes('?')) {
+      if (/b\?ceps/i.test(g)) g = 'Bíceps';
+      else if (/tr\?ceps/i.test(g)) g = 'Tríceps';
+      changed = true;
+    }
+    if (changed) {
+      await db.put('exercises', { ...ex, nombre: n, grupo: g });
+    }
+  }
+}
+
 export async function listExercises() {
+  await sanitizeExercises();
   return (await db.getAll('exercises')).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
 }
 
