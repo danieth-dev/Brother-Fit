@@ -131,7 +131,7 @@ async function remove() {
   }
 }
 
-export function openExerciseCreator({ name = '', grupo = 'Pecho' } = {}, done) {
+export function openExerciseCreator({ name = '', grupo = 'Otro' } = {}, done) {
   ensureSheet();
   dismissPicker();
   onDone = done;
@@ -139,7 +139,7 @@ export function openExerciseCreator({ name = '', grupo = 'Pecho' } = {}, done) {
   form.dataset.mode = 'create';
   delete form.dataset.id;
   form.elements.nombre.value = name;
-  form.elements.grupo.value = GRUPOS.includes(grupo) ? grupo : 'Pecho';
+  form.elements.grupo.value = GRUPOS.includes(grupo) ? grupo : 'Otro';
   titleEl.textContent = 'Crear nuevo ejercicio';
   form.querySelector('.editor-delete').hidden = true;
   busy(false);

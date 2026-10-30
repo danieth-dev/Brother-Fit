@@ -16,37 +16,71 @@ let findGrupo = '';
 
 const GRUPO_ORDER = ['Pecho', 'Espalda', 'Piernas', 'Hombros', 'Bíceps', 'Tríceps', 'Core', 'Cardio', 'Otro'];
 
-export function inferMuscleGroup(name, activeFilter = '') {
+export function inferMuscleGroup(name, activeFilter = '', candidateGroups = []) {
   if (activeFilter && activeFilter !== '__hoy__' && GRUPO_ORDER.includes(activeFilter)) {
     return activeFilter;
   }
-  const q = fold(name);
-  if (!q) return 'Pecho';
-  if (/sentadill|hack|squat|prensa|femoral|isquio|cuadric|glute|bulgar|búlgara|zancad|lunge|gemel|pantorril|abduct|aduct|hip\s*thrust|puente|patada/i.test(q)) {
+  const q = fold(name).trim();
+  if (!q) return 'Otro';
+
+  // Casos compuestos específicos para evitar falsos positivos
+  if (/elevacion(es)?\s*(de\s*)?pierna/i.test(q)) return 'Core';
+  if (/jalon|pulldown|dominad|pull\s*up|chin\s*up/i.test(q)) return 'Espalda';
+  if (/peso\s*muerto\s*(rumano|rigido)|rdl/i.test(q)) return 'Piernas';
+  if (/press\s*cerrado|fondos?\s*(de\s*)?triceps/i.test(q)) return 'Tríceps';
+  if (/fondos?\s*(de\s*)?pecho/i.test(q)) return 'Pecho';
+
+  // Piernas
+  if (/\b(pierna|piernas|pata|patas|legs?)\b|sentadill|squat|hack|prensa|femoral|isquio|cuadric|quad|glute|bulgar|zancad|lunge|gemel|pantorril|abduct|aduct|hip\s*thrust|puente\s*gluteo|sissy|nordic|step\s*up|soleo|tibial/i.test(q)) {
     return 'Piernas';
   }
-  if (/press\s*banc|banca|pecho|pectoral|apertur|fly|cruce|flexion|push\s*up/i.test(q)) {
-    return 'Pecho';
-  }
-  if (/remo|jalon|jalón|dominad|pull\s*up|chin\s*up|dorsal|trapeci|espalda|pullover|deadlift|peso\s*muert/i.test(q)) {
+
+  // Espalda
+  if (/\b(espalda|back|dorsal|dorsales|trapecio|trapecios)\b|remo|row|lat\s*pull|pullover|deadlift|peso\s*muerto|t-?bar|seal\s*row/i.test(q)) {
     return 'Espalda';
   }
-  if (/militar|overhead|hombro|deltoid|lateral|frontal|pajaro|pájaro|face\s*pull|arnold|encogimi/i.test(q)) {
+
+  // Pecho
+  if (/\b(pecho|pechos|pectoral|pectorales|chest)\b|press\s*banc|banca|bench|apertur|flys?|flyes?|cruce\s*polea|contractor|pec\s*deck|flexion(es)?|push\s*ups?/i.test(q)) {
+    return 'Pecho';
+  }
+
+  // Hombros
+  if (/\b(hombro|hombros|deltoid|deltoides|shoulder|shoulders)\b|militar|overhead|ohp|lateral(es)?|frontal(es)?|pajaro|pajaros|face\s*pull|arnold|encogimi|ypraise|y-?raise|w-?raise/i.test(q)) {
     return 'Hombros';
   }
-  if (/biceps|bíceps|curl|martillo|predicador|braquial/i.test(q)) {
+
+  // Bíceps
+  if (/\b(biceps?|brazo|brazos|arms?)\b|curl|martillo|predicador|scott|braquial/i.test(q)) {
     return 'Bíceps';
   }
-  if (/triceps|tríceps|copa|frances|francés|extension|pushdown/i.test(q)) {
+
+  // Tríceps
+  if (/\b(triceps?)\b|copa|frances|francés|pushdown|patada\s*tricep|rompecraneos/i.test(q)) {
     return 'Tríceps';
   }
-  if (/plancha|crunch|abdom|core|rueda/i.test(q)) {
+
+  // Core
+  if (/\b(core|abs?|abdomen|abdominal|abdominales)\b|plancha|plank|crunch|rueda\s*abdom|oblicuo|hollow|dragon\s*flag|twist\s*rus|hipopresiv/i.test(q)) {
     return 'Core';
   }
-  if (/cinta|bici|biciclet|correr|eliptic|cardio/i.test(q)) {
+
+  // Cardio
+  if (/\b(cardio|aerobico)\b|cinta|treadmill|bici|biciclet|bike|correr|running?|eliptic|ergometro|stair|escalador|salto\s*cuerda|comba|burpee|hiit/i.test(q)) {
     return 'Cardio';
   }
-  return 'Pecho';
+
+  // Si hay ejercicios visibles coincidentes en la lista, inferir por el grupo predominante
+  if (Array.isArray(candidateGroups) && candidateGroups.length > 0) {
+    const counts = {};
+    for (const g of candidateGroups) {
+      if (g && GRUPO_ORDER.includes(g)) counts[g] = (counts[g] || 0) + 1;
+    }
+    const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+    if (top && top[1] > 0) return top[0];
+  }
+
+  return 'Otro';
 }
 
 function fold(value) {
@@ -336,7 +370,8 @@ function applyFind() {
     const hasExact = entries.some((e) => (e.btn.dataset.name || '').toLowerCase() === rawQ.toLowerCase());
     if (rawQ.length >= 2 && !hasExact) {
       createEl.hidden = false;
-      const detected = inferMuscleGroup(rawQ, findGrupo);
+      const candidateGroups = shown.map((s) => s.btn.dataset.grupo).filter(Boolean);
+      const detected = inferMuscleGroup(rawQ, findGrupo, candidateGroups);
       const nameEl = createEl.querySelector('.picker-create-name');
       if (nameEl) nameEl.textContent = rawQ;
       const badge = createEl.querySelector('.picker-create-badge');

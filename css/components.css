@@ -713,6 +713,8 @@ body.picker-open {
 .picker-create-badge[data-g="Bíceps"],
 .picker-create-badge[data-g="Tríceps"] { color: var(--orange); }
 .picker-create-badge[data-g="Core"] { color: var(--purple); }
+.picker-create-badge[data-g="Cardio"] { color: var(--green); }
+.picker-create-badge[data-g="Otro"] { color: var(--muted); }
 .picker-list {
   max-height: min(46vh, 420px);
   overflow-y: auto;
