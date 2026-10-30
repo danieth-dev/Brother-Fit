@@ -27,7 +27,7 @@ async function list(el) {
               <small>${w.totalSets} series · ${fmtVolume(w.volumen, unidad)} ${esc(unidad)}</small>
             </div>
             ${w.finishedAt
-              ? icons.chevronRight({ size: 18, cls: 'chev' })
+              ? ''
               : '<span class="chip chip-warn">En curso</span>'}
           </a>`).join('')}
       </div>`
@@ -58,7 +58,7 @@ async function detail(el, id) {
       <p style="text-transform:none">${w.duracion ? `Duración ${formatDuration(w.duracion)}` : 'En curso'}</p>
     </header>
 
-    <div class="stats" style="margin-top:0">
+    <div class="stats stats--3" style="margin-top:0">
       <div class="stat"><b>${d.totalSets}</b><span>series</span></div>
       <div class="stat"><b>${d.groups.length}</b><span>ejercicios</span></div>
       <div class="stat"><b>${fmtVolume(d.volumen, unidad)}</b><span>${esc(unidad)} volumen</span></div>

@@ -15,18 +15,18 @@
 
 :root {
   /* Canvas y Superficies OLED */
-  --bg: #07080a;
-  --surface: #101217;
-  --surface-2: #171b22;
-  --surface-elevated: #202530;
-  --line: #252b36;
-  --line-strong: #384152;
+  --bg: #0a0a0a;
+  --surface: #1e1e1e;
+  --surface-2: #262626;
+  --surface-elevated: #2f2f2f;
+  --line: #2a2a2a;
+  --line-strong: #3d3d3d;
   --line-accent: rgba(255, 230, 0, 0.28);
 
   /* Jerarquía de Texto Técnico */
-  --text: #f8fafc;
-  --muted: #94a3b8;
-  --text-dim: #64748b;
+  --text: #ffffff;
+  --muted: #a1a1a1;
+  --text-dim: #71717a;
 
   /* Escala Tipográfica Sistemática */
   --fs-2xs: 0.6875rem; /* 11px */

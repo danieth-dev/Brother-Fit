@@ -70,8 +70,10 @@ export async function render(el) {
         <h1>Brother Fit</h1>
         <a class="head-link" href="#/settings" aria-label="Ajustes">${icons.sliders({ size: 22 })}</a>
       </div>
-      <p>${esc(formatLong(todayISO()))}</p>
     </header>
+
+    <!-- ═══ CINTA SEMANAL: la fecha de hoy vive aquí (día resaltado) ═══ -->
+    ${weekStrip(week.dias)}
 
     <!-- ═══ DISCO OLÍMPICO HERO: CREATINA DIARIA ═══ -->
     ${creatinePlate(cr, g, 'creatine', `
@@ -96,19 +98,16 @@ export async function render(el) {
     </div>
 
     <!-- ═══ TELEMETRÍA SEMANAL ═══ -->
-    ${weekStrip(week.dias)}
-
-    <div class="stats stats--2">
-      <div class="stat"><b>${fmtVolume(week.volumen, unidad)}</b><span>${esc(unidad)} de<br>volumen</span></div>
-      <div class="stat"><b>${cr.dias7}/7</b><span>días con<br>creatina</span></div>
-    </div>
-    ${week.entrenos ? `
     <div class="stats">
-      <div class="stat"><b>${week.efectivas}</b><span>series<br>efectivas</span></div>
-      <div class="stat"><b>${week.faciles}</b><span>fáciles</span></div>
-      <div class="stat"><b>${week.sinEsfuerzo}</b><span>sin<br>esfuerzo</span></div>
+      <div class="stat"><b>${fmtVolume(week.volumen, unidad)}</b><span>${esc(unidad)} de volumen</span></div>
+      <div class="stat"><b>${cr.dias7}/7</b><span>días con creatina</span></div>
+      ${week.entrenos ? `
+      <div class="stat"><b>${week.efectivas}</b><span>series efectivas</span></div>
+      ${week.faciles > 0 ? `<div class="stat"><b>${week.faciles}</b><span>fáciles</span></div>` : ''}
+      ${week.sinEsfuerzo > 0 ? `<div class="stat"><b>${week.sinEsfuerzo}</b><span>sin esfuerzo</span></div>` : ''}
+      ` : ''}
     </div>
-    ${weekGroupLine(week)}` : ''}
+    ${weekGroupLine(week)}
 
     <h2 class="section-title">
       <span>Últimos entrenamientos</span>
@@ -124,7 +123,7 @@ export async function render(el) {
               <small>${w.totalSets} series · ${fmtVolume(w.volumen, unidad)} ${esc(unidad)}</small>
             </div>
             ${w.finishedAt
-              ? icons.chevronRight({ size: 18, cls: 'chev' })
+              ? ''
               : '<span class="chip chip-warn">En curso</span>'}
           </a>`).join('')}
       </div>`
