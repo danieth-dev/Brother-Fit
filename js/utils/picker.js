@@ -1,5 +1,7 @@
 /* Lista propia para los <select>. En el teléfono el menú nativo no hereda la paleta. */
 import { icons } from './icons.js';
+import { addExercise } from '../services/workouts.js';
+import { toast, esc } from './dom.js';
 
 let sheet;
 let list;
@@ -8,9 +10,20 @@ let lastTrigger;
 let openSelect;
 let findEl;
 let searchEl;
+let searchClearBtn;
 let groupsEl;
 let emptyEl;
 let createEl;
+let footerEl;
+let footerCreateBtn;
+let creatorViewEl;
+let creatorInput;
+let creatorPillsEl;
+let creatorHintEl;
+let creatorConfirmBtn;
+let creatorCancelBtn;
+let creatorSelectedGrupo = '';
+let isCreatingInline = false;
 let findQuery = '';
 let findGrupo = '';
 
@@ -101,10 +114,44 @@ function ensureSheet() {
         <button type="button" class="picker-close" aria-label="Cerrar">${icons.x({ size: 18 })}</button>
       </div>
       <div class="picker-find" hidden>
-        <input class="picker-search" type="search" enterkeyhint="search" autocomplete="off" autocapitalize="off" aria-label="Buscar ejercicio" placeholder="Buscar">
-        <div class="picker-groups" role="group" aria-label="Grupo muscular"></div>
+        <div class="picker-search-box">
+          <span class="picker-search-icon" aria-hidden="true">${icons.search({ size: 18 })}</span>
+          <input class="picker-search" type="search" enterkeyhint="search" autocomplete="off" autocapitalize="off" aria-label="Buscar ejercicio" placeholder="Buscar ejercicio">
+          <button type="button" class="picker-search-clear" aria-label="Borrar búsqueda" hidden>${icons.x({ size: 16 })}</button>
+        </div>
+        <div class="picker-groups-wrap">
+          <div class="picker-groups" role="group" aria-label="Grupo muscular"></div>
+          <div class="picker-groups-fade" aria-hidden="true"></div>
+        </div>
       </div>
       <div class="picker-list" role="listbox"></div>
+      <div class="picker-creator-view" hidden>
+        <div class="picker-create-card">
+          <div class="picker-create-top">
+            <span class="picker-create-avatar" aria-hidden="true">${icons.plus({ size: 20 })}</span>
+            <div class="picker-create-info">
+              <p class="picker-create-kicker">Nuevo ejercicio</p>
+              <input class="picker-create-input" type="text" placeholder="Ej: Press francés" autocomplete="off" autocapitalize="sentences">
+            </div>
+          </div>
+          <div>
+            <p class="picker-create-muscle-title">¿Qué grupo muscular trabaja?</p>
+            <div class="picker-create-pills" role="radiogroup"></div>
+          </div>
+        </div>
+        <div class="picker-create-footer">
+          <p class="picker-create-hint">Elige un grupo muscular para continuar</p>
+          <div class="picker-create-actions">
+            <button type="button" class="btn btn-ghost picker-create-cancel-btn">Cancelar</button>
+            <button type="button" class="btn btn-primary picker-create-confirm-btn" disabled>Crear y usar</button>
+          </div>
+        </div>
+      </div>
+      <div class="picker-footer" hidden>
+        <button type="button" class="picker-footer-create-btn">
+          ${icons.plus({ size: 20 })} Crear ejercicio nuevo
+        </button>
+      </div>
     </div>
   `;
   document.body.append(sheet);
@@ -112,13 +159,61 @@ function ensureSheet() {
   titleEl = sheet.querySelector('.picker-title');
   findEl = sheet.querySelector('.picker-find');
   searchEl = sheet.querySelector('.picker-search');
+  searchClearBtn = sheet.querySelector('.picker-search-clear');
   groupsEl = sheet.querySelector('.picker-groups');
+  footerEl = sheet.querySelector('.picker-footer');
+  footerCreateBtn = sheet.querySelector('.picker-footer-create-btn');
+  creatorViewEl = sheet.querySelector('.picker-creator-view');
+  creatorInput = sheet.querySelector('.picker-create-input');
+  creatorPillsEl = sheet.querySelector('.picker-create-pills');
+  creatorHintEl = sheet.querySelector('.picker-create-hint');
+  creatorConfirmBtn = sheet.querySelector('.picker-create-confirm-btn');
+  creatorCancelBtn = sheet.querySelector('.picker-create-cancel-btn');
+
   searchEl.addEventListener('input', () => {
     findQuery = searchEl.value;
+    searchClearBtn.hidden = !findQuery;
     applyFind();
     list.scrollTop = 0;
     syncSearching();
   });
+
+  searchClearBtn.addEventListener('click', () => {
+    searchEl.value = '';
+    searchClearBtn.hidden = true;
+    findQuery = '';
+    applyFind();
+    list.scrollTop = 0;
+    searchEl.focus();
+    syncSearching();
+  });
+
+  footerCreateBtn.addEventListener('click', () => {
+    openInlineCreator(searchEl.value.trim());
+  });
+
+  creatorCancelBtn.addEventListener('click', closeInlineCreator);
+  creatorConfirmBtn.addEventListener('click', submitInlineCreator);
+
+  creatorInput.addEventListener('input', () => {
+    const val = creatorInput.value.trim();
+    if (!creatorSelectedGrupo && val.length >= 2) {
+      const autoG = inferMuscleGroup(val);
+      if (autoG !== 'Otro') {
+        creatorSelectedGrupo = autoG;
+        renderCreatorPills();
+      }
+    }
+    syncCreatorUi();
+  });
+
+  creatorInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (!creatorConfirmBtn.disabled) submitInlineCreator();
+    }
+  });
+
   // Modo búsqueda: la hoja ocupa todo el alto visible para que el teclado no tape los resultados.
   searchEl.addEventListener('focus', syncSearching);
   searchEl.addEventListener('blur', () => setTimeout(syncSearching, 0));
@@ -129,7 +224,9 @@ function ensureSheet() {
     if (first) {
       first.click();
     } else if (createEl && !createEl.hidden) {
-      createEl.querySelector('.picker-create-btn')?.click();
+      openInlineCreator(createEl.dataset.name || searchEl.value.trim());
+    } else if (searchEl.value.trim()) {
+      openInlineCreator(searchEl.value.trim());
     }
   });
   sheet.querySelector('.picker-backdrop').addEventListener('click', closePicker);
@@ -243,7 +340,9 @@ function muscleNode(grupo, foco) {
   dot.className = 'muscle-dot';
   dot.dataset.g = grupo;
   dot.setAttribute('aria-hidden', 'true');
-  meta.append(dot, document.createTextNode(grupo));
+  const strong = document.createElement('strong');
+  strong.textContent = grupo;
+  meta.append(dot, strong);
   if (foco) {
     const spec = document.createElement('span');
     spec.className = 'muscle-focus';
@@ -363,7 +462,16 @@ function applyFind() {
   for (const { entry } of entries) list.append(entry);
   const shown = entries.filter((e) => e.ok);
   if (q && shown[0]) shown[0].btn.classList.add('is-first');
-  if (emptyEl) emptyEl.hidden = shown.length > 0;
+  if (emptyEl) {
+    if (shown.length === 0) {
+      emptyEl.hidden = false;
+      emptyEl.innerHTML = q
+        ? `Ningún ejercicio coincide con «<strong>${esc(findQuery.trim())}</strong>».`
+        : 'Nada que coincida';
+    } else {
+      emptyEl.hidden = true;
+    }
+  }
 
   if (createEl) {
     const rawQ = findQuery.trim();
@@ -419,6 +527,103 @@ function scrollStillLocked() {
   return !!document.querySelector('.editor-sheet.open, .picker-sheet.open');
 }
 
+function openInlineCreator(initialName = '') {
+  if (!creatorViewEl) return;
+  isCreatingInline = true;
+  findEl.hidden = true;
+  list.hidden = true;
+  if (footerEl) footerEl.hidden = true;
+  creatorViewEl.hidden = false;
+  titleEl.textContent = 'Crear ejercicio';
+
+  const name = String(initialName || findQuery || '').trim();
+  creatorInput.value = name;
+  const detected = inferMuscleGroup(name, findGrupo);
+  creatorSelectedGrupo = (detected && detected !== 'Otro') ? detected : (findGrupo && findGrupo !== '__hoy__' ? findGrupo : '');
+
+  renderCreatorPills();
+  syncCreatorUi();
+
+  requestAnimationFrame(() => {
+    if (!name) creatorInput.focus();
+    else creatorInput.setSelectionRange(name.length, name.length);
+  });
+}
+
+function closeInlineCreator() {
+  isCreatingInline = false;
+  creatorViewEl.hidden = true;
+  findEl.hidden = false;
+  list.hidden = false;
+  const catalog = [...openSelect?.options || []].some((opt) => opt.dataset.grupo);
+  if (footerEl) footerEl.hidden = !catalog;
+  titleEl.textContent = openSelect ? labelOf(openSelect) : 'Elegir ejercicio';
+  searchEl.focus();
+}
+
+function renderCreatorPills() {
+  if (!creatorPillsEl) return;
+  creatorPillsEl.replaceChildren();
+  for (const g of GRUPO_ORDER) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'picker-muscle-pill';
+    btn.setAttribute('aria-pressed', String(creatorSelectedGrupo === g));
+    btn.innerHTML = `<span class="muscle-dot" data-g="${g}"></span>${g}`;
+    btn.addEventListener('click', () => {
+      creatorSelectedGrupo = g;
+      renderCreatorPills();
+      syncCreatorUi();
+    });
+    creatorPillsEl.append(btn);
+  }
+}
+
+function syncCreatorUi() {
+  if (!creatorConfirmBtn || !creatorInput || !creatorHintEl) return;
+  const name = creatorInput.value.trim();
+  const hasGroup = Boolean(creatorSelectedGrupo);
+  creatorConfirmBtn.disabled = !name || !hasGroup;
+  if (!hasGroup) {
+    creatorHintEl.textContent = 'Elige un grupo muscular para continuar';
+    creatorHintEl.hidden = false;
+    creatorConfirmBtn.textContent = 'Crear y usar';
+  } else {
+    creatorHintEl.hidden = true;
+    creatorConfirmBtn.textContent = name ? `Crear y usar «${name}»` : 'Crear y usar';
+  }
+}
+
+async function submitInlineCreator() {
+  const name = creatorInput.value.trim();
+  const grupo = creatorSelectedGrupo;
+  if (!name || !grupo) return;
+  const select = openSelect;
+  try {
+    creatorConfirmBtn.disabled = true;
+    const newId = await addExercise(name, grupo);
+    toast(`Ejercicio creado: «${name}»`);
+    closePicker({ immediate: true });
+    if (select && select.isConnected) {
+      const opt = document.createElement('option');
+      opt.value = String(newId);
+      opt.textContent = name;
+      opt.dataset.grupo = grupo;
+      opt.dataset.propio = '1';
+      select.append(opt);
+      select.value = String(newId);
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+      select.dispatchEvent(new CustomEvent('exercise-created', {
+        bubbles: true,
+        detail: { id: newId, nombre: name, grupo }
+      }));
+    }
+  } catch (err) {
+    toast(err?.message || 'Error al crear ejercicio.', { tone: 'danger' });
+    creatorConfirmBtn.disabled = false;
+  }
+}
+
 function closePicker({ immediate = false } = {}) {
   if (!sheet || sheet.hidden) return;
   openSelect = null;
@@ -426,6 +631,11 @@ function closePicker({ immediate = false } = {}) {
   sheet.classList.remove('open');
   watchViewport(false);
   if (document.activeElement === searchEl) searchEl.blur();
+  if (document.activeElement === creatorInput) creatorInput.blur();
+  isCreatingInline = false;
+  if (creatorViewEl) creatorViewEl.hidden = true;
+  if (findEl) findEl.hidden = false;
+  if (list) list.hidden = false;
   if (!scrollStillLocked()) document.body.classList.remove('picker-open');
   const hide = () => {
     sheet.hidden = true;
@@ -458,7 +668,12 @@ function openPicker(select, label, trigger) {
   findQuery = '';
   findGrupo = '';
   searchEl.value = '';
+  if (searchClearBtn) searchClearBtn.hidden = true;
   findEl.hidden = !catalog;
+  if (footerEl) footerEl.hidden = !catalog;
+  if (creatorViewEl) creatorViewEl.hidden = true;
+  list.hidden = false;
+  isCreatingInline = false;
   sheet.classList.toggle('picker-sheet--catalog', catalog);
   sheet.classList.remove('is-searching');
   watchViewport(true);
@@ -484,21 +699,8 @@ function openPicker(select, label, trigger) {
       </button>
     `;
     const createBtn = createEl.querySelector('.picker-create-btn');
-    createBtn.addEventListener('click', async () => {
-      const name = createEl.dataset.name;
-      const grupo = createEl.dataset.grupo;
-      const select = openSelect;
-      closePicker({ immediate: true });
-      const { openExerciseCreator } = await import('./exercise-editor.js');
-      openExerciseCreator({ name, grupo }, (result) => {
-        if (!result || !result.created) return;
-        if (select && select.isConnected) {
-          select.dispatchEvent(new CustomEvent('exercise-created', {
-            bubbles: true,
-            detail: { id: result.id, nombre: result.nombre, grupo: result.grupo }
-          }));
-        }
-      });
+    createBtn.addEventListener('click', () => {
+      openInlineCreator(createEl.dataset.name || searchEl.value.trim());
     });
     list.append(createEl);
   }
@@ -528,12 +730,11 @@ function openPicker(select, label, trigger) {
     const mark = document.createElement('span');
     mark.className = 'picker-mark';
     mark.setAttribute('aria-hidden', 'true');
-    if (selected) mark.innerHTML = icons.check({ size: 14 });
-    btn.append(copy);
+    mark.innerHTML = icons.check({ size: 14 });
+    btn.append(copy, mark);
     if (grupo) btn.setAttribute('aria-label', `${name}, ${grupo}${foco ? `, ${foco}` : ''}`);
     btn.addEventListener('click', () => choose(select, opt.value));
     if (!own) {
-      btn.append(mark);
       list.append(btn);
       return;
     }
@@ -550,7 +751,7 @@ function openPicker(select, label, trigger) {
       if (!select.isConnected) return;
       select.dispatchEvent(new CustomEvent('edit-exercise', { bubbles: true, detail: { id } }));
     });
-    row.append(btn, edit, mark);
+    row.append(btn, edit);
     list.append(row);
   });
   sheet.hidden = false;
