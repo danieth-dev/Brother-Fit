@@ -87,7 +87,6 @@ function bindDragToClose() {
     lastT = e.timeStamp;
     velocity = 0;
     e.currentTarget.setPointerCapture(pointerId);
-    if (document.activeElement === searchEl) searchEl.blur();
     panel.style.transition = 'none';
     backdrop.style.transition = 'none';
   };
@@ -111,13 +110,25 @@ function bindDragToClose() {
     dragging = false;
     const dy = e.clientY - startY;
     const h = panel.offsetHeight || 1;
-    const shouldClose = dy > Math.min(120, h * 0.25) || (velocity > 0.6 && dy > 20);
-    if (!shouldClose) { reset(); return; }
-    // El panel sigue bajando desde donde lo soltaste; el fondo no vuelve a oscurecerse.
-    panel.style.transition = '';
-    panel.style.transform = '';
-    closePicker();
-    setTimeout(() => { backdrop.style.transition = ''; backdrop.style.opacity = ''; }, 320);
+    const shouldClose = dy > Math.min(140, h * 0.35) || (velocity > 0.65 && dy > 40);
+    if (!shouldClose) {
+      panel.style.transition = 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)';
+      backdrop.style.transition = 'opacity 0.2s ease';
+      panel.style.transform = 'translateY(0)';
+      backdrop.style.opacity = '1';
+      setTimeout(reset, 220);
+      return;
+    }
+    // Si se decide cerrar, ocultamos teclado y cerramos
+    if (document.activeElement === searchEl) searchEl.blur();
+    panel.style.transition = 'transform 0.22s cubic-bezier(0.16, 1, 0.3, 1)';
+    panel.style.transform = `translateY(${h}px)`;
+    backdrop.style.transition = 'opacity 0.22s ease';
+    backdrop.style.opacity = '0';
+    setTimeout(() => {
+      reset();
+      closePicker({ immediate: true });
+    }, 240);
   };
 
   for (const z of zones) {
