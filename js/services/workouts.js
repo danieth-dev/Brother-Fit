@@ -298,19 +298,34 @@ export async function lastSetFor(exerciseId) {
   return sets.sort((a, b) => b.ts - a.ts)[0] || null;
 }
 
-/* Series de la sesión ANTERIOR completa para un ejercicio (excluye la sesión activa). */
+/* Series de la última sesión en la que se realizó este ejercicio (excluye la sesión activa). */
 export async function lastSessionSetsFor(exerciseId) {
   const [sets, ws] = await Promise.all([
     db.byIndex('sets', 'exerciseId', exerciseId),
     db.getAll('workouts'),
   ]);
   const active = await getActiveWorkout();
-  const sorted = ws
-    .filter((w) => w.finishedAt && w.id !== active?.id)
-    .sort((a, b) => b.startedAt - a.startedAt);
-  if (!sorted.length) return null;
-  const prevSets = sets.filter((s) => s.workoutId === sorted[0].id).sort((a, b) => a.ts - b.ts);
-  return prevSets.length ? { workout: sorted[0], sets: prevSets } : null;
+  const wMap = new Map(ws.map((w) => [w.id, w]));
+
+  // Agrupamos las series del ejercicio por workoutId y buscamos el entreno finalizado más reciente
+  const sessionMap = new Map();
+  for (const s of sets) {
+    if (active && s.workoutId === active.id) continue;
+    const w = wMap.get(s.workoutId);
+    if (!w || !w.finishedAt) continue;
+    if (!sessionMap.has(s.workoutId)) {
+      sessionMap.set(s.workoutId, { workout: w, sets: [] });
+    }
+    sessionMap.get(s.workoutId).sets.push(s);
+  }
+
+  const sortedSessions = [...sessionMap.values()]
+    .sort((a, b) => b.workout.startedAt - a.workout.startedAt);
+
+  if (!sortedSessions.length) return null;
+  const latest = sortedSessions[0];
+  latest.sets.sort((a, b) => a.ts - b.ts);
+  return latest;
 }
 
 /* PRs históricos de un ejercicio: peso máximo, 1RM estimado máximo y reps máximas. */
