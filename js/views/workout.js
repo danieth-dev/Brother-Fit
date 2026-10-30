@@ -396,6 +396,11 @@ export async function render(el) {
       const sets = detail?.groups?.find((g) => g.exercise.id === selectedEx)?.sets || [];
       const ref = el.querySelector('#set-ref');
       if (ref) ref.outerHTML = setRefMarkup(p, sets, weightUnit());
+      const f = el.querySelector('form[data-form="set"]');
+      if (f) {
+        f.elements.peso.value = '';
+        f.elements.reps.value = '';
+      }
       await prefill(el, p, sets);
     }
   });
@@ -475,7 +480,6 @@ async function prefill(el, prev, curSets = []) {
   const target = sets[curSets.length] || sets[sets.length - 1];
   if (!target) return;
   if (!f.elements.peso.value) f.elements.peso.value = fmtWeight(target.peso);
-  if (!f.elements.reps.value) f.elements.reps.value = target.reps;
 }
 
 function startTicker(el, w) {
