@@ -293,10 +293,7 @@ export async function render(el) {
       </div>
 
       <div id="rir-pick" class="stack">
-        <div class="rir-head-row">
-          <span class="effort-label">¿Cuántas más podrías haber hecho?</span>
-          <span class="rir-optional-tag">${draftTipo === 'trabajo' ? 'Opcional' : 'No aplica'}</span>
-        </div>
+        <span class="effort-label">¿Cuántas más podrías haber hecho?</span>
         ${rirButtons('', { action: 'draft-rir', pressed: draftRir, disabled: draftTipo !== 'trabajo' })}
         <div class="rir-scale-legend" id="rir-scale-legend" ${draftTipo !== 'trabajo' ? 'hidden' : ''}>
           <span class="rir-legend-left">0 = al límite, no salía otra</span>
@@ -396,8 +393,6 @@ export async function render(el) {
       });
       const legend = el.querySelector('#rir-scale-legend');
       if (legend) legend.hidden = warm;
-      const opt = el.querySelector('.rir-optional-tag');
-      if (opt) opt.textContent = warm ? 'No aplica' : 'Opcional';
     },
     'draft-rir': (t) => {
       draftRir = Number(t.dataset.rir);

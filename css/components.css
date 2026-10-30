@@ -516,24 +516,6 @@
 }
 
 /* Guía visual del RIR */
-.rir-head-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.rir-optional-tag {
-  font-size: 11px;
-  color: var(--muted);
-  background: var(--surface-2);
-  padding: 2px 8px;
-  border-radius: var(--r-full);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
 .rir-scale-legend {
   display: flex;
   align-items: center;
