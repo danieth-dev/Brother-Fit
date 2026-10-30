@@ -249,6 +249,10 @@ export async function render(el) {
             <p class="workout-set-target">Primera sesión · <span class="muted">Establece tu marca</span></p>
           `}
         </div>
+        <div class="seg tipo-seg" role="group" aria-label="Tipo de serie" id="draft-tipo-seg">
+          <button type="button" data-action="draft-tipo" data-tipo="trabajo" aria-pressed="${draftTipo === 'trabajo'}">Trabajo</button>
+          <button type="button" data-action="draft-tipo" data-tipo="calentamiento" aria-pressed="${draftTipo === 'calentamiento'}">Calentamiento</button>
+        </div>
       </div>
 
       ${setRefMarkup(prev, curExSets, unidad)}
@@ -286,11 +290,6 @@ export async function render(el) {
             <button type="button" class="stepper-step-btn" data-action="step-reps" data-dir="1" aria-label="Subir repeticiones">+1</button>
           </div>
         </div>
-      </div>
-
-      <div class="seg" role="group" aria-label="Tipo de serie" id="draft-tipo-seg">
-        <button type="button" data-action="draft-tipo" data-tipo="trabajo" aria-pressed="${draftTipo === 'trabajo'}">Trabajo</button>
-        <button type="button" data-action="draft-tipo" data-tipo="calentamiento" aria-pressed="${draftTipo === 'calentamiento'}">Calentamiento</button>
       </div>
 
       <div id="rir-pick" class="stack">
