@@ -70,6 +70,15 @@ function kgReps(set, unidad) {
 }
 
 /* Sesión anterior completa: lo que hiciste en tarjetas horizontales compactas. */
+function scrollTargetRefCard(el) {
+  const target = el?.querySelector?.('.set-ref-card.is-target');
+  if (target) {
+    requestAnimationFrame(() => {
+      target.scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' });
+    });
+  }
+}
+
 function setRefMarkup(prev, curSets, unidad) {
   const sets = prev?.sets || [];
   if (!sets.length) {
@@ -324,6 +333,7 @@ export async function render(el) {
 
   let sessionPr = pr;
   await prefill(el, prev, curExSets);
+  scrollTargetRefCard(el);
   startTicker(el, w);
   const tipoSeg = el.querySelector('#draft-tipo-seg');
   if (tipoSeg) requestAnimationFrame(() => syncSegThumb(tipoSeg));
@@ -472,7 +482,10 @@ export async function render(el) {
       sessionPr = prData;
       const sets = detail?.groups?.find((g) => g.exercise.id === selectedEx)?.sets || [];
       const ref = el.querySelector('#set-ref');
-      if (ref) ref.outerHTML = setRefMarkup(p, sets, weightUnit());
+      if (ref) {
+        ref.outerHTML = setRefMarkup(p, sets, weightUnit());
+        scrollTargetRefCard(el);
+      }
       const f = el.querySelector('form[data-form="set"]');
       if (f) {
         f.elements.peso.value = '';
