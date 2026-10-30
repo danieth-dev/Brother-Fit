@@ -349,17 +349,45 @@ export async function getWorkoutDetail(id) {
 }
 
 export async function listWorkoutSummaries(limit = Infinity) {
-  const [ws, sets] = await Promise.all([db.getAll('workouts'), db.getAll('sets')]);
+  const [ws, sets, exs] = await Promise.all([
+    db.getAll('workouts'),
+    db.getAll('sets'),
+    db.getAll('exercises')
+  ]);
+  const exMap = new Map(exs.map((e) => [e.id, e]));
   const agg = new Map();
   for (const s of sets) {
-    const a = agg.get(s.workoutId) || { n: 0, v: 0 };
-    a.n++; a.v += s.peso * s.reps;
-    agg.set(s.workoutId, a);
+    let a = agg.get(s.workoutId);
+    if (!a) {
+      a = { n: 0, v: 0, grupos: new Map() };
+      agg.set(s.workoutId, a);
+    }
+    a.n++;
+    a.v += (s.peso || 0) * (s.reps || 0);
+    const ex = exMap.get(s.exerciseId);
+    const g = muscleName(ex?.grupo);
+    if (g) {
+      a.grupos.set(g, (a.grupos.get(g) || 0) + 1);
+    }
   }
   return ws
     .sort((a, b) => b.startedAt - a.startedAt)
     .slice(0, limit)
-    .map((w) => ({ ...w, totalSets: agg.get(w.id)?.n || 0, volumen: agg.get(w.id)?.v || 0 }));
+    .map((w) => {
+      const data = agg.get(w.id);
+      let gruposArr = [];
+      if (data?.grupos) {
+        gruposArr = [...data.grupos.entries()]
+          .sort((a, b) => b[1] - a[1])
+          .map(([name]) => name);
+      }
+      return {
+        ...w,
+        totalSets: data?.n || 0,
+        volumen: data?.v || 0,
+        grupos: gruposArr
+      };
+    });
 }
 
 export async function weekStats() {

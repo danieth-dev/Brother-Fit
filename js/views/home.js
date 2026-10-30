@@ -2,7 +2,7 @@ import { creatineSummary, toggleTodayIntake, DOSE_G } from '../services/creatine
 import { getActiveWorkout, startWorkout, listWorkoutSummaries, weekStats, muscleName } from '../services/workouts.js';
 import { scheduleAfterCreatine, cancelWaterReminders } from '../services/water-reminders.js';
 import { delegate, toast, esc, fmtNum, go } from '../utils/dom.js';
-import { formatLong, todayISO, startOfWeekISO, addDays } from '../utils/dates.js';
+import { formatLong, formatMedium, todayISO, startOfWeekISO, addDays } from '../utils/dates.js';
 import { icons } from '../utils/icons.js';
 import { creatinePlate } from '../utils/components.js';
 import { weightUnit, fmtVolume } from '../utils/units.js';
@@ -39,6 +39,15 @@ function weekGroupLine(week) {
     .map((g) => `${esc(muscleName(g.grupo))} ${g.n}`)
     .join(' · ');
   return groups ? `<p class="week-effort">${groups}</p>` : '';
+}
+
+function workoutTitle(w) {
+  if (!w.grupos || !w.grupos.length) return 'Entrenamiento';
+  const gs = w.grupos;
+  if (gs.length === 1) return gs[0];
+  if (gs.length === 2) return `${gs[0]} y ${gs[1]}`;
+  if (gs.length === 3) return `${gs[0]}, ${gs[1]} y ${gs[2]}`;
+  return `${gs[0]}, ${gs[1]} (+${gs.length - 2})`;
 }
 
 export async function render(el) {
@@ -119,8 +128,8 @@ export async function render(el) {
         ${recent.map((w) => `
           <a class="row" href="#/history/${w.id}">
             <div>
-              <strong style="text-transform:capitalize">${esc(formatLong(w.fecha))}</strong>
-              <small>${w.totalSets} series · ${fmtVolume(w.volumen, unidad)} ${esc(unidad)}</small>
+              <strong>${esc(workoutTitle(w))}</strong>
+              <small>${esc(formatMedium(w.fecha))} · ${w.totalSets} series · ${fmtVolume(w.volumen, unidad)} ${esc(unidad)}</small>
             </div>
             ${w.finishedAt
               ? ''

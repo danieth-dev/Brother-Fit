@@ -1,7 +1,7 @@
 import { listWorkoutSummaries, getWorkoutDetail, deleteWorkout, muscleName } from '../services/workouts.js';
 import { setEffort, setTipo } from '../services/effort.js';
 import { delegate, esc, go, toast } from '../utils/dom.js';
-import { formatLong, formatDuration } from '../utils/dates.js';
+import { formatLong, formatMedium, formatDuration } from '../utils/dates.js';
 import { icons } from '../utils/icons.js';
 import { effortTag, effortExtra } from '../utils/set-line.js';
 import { askConfirm } from '../utils/confirm-sheet.js';
@@ -11,6 +11,15 @@ let openEffortId = null;
 
 export async function render(el, [id]) {
   return id ? detail(el, Number(id)) : list(el);
+}
+
+function workoutTitle(w) {
+  if (!w.grupos || !w.grupos.length) return 'Entrenamiento';
+  const gs = w.grupos;
+  if (gs.length === 1) return gs[0];
+  if (gs.length === 2) return `${gs[0]} y ${gs[1]}`;
+  if (gs.length === 3) return `${gs[0]}, ${gs[1]} y ${gs[2]}`;
+  return `${gs[0]}, ${gs[1]} (+${gs.length - 2})`;
 }
 
 async function list(el) {
@@ -23,8 +32,8 @@ async function list(el) {
         ${items.map((w) => `
           <a class="row" href="#/history/${w.id}">
             <div>
-              <strong style="text-transform:capitalize">${esc(formatLong(w.fecha))}</strong>
-              <small>${w.totalSets} series · ${fmtVolume(w.volumen, unidad)} ${esc(unidad)}</small>
+              <strong>${esc(workoutTitle(w))}</strong>
+              <small>${esc(formatMedium(w.fecha))} · ${w.totalSets} series · ${fmtVolume(w.volumen, unidad)} ${esc(unidad)}</small>
             </div>
             ${w.finishedAt
               ? ''
