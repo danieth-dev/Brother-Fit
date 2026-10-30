@@ -34,6 +34,12 @@ export function syncSegThumb(seg) {
     thumb.hidden = true;
     return;
   }
+  if (!seg.isConnected || active.offsetWidth === 0) {
+    requestAnimationFrame(() => {
+      if (seg.isConnected && active.offsetWidth > 0) syncSegThumb(seg);
+    });
+    return;
+  }
   thumb.hidden = false;
   thumb.style.width = `${active.offsetWidth}px`;
   thumb.style.height = `${active.offsetHeight}px`;

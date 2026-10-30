@@ -255,7 +255,7 @@ export async function render(el) {
           ${targetSet ? `
             <p class="workout-set-target">A superar: <strong><span data-kg="${targetSet.peso}">${fmtWeight(targetSet.peso, unidad)}</span> <span data-unit>${esc(unidad)}</span> × ${targetSet.reps}</strong></p>
           ` : `
-            <p class="workout-set-target">Primera sesión · <span class="muted">Establece tu marca</span></p>
+            <p class="workout-set-target">Primera sesión</p>
           `}
         </div>
         <div class="seg tipo-seg" role="group" aria-label="Tipo de serie" id="draft-tipo-seg">
@@ -477,21 +477,7 @@ export async function render(el) {
       const curEx = exs.find((e) => e.id === selectedEx);
       state.activeExercise = curEx ? { id: curEx.id, nombre: curEx.nombre, grupo: curEx.grupo } : null;
       getActiveAgent()?.sendContext(`Ejercicio seleccionado: ${curEx?.nombre} (${curEx?.grupo}).`);
-      // Actualizar panel sin re-render completo
-      const [p, prData] = await Promise.all([lastSessionSetsFor(selectedEx), prByExercise(selectedEx)]);
-      sessionPr = prData;
-      const sets = detail?.groups?.find((g) => g.exercise.id === selectedEx)?.sets || [];
-      const ref = el.querySelector('#set-ref');
-      if (ref) {
-        ref.outerHTML = setRefMarkup(p, sets, weightUnit());
-        scrollTargetRefCard(el);
-      }
-      const f = el.querySelector('form[data-form="set"]');
-      if (f) {
-        f.elements.peso.value = '';
-        f.elements.reps.value = '';
-      }
-      await prefill(el, p, sets);
+      await render(el);
     }
   });
 

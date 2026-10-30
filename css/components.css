@@ -369,14 +369,15 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   padding: 2px 0;
   min-width: 0;
 }
 
 .workout-set-title-wrap {
   flex: 1 1 auto;
-  min-width: 110px;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .workout-set-header .workout-set-title {
@@ -385,6 +386,7 @@
   font-weight: 800;
   line-height: 1.15;
   color: var(--text);
+  white-space: nowrap;
 }
 
 .workout-set-header .workout-set-target {
@@ -392,6 +394,9 @@
   font-size: var(--fs-xs);
   color: var(--muted);
   line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .workout-set-header .workout-set-target strong {
