@@ -392,37 +392,6 @@
   font-weight: 700;
 }
 
-.set-tipo-seg {
-  display: inline-flex;
-  padding: 3px;
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  border-radius: var(--r-sm);
-  gap: 2px;
-  flex-shrink: 0;
-}
-
-.set-tipo-seg button {
-  height: 36px;
-  padding: 0 12px;
-  border: none;
-  border-radius: 6px;
-  font-size: var(--fs-xs);
-  font-weight: 700;
-  font-family: inherit;
-  background: transparent;
-  color: var(--muted);
-  cursor: pointer;
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
-  transition: background-color 0.12s ease, color 0.12s ease;
-}
-
-.set-tipo-seg button[aria-pressed="true"] {
-  background: var(--line-strong);
-  color: var(--text);
-}
-
 /* Tarjetas ergonómicas de Peso y Repeticiones */
 .workout-inputs-grid {
   display: grid;

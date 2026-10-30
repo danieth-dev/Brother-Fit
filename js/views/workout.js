@@ -249,10 +249,6 @@ export async function render(el) {
             <p class="workout-set-target">Primera sesión · <span class="muted">Establece tu marca</span></p>
           `}
         </div>
-        <div class="set-tipo-seg" role="group" aria-label="Tipo de serie">
-          <button type="button" data-action="draft-tipo" data-tipo="trabajo" aria-pressed="${draftTipo === 'trabajo'}">Trabajo</button>
-          <button type="button" data-action="draft-tipo" data-tipo="calentamiento" aria-pressed="${draftTipo === 'calentamiento'}">Calentamiento</button>
-        </div>
       </div>
 
       ${setRefMarkup(prev, curExSets, unidad)}
@@ -292,6 +288,11 @@ export async function render(el) {
         </div>
       </div>
 
+      <div class="seg" role="group" aria-label="Tipo de serie" id="draft-tipo-seg">
+        <button type="button" data-action="draft-tipo" data-tipo="trabajo" aria-pressed="${draftTipo === 'trabajo'}">Trabajo</button>
+        <button type="button" data-action="draft-tipo" data-tipo="calentamiento" aria-pressed="${draftTipo === 'calentamiento'}">Calentamiento</button>
+      </div>
+
       <div id="rir-pick" class="stack">
         <div class="rir-head-row">
           <span class="effort-label">¿Cuántas más podrías haber hecho?</span>
@@ -328,6 +329,8 @@ export async function render(el) {
   let sessionPr = pr;
   await prefill(el, prev, curExSets);
   startTicker(el, w);
+  const tipoSeg = el.querySelector('#draft-tipo-seg');
+  if (tipoSeg) requestAnimationFrame(() => syncSegThumb(tipoSeg));
 
   delegate(el, {
     unidad: async (t) => {
@@ -383,9 +386,11 @@ export async function render(el) {
       draftTipo = t.dataset.tipo === 'calentamiento' ? 'calentamiento' : 'trabajo';
       if (draftTipo === 'calentamiento') draftRir = null;
       const warm = draftTipo === 'calentamiento';
+      const seg = el.querySelector('#draft-tipo-seg');
       el.querySelectorAll('[data-action="draft-tipo"]').forEach((b) => {
         b.setAttribute('aria-pressed', String(b === t));
       });
+      if (seg) syncSegThumb(seg);
       el.querySelectorAll('[data-action="draft-rir"]').forEach((b) => {
         b.disabled = warm;
         b.setAttribute('aria-pressed', String(!warm && Number(b.dataset.rir) === draftRir));
