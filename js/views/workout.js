@@ -224,10 +224,20 @@ export async function render(el) {
       <div class="grid-2">
         <div class="field">
           <span>Peso ${unitSegHtml(unidad)}</span>
-          <input name="peso" inputmode="decimal" autocomplete="off" required placeholder="0" aria-label="Peso">
+          <div class="stepper">
+            <button type="button" class="stepper-btn" data-action="step-peso" data-dir="-1" aria-label="Bajar peso">−</button>
+            <input name="peso" inputmode="decimal" autocomplete="off" required placeholder="0" aria-label="Peso">
+            <button type="button" class="stepper-btn" data-action="step-peso" data-dir="1" aria-label="Subir peso">+</button>
+          </div>
         </div>
-        <label class="field"><span>Reps</span>
-          <input name="reps" inputmode="numeric" pattern="[0-9]*" autocomplete="off" required placeholder="0"></label>
+        <div class="field">
+          <span>Reps</span>
+          <div class="stepper">
+            <button type="button" class="stepper-btn" data-action="step-reps" data-dir="-1" aria-label="Bajar repeticiones">−</button>
+            <input name="reps" inputmode="numeric" pattern="[0-9]*" autocomplete="off" required placeholder="0" aria-label="Repeticiones">
+            <button type="button" class="stepper-btn" data-action="step-reps" data-dir="1" aria-label="Subir repeticiones">+</button>
+          </div>
+        </div>
       </div>
       <div class="seg" role="group" aria-label="Tipo de serie">
         <button type="button" data-action="draft-tipo" data-tipo="trabajo" aria-pressed="${draftTipo === 'trabajo'}">Trabajo</button>
@@ -295,6 +305,36 @@ export async function render(el) {
       if (!ok) return;
       await deleteSet(Number(t.dataset.id));
       await render(el);
+    },
+    'step-peso': (t) => {
+      const dir = Number(t.dataset.dir || 1);
+      const input = el.querySelector('input[name="peso"]');
+      if (!input) return;
+      const step = weightUnit() === 'lb' ? 5 : 2.5;
+      let curr = parseFloat(input.value);
+      if (isNaN(curr) || curr < 0) curr = 0;
+      let next = Math.max(0, Math.round((curr + dir * step) * 100) / 100);
+      input.value = next;
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    },
+    'step-reps': (t) => {
+      const dir = Number(t.dataset.dir || 1);
+      const input = el.querySelector('input[name="reps"]');
+      if (!input) return;
+      const curSets = detail?.groups?.find((g) => g.exercise.id === selectedEx)?.sets || [];
+      const sets = prev?.sets || [];
+      const target = sets[curSets.length] || sets[sets.length - 1];
+      const baseReps = target?.reps || 10;
+      let curr = parseInt(input.value, 10);
+      if (isNaN(curr) || curr <= 0) {
+        curr = dir > 0 ? baseReps : Math.max(1, baseReps - 1);
+      } else {
+        curr = Math.max(1, curr + dir);
+      }
+      input.value = curr;
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.dispatchEvent(new Event('change', { bubbles: true }));
     },
     'skip-rest': async () => {
       restEnd = 0;

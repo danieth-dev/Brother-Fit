@@ -270,6 +270,73 @@
   color: var(--text-dim);
 }
 
+/* Stepper numérico con botones de - y + */
+.stepper {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  overflow: hidden;
+  transition: border-color 0.14s ease, background-color 0.14s ease, box-shadow 0.14s ease;
+}
+
+.stepper:focus-within {
+  border-color: var(--primary);
+  background: var(--surface);
+  box-shadow: 0 0 0 3px rgba(255, 230, 0, 0.12);
+}
+
+.stepper input {
+  flex: 1;
+  min-width: 0;
+  width: auto !important;
+  min-height: 46px;
+  padding: 0 4px !important;
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  text-align: center;
+  box-shadow: none !important;
+  font-weight: 700;
+  font-size: var(--fs-lg);
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.stepper-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  min-width: 38px;
+  min-height: 46px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 1.35rem;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  user-select: none;
+  touch-action: manipulation;
+  transition: background-color 0.12s ease, color 0.12s ease, transform 0.08s ease;
+}
+
+.stepper-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--primary);
+}
+
+.stepper-btn:active {
+  background: rgba(255, 230, 0, 0.16);
+  color: var(--primary);
+  transform: scale(0.92);
+}
+
 /* El <select> nativo del teléfono no hereda la paleta. El disparador y la hoja sí. */
 .field {
   position: relative;
