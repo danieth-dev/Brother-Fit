@@ -1,6 +1,6 @@
 import {
-  getActiveWorkout, startWorkout, finishWorkout, finishWorkoutSummary, deleteWorkout, listExercises, addExercise, muscleName, isOwnExercise, muscleFocus,
-  deleteSet, getWorkoutDetail, lastSessionSetsFor, prByExercise, GRUPOS,
+  getActiveWorkout, startWorkout, finishWorkout, finishWorkoutSummary, deleteWorkout, listExercises, muscleName, isOwnExercise, muscleFocus,
+  deleteSet, getWorkoutDetail, lastSessionSetsFor, prByExercise,
   loadActiveRest, saveActiveRest, clearActiveRest
 } from '../services/workouts.js';
 import { registerSet, setEffort, setTipo, skipRestClock, AVISO_DUPLICADA } from '../services/effort.js';
@@ -255,19 +255,6 @@ export async function render(el) {
 
     ${todayLogMarkup(detail.groups, unidad)}
 
-    <details class="form-card" style="margin-top:26px">
-      <summary>
-        <span>Crear nuevo ejercicio</span>
-        ${icons.plus({ size: 18, cls: 'muted' })}
-      </summary>
-      <form class="stack" data-form="exercise">
-        <label class="field"><span>Nombre</span><input name="nombre" autocomplete="off" required></label>
-        <label class="field"><span>Grupo muscular</span>
-          <select name="grupo">${GRUPOS.map((x) => `<option>${x}</option>`).join('')}</select></label>
-        <button class="btn btn-primary btn-block" type="submit">Guardar ejercicio</button>
-      </form>
-    </details>
-
     <div class="grid-2 workout-actions">
       <button class="btn btn-danger" data-action="discard" type="button">
         ${icons.x({ size: 16 })} Descartar
@@ -484,13 +471,6 @@ export async function render(el) {
       else if (peso > prevPR && prevPR > 0) toast(`🏆 ¡Nuevo PR! ${fmtWeight(peso)} ${weightUnit()}`);
 
       await render(el);
-    },
-    exercise: async (f) => {
-      try {
-        selectedEx = await addExercise(f.elements.nombre.value, f.elements.grupo.value);
-        await render(el);
-        toast('Ejercicio guardado');
-      } catch (e) { toast(e.message); }
     }
   });
 
