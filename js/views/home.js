@@ -140,19 +140,16 @@ export async function render(el) {
         : `<button class="btn btn-primary btn-block btn-lg" data-action="start" type="button" id="btn-start-workout">${icons.plus({ size: 20 })} Iniciar entrenamiento</button>`}
     </div>
 
-    <!-- ═══ TELEMETRÍA SEMANAL (DOS BLOQUES BALANCEADOS) ═══ -->
-    <div class="stats stats--2">
+    <!-- ═══ TELEMETRÍA SEMANAL (TARJETA UNIFICADA 2x2) ═══ -->
+    <div class="stats">
       <div class="stat"><b>${fmtVolume(week.volumen, unidad)}</b><span>${esc(unidad)} de volumen</span></div>
       <div class="stat"><b>${cr.dias7}/7</b><span>días con creatina</span></div>
-    </div>
-
-    ${week.entrenos ? `
-    <div class="stats stats--3">
+      ${week.entrenos ? `
       <div class="stat"><b>${week.efectivas}</b><span>series efectivas</span></div>
       <div class="stat"><b>${week.faciles}</b><span>fáciles</span></div>
-      <div class="stat"><b>${week.sinEsfuerzo}</b><span>sin esfuerzo</span></div>
+      ` : ''}
     </div>
-    ${weekGroupLine(week)}` : ''}
+    ${week.entrenos ? weekGroupLine(week) : ''}
 
     <!-- ═══ ÚLTIMOS ENTRENAMIENTOS ═══ -->
     <div class="home-recent-head">
