@@ -329,6 +329,9 @@ function updateProgressView(el) {
     btn.setAttribute('aria-pressed', String(btn.dataset.tab === currentTab));
   });
 
+  const tabsSeg = el.querySelector('.progress-tabs');
+  if (tabsSeg) requestAnimationFrame(() => syncSegThumb(tabsSeg));
+
   if (currentTab === 'ejercicio') {
     const cardSlot = el.querySelector('#ex-card-slot');
     if (cardSlot && currentEx) {
@@ -413,7 +416,7 @@ export async function render(el, [idParam] = []) {
     </header>
 
     <!-- Conmutador de 2 Pestañas: Ejercicio vs Peso Corporal -->
-    <div class="progress-tabs" role="group" aria-label="Qué quieres ver">
+    <div class="seg progress-tabs" role="group" aria-label="Qué quieres ver">
       <button type="button" class="progress-tab-btn" data-action="switch-tab" data-tab="ejercicio" aria-pressed="${currentTab === 'ejercicio'}">
         Ejercicio
       </button>
