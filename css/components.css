@@ -4662,6 +4662,36 @@ html[data-modo="claro"] .plate {
 .workout-set-wrap {
   display: flex;
   flex-direction: column;
+  transition: all 0.15s ease;
+}
+.workout-set-wrap.is-editing {
+  border: 1.5px solid var(--primary);
+  border-radius: 16px;
+  background: #232323;
+  margin: 8px 0;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+html[data-modo="claro"] .workout-set-wrap.is-editing {
+  background: #FFFFFF;
+  border-color: var(--primary);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+.workout-set-wrap.is-editing .workout-set-row-btn {
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 12px 14px 8px;
+}
+.workout-set-wrap.is-editing .set-inline-editor {
+  margin: 0;
+  padding: 4px 14px 16px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+}
+.workout-set-wrap.is-editing + .workout-set-wrap .workout-set-row-btn {
+  border-top: none;
 }
 .workout-set-row-btn {
   box-sizing: border-box;
@@ -4689,8 +4719,8 @@ html[data-modo="claro"] .plate {
   background: var(--surface-2);
 }
 .workout-set-row-btn.is-active {
-  background: var(--surface-2);
-  border: 1.5px solid var(--primary);
+  background: transparent;
+  border: none;
 }
 .workout-set-n {
   width: 52px;
@@ -4843,16 +4873,18 @@ html[data-modo="claro"] .editor-stepper .stepper-btn:active {
 }
 .stepper-display {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: center;
-  gap: 3px;
+  gap: 4px;
   flex: 1 1 auto;
   min-width: 0;
-  overflow: hidden;
+  height: 50px;
 }
 .stepper-input {
   width: 38px;
   min-width: 0;
+  height: 50px;
+  line-height: 50px;
   background: transparent;
   border: none;
   font-family: inherit;
@@ -4865,6 +4897,7 @@ html[data-modo="claro"] .editor-stepper .stepper-btn:active {
   outline: none;
   -moz-appearance: textfield;
   appearance: textfield;
+  display: inline-block;
 }
 .stepper-input::-webkit-outer-spin-button,
 .stepper-input::-webkit-inner-spin-button {
@@ -4875,10 +4908,14 @@ html[data-modo="claro"] .stepper-input {
   color: var(--text);
 }
 .stepper-unit {
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 600;
   color: #A8A8A8;
   flex-shrink: 0;
+  height: 50px;
+  line-height: 50px;
+  display: inline-flex;
+  align-items: center;
 }
 
 /* Pastilla tipo con deslizamiento (seg-swipe): Trabajo / Calentamiento */

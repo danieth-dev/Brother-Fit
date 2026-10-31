@@ -288,7 +288,7 @@ async function detail(el, id) {
                 : `${fmtWeight(s.peso, unidad)} ${esc(unidad)} × ${s.reps}`;
 
               return `
-                <div class="workout-set-wrap">
+                <div class="workout-set-wrap ${isEditing ? 'is-editing' : ''}">
                   <button type="button" class="workout-set-row-btn ${isEditing ? 'is-active' : ''}" data-action="toggle-edit-set" data-id="${s.id}" aria-expanded="${isEditing}">
                     <span class="workout-set-n">Serie ${i + 1}</span>
                     <span class="workout-set-val">${weightDisplay}</span>
