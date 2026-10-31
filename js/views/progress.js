@@ -164,12 +164,33 @@ function sessionTableHtml(sessions, unidad) {
   `;
 }
 
-function chartCardHtml(sessions, unidad) {
-  if (!sessions.length) return '';
+function chartCardInnerHtml(sessions, unidad) {
   const points = metricPoints(sessions, unidad);
   const lastVal = points[points.length - 1]?.value ?? 0;
   const prevVal = points[points.length - 2]?.value ?? null;
   const unitStr = metric === 'series' ? '' : unidad;
+
+  return `
+    <div class="chart-card-head">
+      <span class="chart-card-title">${METRICS[metric]}</span>
+      <div class="chart-card-val-wrap">
+        <span class="chart-card-val">${fmtNum(lastVal)} ${esc(unitStr)}</span>
+        ${prevVal != null ? trendBadge(lastVal, prevVal) : ''}
+      </div>
+    </div>
+
+    <div id="metric-chart">
+      ${lineChart(points, { desc: `${METRICS[metric]} por sesión`, unit: unitStr })}
+    </div>
+
+    <p class="chart-card-note">
+      ${esc(METRIC_DESCRIPTIONS[metric] || '')}
+    </p>
+  `;
+}
+
+function chartCardHtml(sessions, unidad) {
+  if (!sessions.length) return '';
 
   return `
     <section>
@@ -184,21 +205,7 @@ function chartCardHtml(sessions, unidad) {
       </div>
 
       <div class="chart-card">
-        <div class="chart-card-head">
-          <span class="chart-card-title">${METRICS[metric]}</span>
-          <div class="chart-card-val-wrap">
-            <span class="chart-card-val">${fmtNum(lastVal)} ${esc(unitStr)}</span>
-            ${prevVal != null ? trendBadge(lastVal, prevVal) : ''}
-          </div>
-        </div>
-
-        <div id="metric-chart">
-          ${lineChart(points, { desc: `${METRICS[metric]} por sesión`, unit: unitStr })}
-        </div>
-
-        <p class="chart-card-note">
-          ${esc(METRIC_DESCRIPTIONS[metric] || '')}
-        </p>
+        ${chartCardInnerHtml(sessions, unidad)}
       </div>
     </section>
   `;
@@ -484,9 +491,19 @@ export async function render(el, [idParam] = []) {
       metric = next;
       const chartCardSlot = el.querySelector('#chart-card-slot');
       if (chartCardSlot && view) {
-        chartCardSlot.innerHTML = chartCardHtml(view.sessions, view.unidad);
         const metricSeg = chartCardSlot.querySelector('.metric-seg');
-        if (metricSeg) requestAnimationFrame(() => syncSegThumb(metricSeg));
+        if (metricSeg) {
+          metricSeg.querySelectorAll('button').forEach((b) => {
+            b.setAttribute('aria-pressed', String(b.dataset.metric === metric));
+          });
+          syncSegThumb(metricSeg);
+        }
+        const card = chartCardSlot.querySelector('.chart-card');
+        if (card) {
+          card.innerHTML = chartCardInnerHtml(view.sessions, view.unidad);
+        } else {
+          chartCardSlot.innerHTML = chartCardHtml(view.sessions, view.unidad);
+        }
       }
     },
     'toggle-date-input': () => {
