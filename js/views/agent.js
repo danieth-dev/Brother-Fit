@@ -1,13 +1,16 @@
 /**
  * agent view — Gemini 3.8 Live Interface for Brother Fit.
  * Real-time voice conversation with precision transcription + live voice playback + long-term memory.
+ * Athletic Dark Chat with Interactive Action Cards & Prompt Chips.
  */
 
 import { FitAgent, getActiveAgent, loadAllMemories, deleteMemory, visibleFitText } from '../services/agent.js';
 import { loadFitChat, appendFitChat, clearFitChat, formatChatForContext } from '../services/fit-chat.js';
+import { getActiveWorkout, startWorkout, listExercises, muscleName } from '../services/workouts.js';
+import { state } from '../store.js';
 import { db } from '../db.js';
 import { icons } from '../utils/icons.js';
-import { toast, esc } from '../utils/dom.js';
+import { toast, esc, go } from '../utils/dom.js';
 import { askConfirm } from '../utils/confirm-sheet.js';
 
 const API_KEY_STORE = 'geminiApiKey';
@@ -80,65 +83,96 @@ async function renderLiveChat(el, apiKey) {
     agent = new FitAgent(apiKey);
   }
 
+  const allExercises = await listExercises();
   const history = await loadFitChat();
   const hadHistory = history.length > 0;
   let currentBotText = '';
   let botBubble = null;
+  let renderedExerciseCard = null;
 
   el.innerHTML = `
-    <header class="page-head agent-chat-head">
-      <div>
-        <h1>Fit</h1>
-        <p id="agent-status">${isExisting ? 'En línea · Conectado' : 'Conectando con Gemini Live...'}</p>
-      </div>
-      <div class="agent-head-actions">
-        <button class="agent-head-btn" data-action="new-chat" type="button" aria-label="Nuevo chat" id="btn-new-chat" title="Nuevo chat">
-          ${(icons.chat || icons.plus)({ size: 20 })}
-        </button>
-        <button class="agent-head-btn" data-action="memories" type="button" aria-label="Ver recuerdos" id="btn-memories" title="Recuerdos">
-          ${icons.bolt({ size: 20 })}
-        </button>
-      </div>
-    </header>
-
-    <div class="agent-msgs" id="agent-msgs" aria-live="polite" aria-label="Conversación"></div>
-
-    <div class="agent-dock" id="agent-dock">
-      <div class="agent-live-banner" id="agent-live-banner">
-        <div class="agent-live-pulse" id="agent-live-pulse" aria-hidden="true">
-          ${icons.mic({ size: 18 })}
+    <div class="agent-view">
+      <header class="page-head agent-chat-head">
+        <div class="agent-chat-head-left">
+          <button class="agent-back-btn" id="btn-agent-back" aria-label="Volver a Entreno" type="button">
+            ${icons.arrowLeft({ size: 26 })}
+          </button>
+          <div class="agent-chat-head-title">
+            <h1>Fit</h1>
+            <p class="agent-chat-status" id="agent-status" data-ok="${isExisting ? '1' : '0'}">
+              <span class="agent-chat-status-dot" aria-hidden="true"></span>
+              <span id="agent-status-text">${isExisting ? 'En línea' : 'Conectando con Gemini Live...'}</span>
+            </p>
+          </div>
         </div>
-        <p class="agent-live-title" id="agent-live-title">Voz</p>
-        <button class="btn btn-primary btn-sm agent-live-btn" id="btn-toggle-live" type="button">
-          Iniciar
-        </button>
+        <div class="agent-chat-head-actions">
+          <button class="agent-head-btn" data-action="new-chat" type="button" aria-label="Nuevo chat" id="btn-new-chat" title="Nuevo chat">
+            ${icons.chat({ size: 22 })}
+          </button>
+          <button class="agent-head-btn" data-action="memories" type="button" aria-label="Acciones rápidas / Recuerdos" id="btn-memories" title="Acciones y recuerdos">
+            ${icons.bolt({ size: 22 })}
+          </button>
+        </div>
+      </header>
+
+      <div class="agent-msgs" id="agent-msgs" aria-live="polite" aria-label="Conversación">
+        <span class="agent-date-badge">Hoy</span>
       </div>
 
-      <div class="agent-bar" id="agent-bar">
-        <div class="agent-input-wrap">
-          <textarea id="agent-input" class="agent-input" placeholder="Escribe a Fit..." rows="1"
-            disabled aria-label="Mensaje de texto"></textarea>
+      <div class="agent-dock" id="agent-dock">
+        <div class="agent-chips-wrap">
+          <div class="agent-chips-scroll">
+            <button type="button" class="agent-chip" data-prompt="Registrar mi peso">Registrar mi peso</button>
+            <button type="button" class="agent-chip" data-prompt="¿Qué hice ayer?">¿Qué hice ayer?</button>
+            <button type="button" class="agent-chip" data-prompt="Ver mi progreso">Ver mi progreso</button>
+            <button type="button" class="agent-chip" data-prompt="¿Qué rutina me toca hoy?">¿Qué rutina me toca?</button>
+          </div>
+          <div class="agent-chips-fade" aria-hidden="true"></div>
         </div>
-        <button class="agent-send" id="agent-send" type="button" aria-label="Enviar mensaje" disabled>
-          ${icons.chevronRight({ size: 22 })}
-        </button>
+
+        <div class="agent-input-row">
+          <input id="agent-input" class="agent-input-pill" type="text" placeholder="Escribe a Fit…" autocomplete="off" aria-label="Escribe a Fit" disabled>
+          <button class="agent-action-btn" id="btn-action-trigger" type="button" aria-label="Hablar con Fit" disabled>
+            ${icons.waveform({ size: 24 })}
+          </button>
+        </div>
       </div>
     </div>
   `;
 
   const msgsEl = el.querySelector('#agent-msgs');
   const statusEl = el.querySelector('#agent-status');
+  const statusTextEl = el.querySelector('#agent-status-text');
   const inputEl = el.querySelector('#agent-input');
-  const sendBtn = el.querySelector('#agent-send');
-  const liveBanner = el.querySelector('#agent-live-banner');
-  const toggleLiveBtn = el.querySelector('#btn-toggle-live');
-  const liveTitle = el.querySelector('#agent-live-title');
+  const actionBtn = el.querySelector('#btn-action-trigger');
   const memoriesBtn = el.querySelector('#btn-memories');
   const newChatBtn = el.querySelector('#btn-new-chat');
+  const backBtn = el.querySelector('#btn-agent-back');
 
   function setStatus(text, ok = true) {
-    statusEl.textContent = text;
+    statusTextEl.textContent = text;
     statusEl.dataset.ok = ok ? '1' : '0';
+  }
+
+  function updateActionButton() {
+    const hasText = inputEl.value.trim().length > 0;
+    if (hasText) {
+      actionBtn.classList.remove('active-live');
+      actionBtn.classList.add('is-send');
+      actionBtn.innerHTML = icons.send({ size: 22 });
+      actionBtn.setAttribute('aria-label', 'Enviar mensaje');
+    } else {
+      actionBtn.classList.remove('is-send');
+      if (agent.isLiveMode) {
+        actionBtn.classList.add('active-live');
+        actionBtn.innerHTML = icons.mic({ size: 22 });
+        actionBtn.setAttribute('aria-label', 'Detener voz en vivo');
+      } else {
+        actionBtn.classList.remove('active-live');
+        actionBtn.innerHTML = icons.waveform({ size: 24 });
+        actionBtn.setAttribute('aria-label', 'Hablar con Fit');
+      }
+    }
   }
 
   function appendMsg(role, text, id) {
@@ -153,6 +187,11 @@ async function renderLiveChat(el, apiKey) {
 
   function paintHistory(list) {
     msgsEl.replaceChildren();
+    const dateBadge = document.createElement('span');
+    dateBadge.className = 'agent-date-badge';
+    dateBadge.textContent = 'Hoy';
+    msgsEl.appendChild(dateBadge);
+
     if (!list || list.length === 0) return;
     for (const m of list) {
       appendMsg(m.role, m.text);
@@ -167,17 +206,53 @@ async function renderLiveChat(el, apiKey) {
 
   function enableControls(on) {
     inputEl.disabled = !on;
-    sendBtn.disabled = !on;
-    toggleLiveBtn.disabled = !on;
+    actionBtn.disabled = !on;
+  }
+
+  function checkExerciseInText(text) {
+    if (!text) return null;
+    const lower = text.toLowerCase();
+    for (const ex of allExercises) {
+      const nameLower = ex.nombre.toLowerCase();
+      if (nameLower.length >= 4 && lower.includes(nameLower)) {
+        return ex;
+      }
+    }
+    return null;
+  }
+
+  function maybeAppendExerciseCard(text) {
+    if (renderedExerciseCard) return;
+    const ex = checkExerciseInText(text);
+    if (!ex) return;
+    renderedExerciseCard = ex.id;
+    const gName = muscleName(ex.grupo) || ex.grupo || 'General';
+    const card = document.createElement('div');
+    card.className = 'agent-card-exercise';
+    card.innerHTML = `
+      <div>
+        <p class="agent-card-exercise-head">
+          <span class="agent-card-exercise-dot muscle-dot" data-g="${esc(gName)}"></span>
+          ${esc(ex.nombre)}
+        </p>
+        <p class="agent-card-exercise-sub">${esc(gName)} · listo para la serie 1</p>
+      </div>
+      <button class="agent-card-exercise-btn" data-action="go-exercise" data-exercise-id="${ex.id}" type="button">
+        Registrar serie 1
+      </button>
+    `;
+    msgsEl.appendChild(card);
+    msgsEl.scrollTop = msgsEl.scrollHeight;
   }
 
   function sendText() {
     const text = inputEl.value.trim();
     if (!text || !agent.connected) return;
     inputEl.value = '';
-    autoResize();
+    updateActionButton();
     currentBotText = '';
     botBubble = null;
+    renderedExerciseCard = null;
     try {
       agent.sendText(text);
     } catch (e) {
@@ -185,22 +260,17 @@ async function renderLiveChat(el, apiKey) {
     }
   }
 
-  function autoResize() {
-    inputEl.style.height = 'auto';
-    inputEl.style.height = Math.min(inputEl.scrollHeight, 140) + 'px';
-  }
-
   paintHistory(history);
 
   /* Eventos del agente */
   agent
     .on('ready', () => {
-      setStatus('Conectado a Gemini 3.8 Live', true);
+      setStatus('En línea', true);
       enableControls(true);
       if (hadHistory) {
         agent.seedPriorChat(formatChatForContext(history));
       } else {
-        appendMsg('bot', 'Hola, estoy en línea. Toca "Iniciar" para hablarme por voz o escríbeme.');
+        appendMsg('bot', 'Hola, estoy en línea. Escríbeme o pulsa el audio para hablar.');
       }
     })
     .on('user_message', (text) => {
@@ -208,6 +278,7 @@ async function renderLiveChat(el, apiKey) {
       persist('user', text);
       currentBotText = '';
       botBubble = null;
+      renderedExerciseCard = null;
     })
     .on('effort_saved', (res) => {
       const line = String(res?.mensaje || '').includes('sin esfuerzo') ? 'Quedó sin esfuerzo.' : 'Anotado.';
@@ -217,35 +288,33 @@ async function renderLiveChat(el, apiKey) {
       botBubble = null;
     })
     .on('live_mode_started', () => {
-      liveBanner.classList.add('active');
-      toggleLiveBtn.textContent = 'Detener';
-      toggleLiveBtn.className = 'btn btn-danger btn-sm agent-live-btn';
-      liveTitle.textContent = 'Escuchando';
+      updateActionButton();
+      setStatus('Escuchando...', true);
     })
     .on('live_mode_stopped', () => {
-      liveBanner.classList.remove('active', 'speaking');
-      toggleLiveBtn.textContent = 'Iniciar';
-      toggleLiveBtn.className = 'btn btn-primary btn-sm agent-live-btn';
-      liveTitle.textContent = 'Voz';
+      updateActionButton();
+      setStatus('En línea', true);
     })
     .on('listening', () => {
-      if (agent.isLiveMode && !liveBanner.classList.contains('speaking')) {
-        liveTitle.textContent = 'Escuchando';
+      if (agent.isLiveMode) {
+        setStatus('Escuchando...', true);
       }
     })
     .on('interim_speech', (text) => {
-      if (agent.isLiveMode && !liveBanner.classList.contains('speaking')) {
+      if (agent.isLiveMode) {
         const said = String(text || '').trim();
-        liveTitle.textContent = said || 'Escuchando';
+        setStatus(said ? `"${said}"` : 'Escuchando...', true);
       }
     })
     .on('speaking_start', () => {
-      liveBanner.classList.add('speaking');
-      liveTitle.textContent = 'Fit habla';
+      if (agent.isLiveMode) {
+        setStatus('Fit habla...', true);
+      }
     })
     .on('speaking_end', () => {
-      liveBanner.classList.remove('speaking');
-      if (agent.isLiveMode) liveTitle.textContent = 'Escuchando';
+      if (agent.isLiveMode) {
+        setStatus('Escuchando...', true);
+      }
     })
     .on('transcript_chunk', (chunk) => {
       currentBotText += chunk;
@@ -264,22 +333,32 @@ async function renderLiveChat(el, apiKey) {
     })
     .on('turn_complete', () => {
       const shown = visibleFitText(currentBotText);
-      if (shown) persist('bot', shown);
+      if (shown) {
+        persist('bot', shown);
+        maybeAppendExerciseCard(shown);
+      }
       botBubble = null;
       currentBotText = '';
     })
-    .on('memory_updated', (toolName) => {
+    .on('memory_updated', (toolName, args, result) => {
       if (toolName === 'guardar_recuerdo') {
-        const note = document.createElement('div');
-        note.className = 'agent-memory-note';
-        note.textContent = 'Nuevo recuerdo guardado en memoria';
-        msgsEl.appendChild(note);
+        const card = document.createElement('div');
+        card.className = 'agent-card-memory';
+        if (result?.id) card.id = `mem-card-${result.id}`;
+        card.innerHTML = `
+          <div class="agent-card-memory-icon">${icons.check({ size: 18, stroke: '#10B981' })}</div>
+          <div class="agent-card-memory-body">
+            <span class="agent-card-memory-tag">Guardado en recuerdos</span>
+            <span class="agent-card-memory-text">${esc(args?.contenido || 'Preferencia guardada')}</span>
+          </div>
+          ${result?.id ? `<button class="agent-card-memory-undo" data-id="${result.id}" type="button">Deshacer</button>` : ''}
+        `;
+        msgsEl.appendChild(card);
         msgsEl.scrollTop = msgsEl.scrollHeight;
-        setTimeout(() => note.remove(), 4000);
       }
     })
     .on('error', (err) => {
-      setStatus('Error de conexion', false);
+      setStatus('Error de conexión', false);
       toast(err.message);
     })
     .on('mic_paused', (message) => {
@@ -290,31 +369,90 @@ async function renderLiveChat(el, apiKey) {
       enableControls(false);
     });
 
-  toggleLiveBtn.addEventListener('click', async () => {
-    if (!agent.isLiveMode) {
-      try {
-        await agent.startLiveMode();
-      } catch (e) {
-        toast('Acceso al microfono: ' + e.message);
-      }
+  /* Disparador de Acción (Enviar texto o Conmutar Voz en vivo) */
+  actionBtn.addEventListener('click', async () => {
+    const text = inputEl.value.trim();
+    if (text) {
+      sendText();
     } else {
-      agent.stopLiveMode();
+      if (!agent.isLiveMode) {
+        try {
+          await agent.startLiveMode();
+        } catch (e) {
+          toast('Acceso al micrófono: ' + e.message);
+        }
+      } else {
+        agent.stopLiveMode();
+      }
     }
   });
 
-  sendBtn.addEventListener('click', sendText);
+  inputEl.addEventListener('input', updateActionButton);
   inputEl.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === 'Enter') {
       e.preventDefault();
       sendText();
     }
   });
-  inputEl.addEventListener('input', autoResize);
 
+  /* Sugerencias Rápidas (Chips) */
+  el.querySelectorAll('.agent-chip').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const prompt = btn.dataset.prompt;
+      if (prompt && agent.connected) {
+        inputEl.value = prompt;
+        sendText();
+      }
+    });
+  });
+
+  /* Interacción con tarjetas dentro del chat */
+  msgsEl.addEventListener('click', async (e) => {
+    const undoBtn = e.target.closest('.agent-card-memory-undo');
+    if (undoBtn) {
+      const id = Number(undoBtn.dataset.id);
+      if (id) {
+        await deleteMemory(id);
+        const card = undoBtn.closest('.agent-card-memory');
+        if (card) {
+          card.style.opacity = '0.4';
+          undoBtn.textContent = 'Deshecho';
+          undoBtn.disabled = true;
+          setTimeout(() => card.remove(), 1200);
+        }
+        toast('Recuerdo eliminado');
+      }
+      return;
+    }
+
+    const exBtn = e.target.closest('[data-action="go-exercise"]');
+    if (exBtn) {
+      const exId = Number(exBtn.dataset.exerciseId);
+      let activeW = await getActiveWorkout();
+      if (!activeW) {
+        activeW = await startWorkout();
+      }
+      state.selectedExerciseId = exId;
+      go('workout');
+      return;
+    }
+  });
+
+  /* Botón volver */
+  backBtn.addEventListener('click', () => {
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      go('workout');
+    }
+  });
+
+  /* Recuerdos */
   memoriesBtn.addEventListener('click', () => {
     showMemoriesPanel(el, agent);
   });
 
+  /* Nuevo Chat */
   newChatBtn.addEventListener('click', async () => {
     const ok = await askConfirm({
       title: 'Nuevo chat',
@@ -345,13 +483,11 @@ async function renderLiveChat(el, apiKey) {
   }
 
   if (isExisting) {
-    setStatus('En línea · Conectado', true);
+    setStatus('En línea', true);
     enableControls(true);
     if (agent.isLiveMode) {
-      liveBanner.classList.add('active');
-      toggleLiveBtn.textContent = 'Detener';
-      toggleLiveBtn.className = 'btn btn-danger btn-sm agent-live-btn';
-      liveTitle.textContent = 'Escuchando';
+      updateActionButton();
+      setStatus('Escuchando...', true);
     }
   } else {
     agent.connect().catch((err) => {

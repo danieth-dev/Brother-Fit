@@ -60,4 +60,7 @@ export const icons = {
   trendDown: (opts) => svg('<polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/>', opts),
   arrowUp: (opts) => svg('<line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/>', opts),
   arrowDown: (opts) => svg('<line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/>', opts),
+  arrowLeft: (opts) => svg('<path d="M15 5l-7 7 7 7"/>', opts),
+  waveform: (opts) => svg('<path d="M4 10v4M8 6v12M12 3v18M16 8v8M20 11v2"/>', opts),
+  send: (opts) => svg('<line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>', opts),
 };
