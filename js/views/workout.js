@@ -806,7 +806,6 @@ async function prefill(el, prev, curSets = []) {
   const target = sets[curSets.length] || sets[sets.length - 1];
   if (!target) return;
   if (!f.elements.peso.value) f.elements.peso.value = fmtWeight(target.peso);
-  if (!f.elements.reps.value && target.reps) f.elements.reps.value = target.reps;
 }
 
 function startTicker(el, w) {
