@@ -22,20 +22,29 @@ function resolveSystemModo() {
 
 export function applyModo(modo) {
   const name = MODOS.has(modo) ? modo : 'oscuro';
+  const syncThemeColor = (effectiveModo) => {
+    const metaTheme = document.querySelector('meta[name="theme-color"]');
+    if (metaTheme) metaTheme.setAttribute('content', effectiveModo === 'claro' ? '#edf0f5' : '#07080a');
+  };
+
   if (name === 'sistema') {
     const effective = resolveSystemModo();
     document.documentElement.dataset.modo = effective;
+    syncThemeColor(effective);
     if (!mediaQueryListener && window.matchMedia) {
       const mq = window.matchMedia('(prefers-color-scheme: light)');
       mediaQueryListener = (e) => {
         if (state.settings.modo === 'sistema') {
-          document.documentElement.dataset.modo = e.matches ? 'claro' : 'oscuro';
+          const sys = e.matches ? 'claro' : 'oscuro';
+          document.documentElement.dataset.modo = sys;
+          syncThemeColor(sys);
         }
       };
       mq.addEventListener('change', mediaQueryListener);
     }
   } else {
     document.documentElement.dataset.modo = name;
+    syncThemeColor(name);
   }
 }
 
