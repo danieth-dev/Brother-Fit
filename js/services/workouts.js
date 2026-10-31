@@ -348,10 +348,23 @@ export async function clearActiveRest() {
   await db.remove('meta', REST_KEY);
 }
 
-export async function startWorkout() {
+export async function startWorkout(fromWorkoutId = null) {
   const existing = await getActiveWorkout();
   if (existing) return existing;
-  const w = { fecha: todayISO(), startedAt: now(), finishedAt: null, notas: '' };
+  let routineExercises = null;
+  if (fromWorkoutId) {
+    const detail = await getWorkoutDetail(fromWorkoutId);
+    if (detail && detail.groups) {
+      routineExercises = detail.groups.map((g) => g.exercise.id);
+    }
+  }
+  const w = {
+    fecha: todayISO(),
+    startedAt: now(),
+    finishedAt: null,
+    notas: '',
+    ...(routineExercises ? { routineExercises, fromWorkoutId } : {})
+  };
   w.id = await db.add('workouts', w);
   await db.put('meta', { key: 'activeWorkoutId', value: w.id });
   return w;

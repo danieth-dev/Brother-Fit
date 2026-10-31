@@ -1,14 +1,14 @@
 import {
   getActiveWorkout, startWorkout, finishWorkout, finishWorkoutSummary, deleteWorkout, listExercises, muscleName, isOwnExercise, muscleFocus,
   deleteSet, getWorkoutDetail, lastSessionSetsFor, prByExercise,
-  loadActiveRest, saveActiveRest, clearActiveRest
+  loadActiveRest, saveActiveRest, clearActiveRest, listWorkoutSummaries
 } from '../services/workouts.js';
 import { registerSet, setEffort, setTipo, skipRestClock, AVISO_DUPLICADA } from '../services/effort.js';
 import { getActiveAgent, saveMemory } from '../services/agent.js';
 import { creatineSummary } from '../services/creatine.js';
 import { state, saveSettings } from '../store.js';
 import { delegate, forms, changes, toast, esc, num, go } from '../utils/dom.js';
-import { formatDuration, formatShort } from '../utils/dates.js';
+import { formatDuration, formatShort, parseISO } from '../utils/dates.js';
 import { now } from '../utils/clock.js';
 import { icons } from '../utils/icons.js';
 import { bindExerciseEdit, openExerciseEditor } from '../utils/exercise-editor.js';
@@ -17,6 +17,23 @@ import { effortTag, effortExtra, rirButtons } from '../utils/set-line.js';
 import { weightUnit, toKg, fmtWeight, fmtVolume, unitSegHtml } from '../utils/units.js';
 import { syncSegThumb } from '../utils/seg-swipe.js';
 import { maybePromptBackup } from '../utils/backup-nudge.js';
+
+function formatShortWorkoutDate(fechaISO) {
+  if (!fechaISO) return '';
+  const d = parseISO(fechaISO);
+  const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+  const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+  return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]}`;
+}
+
+function workoutTitle(w) {
+  if (!w.grupos || !w.grupos.length) return 'Entrenamiento';
+  const gs = w.grupos;
+  if (gs.length === 1) return gs[0];
+  if (gs.length === 2) return `${gs[0]} y ${gs[1]}`;
+  if (gs.length === 3) return `${gs[0]}, ${gs[1]} y ${gs[2]}`;
+  return `${gs[0]}, ${gs[1]} (+${gs.length - 2})`;
+}
 
 let selectedEx = null;
 let restEnd = 0;
@@ -188,21 +205,70 @@ export async function render(el) {
     restEnd = 0;
     todayLogOpen = false;
     clearActiveRest();
+    const unidad = weightUnit();
+    const summaries = await listWorkoutSummaries(10);
+    const pastWorkouts = summaries.filter((item) => item.finishedAt && item.totalSets > 0).slice(0, 3);
+
     el.innerHTML = `
       <header class="page-head">
         <div class="page-head-row">
-          <h1>Entreno</h1>
+          <div>
+            <h1>Entreno</h1>
+            <p class="workout-status-idle">Sin entrenamiento en curso</p>
+          </div>
           <a class="head-link" href="#/agent" aria-label="Fit">${icons.bot({ size: 22 })}</a>
         </div>
       </header>
-      <div class="empty">
-        ${icons.dumbbell({ size: 42, stroke: 'var(--line-strong)' })}
-        <p>No hay un entrenamiento en curso. Inicia una sesión cuando estés listo para levantar.</p>
-        <button class="btn btn-primary" data-action="start" type="button">
-          ${icons.plus({ size: 20 })} Iniciar entrenamiento
+
+      <div class="workout-empty-view">
+        <button class="btn-start-hero" data-action="start" type="button" id="btn-start-empty">
+          ${icons.plus({ size: 22, stroke: '#111111' })} Iniciar entrenamiento vacío
         </button>
+
+        ${pastWorkouts.length ? `
+          <section class="repeat-section">
+            <div class="repeat-section-head">
+              <h2>O empieza desde uno anterior</h2>
+              <p>Carga los mismos ejercicios y pesos de esa sesión.</p>
+            </div>
+            <div class="repeat-list">
+              ${pastWorkouts.map((pw) => {
+                const title = workoutTitle(pw);
+                const primaryGroup = pw.grupos[0] || 'Otro';
+                const dateStr = formatShortWorkoutDate(pw.fecha);
+                return `
+                  <div class="repeat-card">
+                    <div class="repeat-card-info">
+                      <p class="repeat-card-title">${esc(title)}</p>
+                      <p class="repeat-card-sub">
+                        <span class="muscle-dot" data-g="${esc(primaryGroup)}" aria-hidden="true"></span>
+                        <span>${esc(dateStr)} · ${pw.totalSets} series · ${fmtVolume(pw.volumen, unidad)} ${esc(unidad)}</span>
+                      </p>
+                    </div>
+                    <button class="repeat-card-btn" data-action="repeat" data-id="${pw.id}" type="button" aria-label="Repetir entrenamiento de ${esc(title)}">
+                      ${icons.repeat({ size: 16 })} Repetir
+                    </button>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </section>
+        ` : ''}
       </div>`;
-    delegate(el, { start: async (b) => { b.disabled = true; await startWorkout(); await render(el); } });
+
+    delegate(el, {
+      start: async (b) => {
+        b.disabled = true;
+        await startWorkout();
+        await render(el);
+      },
+      repeat: async (b) => {
+        b.disabled = true;
+        const id = Number(b.dataset.id);
+        await startWorkout(id);
+        await render(el);
+      }
+    });
     return;
   }
 
@@ -216,7 +282,13 @@ export async function render(el) {
       restEnd = 0;
     }
   }
-  if (state.activeExercise && exs.some((e) => e.id === state.activeExercise.id)) {
+  if ((!detail?.groups || detail.groups.length === 0) && w.routineExercises?.length) {
+    const firstRoutineEx = exs.find((e) => e.id === w.routineExercises[0]);
+    if (firstRoutineEx) {
+      selectedEx = firstRoutineEx.id;
+      state.activeExercise = { id: firstRoutineEx.id, nombre: firstRoutineEx.nombre, grupo: firstRoutineEx.grupo };
+    }
+  } else if (state.activeExercise && exs.some((e) => e.id === state.activeExercise.id)) {
     selectedEx = state.activeExercise.id;
   } else if (!exs.some((e) => e.id === selectedEx)) {
     selectedEx = exs[0]?.id ?? null;
@@ -237,10 +309,14 @@ export async function render(el) {
   const prevSets = prev?.sets || [];
   const targetSet = prevSets[curExSets.length] || prevSets[prevSets.length - 1];
   const todayRank = new Map((detail?.groups || []).map((g, i) => [g.exercise.id, i]));
+  const routineRank = new Map((w.routineExercises || []).map((id, i) => [id, i]));
   const orderedExs = exs.map((e, i) => ({ e, i })).sort((a, b) => {
-    const ra = todayRank.has(a.e.id) ? todayRank.get(a.e.id) : 1e9;
-    const rb = todayRank.has(b.e.id) ? todayRank.get(b.e.id) : 1e9;
-    if (ra !== rb) return ra - rb;
+    const tra = todayRank.has(a.e.id) ? todayRank.get(a.e.id) : 1e9;
+    const trb = todayRank.has(b.e.id) ? todayRank.get(b.e.id) : 1e9;
+    if (tra !== trb) return tra - trb;
+    const rra = routineRank.has(a.e.id) ? routineRank.get(a.e.id) : 1e9;
+    const rrb = routineRank.has(b.e.id) ? routineRank.get(b.e.id) : 1e9;
+    if (rra !== rrb) return rra - rrb;
     return a.i - b.i;
   }).map(({ e }) => e);
 

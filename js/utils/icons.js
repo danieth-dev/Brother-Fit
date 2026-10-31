@@ -40,6 +40,7 @@ export const icons = {
   dots: (opts) => svg('<circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/>', opts),
   search: (opts) => svg('<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>', opts),
   bot: (opts) => svg('<rect x="4" y="9" width="16" height="11" rx="3"/><path d="M12 9V5M12 5h.01M9 14v1M15 14v1"/>', opts),
+  repeat: (opts) => svg('<path d="M4 12a8 8 0 0 1 14-5l2 2M20 4v5h-5M20 12a8 8 0 0 1-14 5l-2-2M4 20v-5h5"/>', opts),
   sliders: (opts) => svg('<line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/>', opts),
   /* Premio PR Brother Fit (original): estrella, laureles y pedestal. */
   trophy: (opts) => svg(
