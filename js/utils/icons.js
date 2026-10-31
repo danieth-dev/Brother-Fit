@@ -39,7 +39,7 @@ export const icons = {
   close: (opts) => svg('<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>', opts),
   dots: (opts) => svg('<circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/>', opts),
   search: (opts) => svg('<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>', opts),
-  bot: (opts) => svg('<rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8.01" y2="16"/><line x1="16" y1="16" x2="16.01" y2="16"/>', opts),
+  bot: (opts) => svg('<rect x="4" y="9" width="16" height="11" rx="3"/><path d="M12 9V5M12 5h.01M9 14v1M15 14v1"/>', opts),
   sliders: (opts) => svg('<line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/>', opts),
   /* Premio PR Brother Fit (original): estrella, laureles y pedestal. */
   trophy: (opts) => svg(
