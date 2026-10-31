@@ -7,7 +7,11 @@ export const num = (v) => {
   const n = parseFloat(String(v ?? '').replace(',', '.'));
   return Number.isFinite(n) ? n : NaN;
 };
-export const fmtNum = (n) => (Number.isInteger(n) ? String(n) : n.toFixed(1).replace(/\.0$/, ''));
+export const fmtNum = (n) => {
+  const num = typeof n === 'number' ? n : parseFloat(String(n ?? '').replace(',', '.'));
+  if (!Number.isFinite(num)) return String(n ?? '');
+  return Number.isInteger(num) ? String(num) : num.toFixed(1).replace(/\.0$/, '');
+};
 export const go = (path) => { location.hash = '#' + path; };
 
 /* Un solo listener por tipo de evento y elemento: re-renderizar no los acumula. */

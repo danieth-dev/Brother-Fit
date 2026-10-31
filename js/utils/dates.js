@@ -35,3 +35,15 @@ export function formatDuration(ms) {
   const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
   return h ? `${h}:${pad(m)}:${pad(sec)}` : `${pad(m)}:${pad(sec)}`;
 }
+
+export function formatRelativeDays(iso) {
+  if (!iso) return '';
+  const now = parseISO(todayISO());
+  const target = parseISO(iso);
+  const diffMs = now.getTime() - target.getTime();
+  const diffDays = Math.round(diffMs / (24 * 60 * 60 * 1000));
+  if (diffDays === 0) return 'hoy';
+  if (diffDays === 1) return 'ayer';
+  if (diffDays > 1) return `hace ${diffDays} días`;
+  return `en ${Math.abs(diffDays)} días`;
+}

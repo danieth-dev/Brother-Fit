@@ -2625,6 +2625,15 @@ html[data-modo="claro"] .plate {
   font-size: 12px;
   font-weight: 600;
 }
+.chart .val-text {
+  fill: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+}
+.chart .pt--single {
+  stroke: var(--surface);
+  stroke-width: 3;
+}
 
 /* ---------- Isla de navegación ---------- */
 .tabbar {
@@ -6722,5 +6731,482 @@ html[data-modo="claro"] .aspecto-preview-bar-track {
   transition: background 0.2s ease, color 0.2s ease;
   user-select: none;
 }
+
+/* ==========================================================================
+   16 · Vista Progreso (Rediseño 2 Pestañas: Ejercicio & Peso Corporal)
+   ========================================================================== */
+
+.progress-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 4px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  margin-bottom: 18px;
+}
+#pane-ejercicio > .picker-trigger {
+  position: absolute !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  width: 1px !important;
+  height: 1px !important;
+  overflow: hidden !important;
+}
+.progress-tab-btn {
+  flex: 1;
+  height: 44px;
+  border: none;
+  border-radius: var(--r-md);
+  background: transparent;
+  color: var(--muted);
+  font-size: 15px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.16s ease, color 0.16s ease;
+}
+.progress-tab-btn[aria-pressed="true"] {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-sm);
+  font-weight: 700;
+}
+
+/* Tarjeta del ejercicio seleccionado */
+.progress-ex-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  width: 100%;
+  box-sizing: border-box;
+  padding: 14px 12px 14px 18px;
+  color: var(--text);
+  text-align: left;
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+  margin-bottom: 16px;
+}
+.progress-ex-card:hover {
+  border-color: var(--line-strong);
+}
+.progress-ex-card-tag {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.progress-ex-card-title {
+  display: block;
+  font-size: 22px;
+  line-height: 1.25;
+  font-weight: 700;
+  margin: 2px 0 4px;
+}
+.progress-ex-card-sub {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.progress-ex-card-sub strong {
+  color: var(--text);
+  font-weight: 600;
+}
+.progress-ex-card-icon {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+/* Insignias de récord (PR Grid) */
+.pr-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.pr-card {
+  box-sizing: border-box;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: var(--r-md);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+}
+.pr-card--gold {
+  border-color: var(--line-accent);
+  background: var(--yellow-dim);
+}
+.pr-card-icon {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.pr-card-val {
+  margin: 0;
+  font-size: 24px;
+  line-height: 1.1;
+  font-weight: 800;
+  font-family: var(--font-display);
+  color: var(--text);
+}
+.pr-card-unit {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.pr-card-label {
+  margin: 4px 0 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  line-height: 1.2;
+}
+
+/* Tarjeta comparativa (Última sesión vs anterior) */
+.compare-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: 8px 16px 10px;
+  box-sizing: border-box;
+  margin-bottom: 18px;
+}
+.compare-card-head {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  font-size: 13.5px;
+  color: var(--muted);
+}
+.compare-card-head strong {
+  color: var(--text);
+}
+.compare-row {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-top: 1px solid var(--line);
+}
+.compare-row:first-child {
+  border-top: none;
+}
+.compare-row-name {
+  width: 110px;
+  font-size: 14.5px;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+.compare-row-vals {
+  flex: 1;
+  text-align: right;
+  font-size: 14.5px;
+  color: var(--muted);
+}
+.compare-row-vals strong {
+  font-size: 16px;
+  color: var(--text);
+  margin-left: 4px;
+}
+.compare-row-chip {
+  width: 84px;
+  text-align: right;
+  flex-shrink: 0;
+}
+.trend-badge {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: var(--r-full);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.trend-badge--down {
+  background: rgba(255, 77, 77, 0.14);
+  color: #FF5A65;
+}
+.trend-badge--up {
+  background: rgba(0, 230, 118, 0.14);
+  color: #00D06C;
+}
+.trend-badge--neutral {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* Tarjeta Evolución con Gráfico */
+.chart-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  margin-top: 10px;
+  padding: 16px;
+  box-sizing: border-box;
+  margin-bottom: 18px;
+}
+.chart-card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+.chart-card-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+}
+.chart-card-val-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.chart-card-val {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text);
+}
+.chart-card-note {
+  margin: 10px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+/* Historial de sesiones agrupado */
+.sess-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+.sess-item {
+  min-height: 64px;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid var(--line);
+}
+.sess-item:first-child {
+  border-top: none;
+}
+.sess-item-date {
+  display: block;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+}
+.sess-item-sub {
+  display: block;
+  font-size: 12.5px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.sess-item-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.sess-item-max {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+/* Sub-pestaña de Peso Corporal */
+.body-hero-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: 18px 20px;
+  margin-bottom: 16px;
+}
+.body-hero-sub {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.body-hero-val {
+  margin: 4px 0 0;
+  font-size: 42px;
+  line-height: 1.05;
+  font-weight: 800;
+  font-family: var(--font-display);
+  color: var(--text);
+}
+.body-hero-unit {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.body-hero-rel {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.body-form-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+.body-date-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.body-date-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+}
+.body-change-date-btn {
+  height: 38px;
+  padding: 0 8px;
+  border: none;
+  background: transparent;
+  color: var(--primary);
+  font-size: 13.5px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+}
+.body-date-input-wrap {
+  margin-top: -6px;
+}
+.body-date-input-wrap input[type="date"] {
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+}
+.body-input-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.body-weight-input {
+  flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
+  height: 56px;
+  padding: 0 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 22px;
+  font-weight: 700;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+.body-weight-input:focus {
+  border-color: var(--primary);
+}
+.body-save-btn {
+  height: 50px;
+  border: none;
+  border-radius: var(--r-md);
+  font-size: 16px;
+  font-weight: 700;
+  font-family: inherit;
+  transition: all 0.16s ease;
+}
+.body-save-btn:disabled {
+  background: var(--surface-2);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+.body-save-btn:not(:disabled) {
+  background: var(--primary);
+  color: var(--primary-ink);
+  cursor: pointer;
+  box-shadow: var(--shadow-primary);
+}
+
+.body-history-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+.body-history-item {
+  min-height: 62px;
+  padding: 10px 10px 10px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid var(--line);
+}
+.body-history-item:first-child {
+  border-top: none;
+}
+.body-history-val {
+  display: block;
+  font-size: 19px;
+  font-weight: 800;
+  font-family: var(--font-display);
+  color: var(--text);
+}
+.body-history-date {
+  display: block;
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.body-del-btn {
+  width: 44px;
+  height: 44px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: var(--r-sm);
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+.body-del-btn:hover {
+  color: var(--red);
+  background: var(--surface-2);
+}
+
 
 

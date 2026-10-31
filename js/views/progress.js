@@ -1,37 +1,42 @@
 import { listExercises, progressForExercise, lastTrainedExerciseId, prByExercise, isOwnExercise, muscleFocus, muscleName } from '../services/workouts.js';
 import { addBodyWeight, listBodyWeights, deleteBodyMetric } from '../services/body.js';
 import { saveSettings } from '../store.js';
-import { delegate, forms, changes, toast, esc, num, fmtNum, go } from '../utils/dom.js';
+import { delegate, forms, toast, esc, num, fmtNum, go } from '../utils/dom.js';
 import { lineChart } from '../utils/chart.js';
-import { formatShort, todayISO } from '../utils/dates.js';
+import { formatShort, todayISO, formatMedium, formatRelativeDays } from '../utils/dates.js';
 import { icons } from '../utils/icons.js';
 import { bindExerciseEdit, openExerciseEditor } from '../utils/exercise-editor.js';
 import { askConfirm } from '../utils/confirm-sheet.js';
-import { weightUnit, toKg, fromKg, fmtWeight, fmtVolume, unitSegHtml } from '../utils/units.js';
+import { openPicker } from '../utils/picker.js';
+import { weightUnit, toKg, fromKg, fmtWeight, fmtVolume } from '../utils/units.js';
 import { syncSegThumb } from '../utils/seg-swipe.js';
 
-const METRICS = { e1rm: '1RM est.', adj: '1RM aj.', maxPeso: 'Peso máx.', volumen: 'Volumen' };
-let metric = 'e1rm';
+const METRICS = {
+  e1rm: '1RM est.',
+  adj: '1RM aj.',
+  maxPeso: 'Peso máx.',
+  volumen: 'Volumen',
+};
 
-/* Datos de la vista actual: actualizar unidad/métrica sin remount de los .seg. */
+const METRIC_DESCRIPTIONS = {
+  e1rm: 'El máximo que podrías levantar en 1 repetición, calculado con tus series. Con solo 2 sesiones se ve una línea recta; la tendencia aparece desde la tercera.',
+  adj: '1RM estimado ajustado por el esfuerzo real (RIR). «4 o más» es considerado un piso seguro de intensidad.',
+  maxPeso: 'Carga máxima efectiva movida en cada sesión de entrenamiento.',
+  volumen: 'Volumen total acumulado (series × repeticiones × peso) realizado en la sesión.',
+};
+
+let currentTab = 'ejercicio'; // 'ejercicio' | 'peso'
+let metric = 'e1rm';
 let view = null;
 
-function trendChip(curr, prev) {
-  if (!prev || prev === 0) return '';
+function trendBadge(curr, prev) {
+  if (!prev || prev === 0) return '<span class="trend-badge trend-badge--neutral">—</span>';
   const pct = ((curr - prev) / prev) * 100;
-  if (Math.abs(pct) < 0.5) return '<span class="trend-neutral">—</span>';
-  if (pct > 0) return `<span class="trend-up">${icons.arrowUp({ size: 11 })} ${pct.toFixed(1)}%</span>`;
-  return `<span class="trend-down">${icons.arrowDown({ size: 11 })} ${Math.abs(pct).toFixed(1)}%</span>`;
-}
-
-function adjCaption(sessions) {
-  const days = sessions.filter((s) => s.adj != null);
-  if (!days.length) return 'Todavía no hay series de trabajo con esfuerzo. Esta escala no se mezcla con el 1RM estimado.';
-  const last = days[days.length - 1];
-  const bits = ['Escala aparte del 1RM estimado. «4 o más» es un piso.'];
-  if (last.adjFloor) bits.push('El último punto es un piso.');
-  if (last.adjReliable === false) bits.push('El último punto no es fiable: pasan de 12 repeticiones efectivas.');
-  return bits.join(' ');
+  if (Math.abs(pct) < 0.5) return '<span class="trend-badge trend-badge--neutral">—</span>';
+  if (pct > 0) {
+    return `<span class="trend-badge trend-badge--up">↑ ${pct.toFixed(1).replace('.', ',')}%</span>`;
+  }
+  return `<span class="trend-badge trend-badge--down">↓ ${Math.abs(pct).toFixed(1).replace('.', ',')}%</span>`;
 }
 
 function showW(kg, unidad) {
@@ -53,181 +58,345 @@ function metricPoints(sessions, unidad) {
     });
 }
 
-function compareCard(sessions, unidad) {
+function compareCardHtml(sessions, unidad) {
   if (sessions.length < 2) return '';
   const last = sessions[sessions.length - 1];
   const prev = sessions[sessions.length - 2];
   const rows = [
-    { label: '1RM est.', curr: showW(last.e1rm, unidad), prev: showW(prev.e1rm, unidad), unit: unidad, rawCurr: last.e1rm, rawPrev: prev.e1rm },
+    { label: '1RM estimado', curr: showW(last.e1rm, unidad), prev: showW(prev.e1rm, unidad), unit: unidad, rawCurr: last.e1rm, rawPrev: prev.e1rm },
   ];
   if (last.adj != null && prev.adj != null) {
-    rows.push({ label: '1RM aj.', curr: showW(last.adj, unidad), prev: showW(prev.adj, unidad), unit: unidad, rawCurr: last.adj, rawPrev: prev.adj });
+    rows.push({ label: '1RM ajustado', curr: showW(last.adj, unidad), prev: showW(prev.adj, unidad), unit: unidad, rawCurr: last.adj, rawPrev: prev.adj });
   }
   rows.push(
     { label: 'Volumen', curr: showW(last.volumen, unidad), prev: showW(prev.volumen, unidad), unit: unidad, rawCurr: last.volumen, rawPrev: prev.volumen },
     { label: 'Series', curr: last.series, prev: prev.series, unit: '', rawCurr: last.series, rawPrev: prev.series },
     { label: 'Peso máx.', curr: showW(last.maxPeso, unidad), prev: showW(prev.maxPeso, unidad), unit: unidad, rawCurr: last.maxPeso, rawPrev: prev.maxPeso },
   );
-  return `
-    <div class="compare-card">
-      <div class="compare-card-head">
-        <span class="compare-label">${esc(formatShort(prev.fecha))}</span>
-        <span class="compare-arrow">→</span>
-        <span class="compare-label compare-label--current">${esc(formatShort(last.fecha))}</span>
-      </div>
-      <div class="compare-rows">
-        ${rows.map((r) => `
-          <div class="compare-row">
-            <span class="compare-row-name">${r.label}</span>
-            <span class="compare-row-prev">${fmtNum(Math.round(r.prev * 10) / 10)} ${esc(r.unit)}</span>
-            <span class="compare-row-arrow">→</span>
-            <span class="compare-row-curr">${fmtNum(Math.round(r.curr * 10) / 10)} ${esc(r.unit)}</span>
-            ${trendChip(r.rawCurr, r.rawPrev)}
-          </div>`).join('')}
-      </div>
-    </div>`;
-}
 
-function sessionTable(sessions, unidad) {
-  if (!sessions.length) return '';
-  const rows = sessions.slice().reverse().map((s, i, arr) => {
-    const prev = arr[i + 1];
-    return `
-      <div class="sess-row">
-        <div class="sess-row-date">
-          <strong>${esc(formatShort(s.fecha))}</strong>
-          <small>${s.series} series</small>
-        </div>
-        <div class="sess-row-best">
-          <span>${fmtWeight(s.maxPeso, unidad)} ${esc(unidad)} × —</span>
-          <small>${fmtVolume(s.volumen, unidad)} ${esc(unidad)} vol.</small>
-        </div>
-        <div class="sess-row-trend">
-          ${trendChip(s.e1rm, prev?.e1rm)}
-        </div>
-      </div>`;
-  });
   return `
-    <h2 class="section-title">Historial de sesiones</h2>
-    <div class="sess-table">${rows.join('')}</div>`;
+    <section>
+      <h2 style="margin: 0 4px 10px; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted)">
+        Última sesión vs anterior
+      </h2>
+      <div class="compare-card">
+        <div class="compare-card-head">
+          <span>${esc(formatShort(prev.fecha))}</span>
+          <span>→</span>
+          <strong>${esc(formatShort(last.fecha))}</strong>
+        </div>
+        <div class="compare-table">
+          ${rows.map((r) => `
+            <div class="compare-row">
+              <span class="compare-row-name">${r.label}</span>
+              <span class="compare-row-vals">
+                <span>${fmtNum(Math.round(r.prev * 10) / 10)}</span>
+                <span style="color:var(--muted)"> → </span>
+                <strong>${fmtNum(Math.round(r.curr * 10) / 10)} ${esc(r.unit)}</strong>
+              </span>
+              <span class="compare-row-chip">
+                ${trendBadge(r.rawCurr, r.rawPrev)}
+              </span>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    </section>
+  `;
 }
 
 function prBadgesHtml(pr, unidad) {
   return `
-    <div class="pr-badges">
-      <div class="pr-badge pr-badge--gold">
-        ${icons.trophy({ size: 16, stroke: 'var(--primary)' })}
-        <div>
-          <span class="pr-badge-val">${fmtWeight(pr.maxPeso, unidad)}<small> ${esc(unidad)}</small></span>
-          <span class="pr-badge-label">Mejor peso (PR)</span>
-        </div>
+    <div class="pr-grid">
+      <div class="pr-card pr-card--gold">
+        <span class="pr-card-icon" style="color: var(--primary)">
+          ${icons.crown({ size: 20 })}
+        </span>
+        <p class="pr-card-val">${fmtWeight(pr.maxPeso, unidad)} <span class="pr-card-unit">${esc(unidad)}</span></p>
+        <p class="pr-card-label">Récord de peso</p>
       </div>
-      <div class="pr-badge">
-        ${icons.trendUp({ size: 16, stroke: 'var(--green)' })}
-        <div>
-          <span class="pr-badge-val">${fmtWeight(pr.e1rmMax, unidad)}<small> ${esc(unidad)}</small></span>
-          <span class="pr-badge-label">Mejor 1RM</span>
-        </div>
+
+      <div class="pr-card">
+        <span class="pr-card-icon" style="color: var(--green)">
+          ${icons.trendUp({ size: 20 })}
+        </span>
+        <p class="pr-card-val">${fmtWeight(pr.e1rmMax, unidad)} <span class="pr-card-unit">${esc(unidad)}</span></p>
+        <p class="pr-card-label">Mejor 1RM</p>
       </div>
-      <div class="pr-badge">
-        ${icons.activity({ size: 16, stroke: 'var(--blue)' })}
-        <div>
-          <span class="pr-badge-val">${pr.maxReps}<small> reps</small></span>
-          <span class="pr-badge-label">Más reps</span>
-        </div>
+
+      <div class="pr-card">
+        <span class="pr-card-icon" style="color: var(--blue)">
+          ${icons.pulse({ size: 20 })}
+        </span>
+        <p class="pr-card-val">${pr.maxReps} <span class="pr-card-unit">reps</span></p>
+        <p class="pr-card-label">Más repeticiones</p>
       </div>
-    </div>`;
+    </div>
+  `;
 }
 
-function bodyListHtml(body, unidad) {
-  if (!body.length) return '';
-  return `
-    <div class="list" id="body-list" style="margin-top:12px">
-      ${body.slice(-5).reverse().map((b) => `
-        <div class="row">
-          <div>
-            <strong class="num">${fmtWeight(b.peso, unidad)} ${esc(unidad)}</strong>
-            <small>${esc(formatShort(b.fecha))}</small>
-          </div>
-          <button class="btn-x" data-action="del-body" data-id="${b.id}" type="button" aria-label="Borrar registro">
-            ${icons.trash({ size: 16 })}
-          </button>
-        </div>`).join('')}
-    </div>`;
-}
-
-function setChart(slot, html) {
-  if (!slot) return;
-  slot.innerHTML = html;
-}
-
-/* Solo números/gráficos: kg/lb y métricas no se destruyen. */
-function applyUnitLive(root, next, pesoKg) {
-  if (!view) return;
-  view.unidad = next;
-
-  root.querySelectorAll('.unit-seg [data-unidad]').forEach((b) => {
-    b.setAttribute('aria-pressed', String(b.dataset.unidad === next));
+function sessionTableHtml(sessions, unidad) {
+  if (!sessions.length) return '';
+  const rows = sessions.slice().reverse().map((s, i, arr) => {
+    const prev = arr[i + 1];
+    const maxStr = s.maxPeso > 0 ? `${fmtWeight(s.maxPeso, unidad)} ${esc(unidad)} máx.` : 'Sin peso';
+    return `
+      <div class="sess-item">
+        <div>
+          <span class="sess-item-date">${esc(formatShort(s.fecha))}</span>
+          <span class="sess-item-sub">${s.series} ${s.series === 1 ? 'serie' : 'series'} · ${fmtVolume(s.volumen, unidad)} ${esc(unidad)} de volumen</span>
+        </div>
+        <div class="sess-item-right">
+          <span class="sess-item-max">${maxStr}</span>
+          ${trendBadge(s.e1rm, prev?.e1rm)}
+        </div>
+      </div>
+    `;
   });
-  const unitSeg = root.querySelector('.unit-seg');
-  if (unitSeg) requestAnimationFrame(() => syncSegThumb(unitSeg));
 
-  const input = root.querySelector('form[data-form="body"] input[name="peso"]');
-  if (input && pesoKg != null) input.value = fmtWeight(pesoKg, next);
+  return `
+    <section>
+      <h2 style="margin: 0 4px 10px; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted)">
+        Historial de sesiones
+      </h2>
+      <div class="sess-card">${rows.join('')}</div>
+    </section>
+  `;
+}
 
-  const { sessions, body, pr } = view;
-  const prSlot = root.querySelector('#pr-slot');
-  if (prSlot) prSlot.innerHTML = prBadgesHtml(pr, next);
+function chartCardHtml(sessions, unidad) {
+  if (!sessions.length) return '';
+  const points = metricPoints(sessions, unidad);
+  const lastVal = points[points.length - 1]?.value ?? 0;
+  const prevVal = points[points.length - 2]?.value ?? null;
+  const unitStr = metric === 'series' ? '' : unidad;
 
-  const compareSlot = root.querySelector('#compare-slot');
-  if (compareSlot) compareSlot.innerHTML = compareCard(sessions, next);
+  return `
+    <section>
+      <h2 style="margin: 0 4px 10px; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted)">
+        Evolución
+      </h2>
 
-  setChart(root.querySelector('#metric-chart'), lineChart(metricPoints(sessions, next), {
-    desc: `${METRICS[metric]} por sesión`,
-  }));
+      <div class="seg metric-seg" role="group" aria-label="Métrica del gráfico">
+        ${Object.entries(METRICS).map(([k, label]) =>
+          `<button type="button" data-action="metric" data-metric="${k}" aria-pressed="${k === metric}">${label}</button>`
+        ).join('')}
+      </div>
 
-  const sessSlot = root.querySelector('#sess-slot');
-  if (sessSlot) sessSlot.innerHTML = sessionTable(sessions, next);
+      <div class="chart-card">
+        <div class="chart-card-head">
+          <span class="chart-card-title">${METRICS[metric]}</span>
+          <div class="chart-card-val-wrap">
+            <span class="chart-card-val">${fmtNum(lastVal)} ${esc(unitStr)}</span>
+            ${prevVal != null ? trendBadge(lastVal, prevVal) : ''}
+          </div>
+        </div>
+
+        <div id="metric-chart">
+          ${lineChart(points, { desc: `${METRICS[metric]} por sesión`, unit: unitStr })}
+        </div>
+
+        <p class="chart-card-note">
+          ${esc(METRIC_DESCRIPTIONS[metric] || '')}
+        </p>
+      </div>
+    </section>
+  `;
+}
+
+function bodySectionHtml(body, unidad) {
+  const latest = body[body.length - 1];
+  const latestWeight = latest ? fmtWeight(latest.peso, unidad) : '';
+  const relTime = latest ? formatRelativeDays(latest.fecha) : '';
+  const dateFmt = latest ? formatShort(latest.fecha) : '';
 
   const bodyPoints = body.slice(-30).map((b) => ({
     label: formatShort(b.fecha),
-    value: Math.round(fromKg(b.peso, next) * 10) / 10,
+    value: Math.round(fromKg(b.peso, unidad) * 10) / 10,
   }));
-  setChart(root.querySelector('#body-chart'), lineChart(bodyPoints, { desc: 'Peso corporal en el tiempo' }));
 
-  const listSlot = root.querySelector('#body-list-slot');
-  if (listSlot) listSlot.innerHTML = bodyListHtml(body, next);
+  const todayFmt = formatMedium(todayISO());
+
+  return `
+    <div id="body-tab-pane">
+      <!-- Tarjeta Último registro -->
+      ${latest ? `
+        <div class="body-hero-card">
+          <p class="body-hero-sub">Último registro</p>
+          <p class="body-hero-val">
+            ${esc(latestWeight)} <span class="body-hero-unit">${esc(unidad)}</span>
+          </p>
+          <p class="body-hero-rel">${esc(dateFmt)} · ${esc(relTime)}</p>
+        </div>
+      ` : ''}
+
+      <!-- Gráfico de peso corporal -->
+      <div class="chart-card" style="margin-top:0">
+        <div class="chart-card-head">
+          <span class="chart-card-title">Tendencia de peso</span>
+          ${latest ? `<span class="chart-card-val">${esc(latestWeight)} ${esc(unidad)}</span>` : ''}
+        </div>
+        <div id="body-chart">
+          ${lineChart(bodyPoints, { height: 180, desc: 'Peso corporal en el tiempo', unit: unidad })}
+        </div>
+        ${body.length <= 1 ? `
+          <p class="chart-card-note">Con un solo registro no hay tendencia. Añade otro para ver cómo cambia.</p>
+        ` : `
+          <p class="chart-card-note">Historial de pesajes recientes en ${esc(unidad)}.</p>
+        `}
+      </div>
+
+      <!-- Formulario Registrar Peso -->
+      <section>
+        <h2 style="margin: 0 4px 10px; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted)">
+          Registrar peso
+        </h2>
+        <form class="body-form-card" data-form="body">
+          <div class="body-date-row">
+            <span class="body-date-label">
+              ${icons.calendar({ size: 19, stroke: 'var(--muted)' })}
+              <span id="body-date-text">Hoy · ${todayFmt}</span>
+            </span>
+            <button type="button" class="body-change-date-btn" data-action="toggle-date-input">
+              Cambiar día
+            </button>
+          </div>
+
+          <div class="body-date-input-wrap" id="body-date-input-wrap" hidden>
+            <input type="date" name="fecha" id="body-date-field" value="${todayISO()}" max="${todayISO()}">
+          </div>
+
+          <div class="body-input-row">
+            <input 
+              name="peso" 
+              id="body-peso-input"
+              inputmode="decimal" 
+              autocomplete="off" 
+              placeholder="${latestWeight || '0,0'}" 
+              aria-label="Peso corporal" 
+              class="body-weight-input"
+            >
+            <div class="seg unit-seg" role="group" aria-label="Unidad">
+              <button type="button" data-action="unit-toggle" data-unit="kg" aria-pressed="${unidad === 'kg'}">KG</button>
+              <button type="button" data-action="unit-toggle" data-unit="lb" aria-pressed="${unidad === 'lb'}">LB</button>
+            </div>
+          </div>
+
+          <button type="submit" class="body-save-btn btn-block" id="btn-save-body" disabled>
+            Escribe tu peso
+          </button>
+        </form>
+      </section>
+
+      <!-- Historial de pesajes -->
+      <section>
+        <h2 style="margin: 0 4px 10px; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted)">
+          Historial
+        </h2>
+        <div class="body-history-card" id="body-list-slot">
+          ${body.length ? body.slice(-12).reverse().map((b) => `
+            <div class="body-history-item">
+              <div>
+                <span class="body-history-val">${fmtWeight(b.peso, unidad)} ${esc(unidad)}</span>
+                <span class="body-history-date">${esc(formatShort(b.fecha))}</span>
+              </div>
+              <button class="body-del-btn" data-action="del-body" data-id="${b.id}" type="button" aria-label="Borrar registro">
+                ${icons.trash({ size: 18 })}
+              </button>
+            </div>
+          `).join('') : `
+            <div style="padding:24px 16px;text-align:center;color:var(--muted);font-size:14px">
+              No hay registros de peso corporal todavía.
+            </div>
+          `}
+        </div>
+      </section>
+    </div>
+  `;
 }
 
-function applyMetricLive(root) {
+function updateProgressView(el) {
   if (!view) return;
-  const { sessions, unidad } = view;
+  const { currentEx, exs, sessions, body, pr, unidad } = view;
 
-  root.querySelectorAll('.metric-seg [data-metric]').forEach((b) => {
-    b.setAttribute('aria-pressed', String(b.dataset.metric === metric));
+  const exPane = el.querySelector('#pane-ejercicio');
+  const pesoPane = el.querySelector('#pane-peso');
+
+  if (exPane) exPane.hidden = currentTab !== 'ejercicio';
+  if (pesoPane) pesoPane.hidden = currentTab !== 'peso';
+
+  el.querySelectorAll('.progress-tab-btn').forEach((btn) => {
+    btn.setAttribute('aria-pressed', String(btn.dataset.tab === currentTab));
   });
-  const metricSeg = root.querySelector('.metric-seg');
-  if (metricSeg) requestAnimationFrame(() => syncSegThumb(metricSeg));
 
-  setChart(root.querySelector('#metric-chart'), lineChart(metricPoints(sessions, unidad), {
-    desc: `${METRICS[metric]} por sesión`,
-  }));
+  if (currentTab === 'ejercicio') {
+    const cardSlot = el.querySelector('#ex-card-slot');
+    if (cardSlot && currentEx) {
+      const gName = muscleName(currentEx.grupo) || currentEx.grupo;
+      const fName = muscleFocus(currentEx.nombre);
+      cardSlot.innerHTML = `
+        <button type="button" class="progress-ex-card" data-action="open-picker" aria-label="Cambiar ejercicio, actualmente ${esc(currentEx.nombre)}">
+          <span>
+            <span class="progress-ex-card-tag">Ejercicio</span>
+            <span class="progress-ex-card-title">${esc(currentEx.nombre)}</span>
+            <span class="progress-ex-card-sub">
+              <span aria-hidden="true" style="width: 8px; height: 8px; border-radius: 4px; background: var(--primary); display: inline-block"></span>
+              <strong>${esc(gName)}</strong> ${fName ? `· ${esc(fName)}` : ''}
+            </span>
+          </span>
+          <span class="progress-ex-card-icon">
+            ${icons.chevronsUpDown({ size: 22 })}
+          </span>
+        </button>
+      `;
+    }
 
-  const note = root.querySelector('#adj-note');
-  if (note) {
-    if (metric === 'adj') {
-      note.hidden = false;
-      note.textContent = adjCaption(sessions);
-    } else {
-      note.hidden = true;
-      note.textContent = '';
+    const prSlot = el.querySelector('#pr-slot');
+    if (prSlot) prSlot.innerHTML = prBadgesHtml(pr, unidad);
+
+    const compareSlot = el.querySelector('#compare-slot');
+    if (compareSlot) compareSlot.innerHTML = compareCardHtml(sessions, unidad);
+
+    const chartCardSlot = el.querySelector('#chart-card-slot');
+    if (chartCardSlot) {
+      chartCardSlot.innerHTML = chartCardHtml(sessions, unidad);
+      const metricSeg = chartCardSlot.querySelector('.metric-seg');
+      if (metricSeg) requestAnimationFrame(() => syncSegThumb(metricSeg));
+    }
+
+    const sessSlot = el.querySelector('#sess-slot');
+    if (sessSlot) sessSlot.innerHTML = sessionTableHtml(sessions, unidad);
+  } else {
+    if (pesoPane) {
+      pesoPane.innerHTML = bodySectionHtml(body, unidad);
+      const unitSeg = pesoPane.querySelector('.unit-seg');
+      if (unitSeg) requestAnimationFrame(() => syncSegThumb(unitSeg));
+      setupBodyInputListener(pesoPane);
     }
   }
+}
+
+function setupBodyInputListener(root) {
+  const input = root.querySelector('#body-peso-input');
+  const btn = root.querySelector('#btn-save-body');
+  if (!input || !btn) return;
+
+  const updateState = () => {
+    const val = num(input.value);
+    const valid = Number.isFinite(val) && val > 0 && val < 600;
+    btn.disabled = !valid;
+    btn.textContent = valid ? '+ Guardar peso corporal' : 'Escribe tu peso';
+  };
+
+  input.addEventListener('input', updateState);
+  updateState();
 }
 
 export async function render(el, [idParam] = []) {
   const exs = await listExercises();
   const exId = Number(idParam) || (await lastTrainedExerciseId()) || exs[0]?.id;
+  const currentEx = exs.find((e) => e.id === exId) || exs[0];
+
   const [prog, body, pr] = await Promise.all([
     exId ? progressForExercise(exId) : { sessions: [], pr: 0 },
     listBodyWeights(),
@@ -235,101 +404,133 @@ export async function render(el, [idParam] = []) {
   ]);
   const unidad = weightUnit();
   const sessions = prog.sessions.slice(-20);
-  view = { exId, sessions, body, pr, unidad };
 
-  const points = metricPoints(sessions, unidad);
-  const adjNote = metric === 'adj' ? adjCaption(sessions) : '';
-  const bodyPoints = body.slice(-30).map((b) => ({
-    label: formatShort(b.fecha),
-    value: Math.round(fromKg(b.peso, unidad) * 10) / 10,
-  }));
+  view = { currentEx, exId, exs, sessions, body, pr, unidad };
 
   el.innerHTML = `
-    <header class="page-head"><h1>Progreso</h1></header>
+    <header class="page-head" style="margin-bottom:12px">
+      <h1>Progreso</h1>
+    </header>
 
-    <label class="field">
-      <span>Ejercicio seleccionado</span>
-      <select data-change="exercise">
+    <!-- Conmutador de 2 Pestañas: Ejercicio vs Peso Corporal -->
+    <div class="progress-tabs" role="group" aria-label="Qué quieres ver">
+      <button type="button" class="progress-tab-btn" data-action="switch-tab" data-tab="ejercicio" aria-pressed="${currentTab === 'ejercicio'}">
+        Ejercicio
+      </button>
+      <button type="button" class="progress-tab-btn" data-action="switch-tab" data-tab="peso" aria-pressed="${currentTab === 'peso'}">
+        Peso corporal
+      </button>
+    </div>
+
+    <!-- Pestaña Ejercicio -->
+    <div id="pane-ejercicio" ${currentTab !== 'ejercicio' ? 'hidden' : ''}>
+      <!-- Hidden native select for picker.js synchronization -->
+      <select id="progress-native-select" data-change="exercise" style="position:absolute;opacity:0;pointer-events:none;width:0;height:0" tabindex="-1" aria-hidden="true">
         ${exs.map((e) => `<option value="${e.id}" data-grupo="${esc(muscleName(e.grupo) || e.grupo)}" ${muscleFocus(e.nombre) ? `data-foco="${esc(muscleFocus(e.nombre))}"` : ''} ${isOwnExercise(e) ? 'data-propio="1"' : ''} ${e.id === exId ? 'selected' : ''}>${esc(e.nombre)}</option>`).join('')}
       </select>
-    </label>
 
-    ${prog.sessions.length ? `
-      <div id="pr-slot">${prBadgesHtml(pr, unidad)}</div>
-      <div id="compare-slot">${compareCard(sessions, unidad)}</div>
+      <div id="ex-card-slot"></div>
 
-      <div class="seg metric-seg" role="group" aria-label="Métrica del gráfico" style="margin:16px 0 10px">
-        ${Object.entries(METRICS).map(([k, label]) =>
-    `<button type="button" data-action="metric" data-metric="${k}" aria-pressed="${k === metric}">${label}</button>`).join('')}
-      </div>
-      <div id="metric-chart">${lineChart(points, { desc: `${METRICS[metric]} por sesión` })}</div>
-      <p class="muted effort-note" id="adj-note" ${metric === 'adj' ? '' : 'hidden'}>${esc(adjNote)}</p>
-
-      <div id="sess-slot">${sessionTable(sessions, unidad)}</div>`
-
-      : `<div class="empty">
+      ${sessions.length ? `
+        <div id="pr-slot"></div>
+        <div id="compare-slot"></div>
+        <div id="chart-card-slot"></div>
+        <div id="sess-slot"></div>
+      ` : `
+        <div class="empty">
           ${icons.dumbbell({ size: 40, stroke: 'var(--line-strong)' })}
           <p>Todavía no hay series registradas de este ejercicio.</p>
           <a class="btn btn-primary" href="#/workout">${icons.plus({ size: 18 })} Ir a entrenar</a>
-        </div>`}
-
-    <h2 class="section-title">Peso corporal</h2>
-    <div id="body-chart">${lineChart(bodyPoints, { desc: 'Peso corporal en el tiempo' })}</div>
-    <form class="form-card stack" data-form="body">
-      <div class="grid-2">
-        <label class="field"><span>Día</span><input type="date" name="fecha" value="${todayISO()}" max="${todayISO()}" required></label>
-        <div class="field">
-          <span>Peso ${unitSegHtml(unidad)}</span>
-          <input name="peso" inputmode="decimal" autocomplete="off" required placeholder="0" aria-label="Peso corporal">
         </div>
-      </div>
-      <button class="btn btn-primary btn-block" type="submit">
-        ${icons.plus({ size: 18 })} Guardar peso corporal
-      </button>
-    </form>
-    <div id="body-list-slot">${bodyListHtml(body, unidad)}</div>
+      `}
+    </div>
+
+    <!-- Pestaña Peso Corporal -->
+    <div id="pane-peso" ${currentTab !== 'peso' ? 'hidden' : ''}>
+      ${bodySectionHtml(body, unidad)}
+    </div>
   `;
 
-  changes(el, { exercise: (t) => go(`/progress/${t.value}`) });
+  updateProgressView(el);
 
+  // Delegación de eventos
   delegate(el, {
-    unidad: async (t) => {
-      const next = t.dataset.unidad === 'lb' ? 'lb' : 'kg';
+    'switch-tab': (t) => {
+      const next = t.dataset.tab;
+      if (!next || next === currentTab) return;
+      currentTab = next;
+      updateProgressView(el);
+    },
+    'open-picker': (t) => {
+      const select = el.querySelector('#progress-native-select');
+      if (!select) return;
+      openPicker(select, 'Ejercicio', t);
+    },
+    'unit-toggle': async (t) => {
+      const next = t.dataset.unit === 'lb' ? 'lb' : 'kg';
       const prev = weightUnit();
       if (next === prev) return;
-      const input = el.querySelector('form[data-form="body"] input[name="peso"]');
-      const raw = num(input?.value);
-      const kg = Number.isFinite(raw) ? toKg(raw, prev) : null;
       await saveSettings({ unidad: next });
-      applyUnitLive(el, next, Number.isFinite(kg) ? kg : null);
+      view.unidad = next;
+      updateProgressView(el);
+      toast(`Unidad cambiada a ${next.toUpperCase()}`);
     },
     metric: (t) => {
       const next = t.dataset.metric;
       if (!next || next === metric) return;
       metric = next;
-      applyMetricLive(el);
+      const chartCardSlot = el.querySelector('#chart-card-slot');
+      if (chartCardSlot && view) {
+        chartCardSlot.innerHTML = chartCardHtml(view.sessions, view.unidad);
+        const metricSeg = chartCardSlot.querySelector('.metric-seg');
+        if (metricSeg) requestAnimationFrame(() => syncSegThumb(metricSeg));
+      }
+    },
+    'toggle-date-input': () => {
+      const wrap = el.querySelector('#body-date-input-wrap');
+      if (wrap) wrap.hidden = !wrap.hidden;
     },
     'del-body': async (t) => {
       const ok = await askConfirm({
         title: 'Borrar peso',
-        body: 'Se quita este registro de peso corporal.',
+        body: 'Se eliminará este registro de peso corporal del historial.',
       });
       if (!ok) return;
       await deleteBodyMetric(Number(t.dataset.id));
-      await render(el, [exId]);
-    }
+      const body = await listBodyWeights();
+      view.body = body;
+      updateProgressView(el);
+      toast('Registro de peso eliminado');
+    },
   });
 
+  // Listener para cambio en el selector de ejercicios
+  const select = el.querySelector('#progress-native-select');
+  if (select) {
+    select.addEventListener('change', () => {
+      go(`/progress/${select.value}`);
+    });
+  }
+
+  // Formulario de peso corporal
   forms(el, {
     body: async (f) => {
-      const peso = toKg(num(f.elements.peso.value));
-      if (!(peso > 0) || peso > 600) { toast('Escribe un peso válido.'); return; }
-      await addBodyWeight({ fecha: f.elements.fecha.value, peso });
-      await render(el, [exId]);
-      toast('Peso corporal guardado');
-    }
+      const rawVal = num(f.elements.peso?.value);
+      if (!(rawVal > 0) || rawVal > 600) {
+        toast('Escribe un peso válido.');
+        return;
+      }
+      const pesoKg = toKg(rawVal, view.unidad);
+      const fecha = f.elements.fecha?.value || todayISO();
+      await addBodyWeight({ fecha, peso: pesoKg });
+      const body = await listBodyWeights();
+      view.body = body;
+      updateProgressView(el);
+      toast('Peso corporal guardado con éxito');
+    },
   });
 
+  // Editor y creador de ejercicios
   bindExerciseEdit(el, async (e) => {
     const id = Number(e.detail?.id);
     await openExerciseEditor(id, async (result) => {

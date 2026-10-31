@@ -658,7 +658,7 @@ function choose(select, value) {
   select.dispatchEvent(new Event('change', { bubbles: true }));
 }
 
-function openPicker(select, label, trigger) {
+export function openPicker(select, label, trigger) {
   ensureSheet();
   document.body.append(sheet);
   openSelect = select;
