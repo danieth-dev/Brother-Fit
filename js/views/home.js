@@ -76,6 +76,7 @@ export async function render(el) {
   const activeVol = activeDetail?.volumen || 0;
   const g = DOSE_G;
   const unidad = weightUnit();
+  const totalTrabajo = (week.efectivas || 0) + (week.faciles || 0) + (week.sinEsfuerzo || 0);
 
   const estadoCreatina = cr.tomadaHoy
     ? `${cr.hoy.count} toma${cr.hoy.count > 1 ? 's' : ''} (${fmtNum(cr.hoy.gramos)} g)`
@@ -143,7 +144,7 @@ export async function render(el) {
     <!-- ═══ TELEMETRÍA SEMANAL DE ENTRENAMIENTO (2x2) ═══ -->
     <div class="stats">
       <div class="stat"><b>${fmtVolume(week.volumen, unidad)}</b><span>${esc(unidad)} de volumen</span></div>
-      <div class="stat"><b>${week.entrenos}</b><span>${week.entrenos === 1 ? 'entrenamiento' : 'entrenamientos'}</span></div>
+      <div class="stat"><b>${totalTrabajo}</b><span>series de trabajo</span></div>
       <div class="stat"><b>${week.efectivas}</b><span>series efectivas</span></div>
       <div class="stat"><b>${week.faciles}</b><span>fáciles</span></div>
     </div>
