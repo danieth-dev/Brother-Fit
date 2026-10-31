@@ -31,6 +31,7 @@ export async function renderRoute() {
 
   document.getElementById('app').replaceChildren(section);
   window.scrollTo(0, 0);
+  document.body.classList.toggle('in-agent-view', name === 'agent');
   const active = routes[name] ? (tabOf[name] ?? name) : '';
   document.querySelectorAll('.tabbar a').forEach((a) => {
     if (a.dataset.tab === active) a.setAttribute('aria-current', 'page');
