@@ -11,16 +11,31 @@
 import { db } from '../db.js';
 import { state } from '../store.js';
 import { now } from '../utils/clock.js';
-import { getActiveWorkout, lastSetFor, saveActiveRest, listExercises, matchExercise } from './workouts.js';
+import { getActiveWorkout, lastSetFor, saveActiveRest, listExercises, matchExercise, listWorkoutSummaries, getWorkoutDetail, muscleName } from './workouts.js';
 import { registerSet, anotarRpe, captureSpokenEffort } from './effort.js';
 import { toKg, weightUnit } from '../utils/units.js';
 import { creatineForFit } from './creatine.js';
+import { toISO, addDays } from '../utils/dates.js';
 
 const LIVE_MODEL = 'models/gemini-3.8-live';
 const WS_URL = (apiKey) =>
   `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key=${apiKey}`;
 
 const TOOL_DECLARATIONS = [
+  {
+    name: 'consultar_entrenamientos',
+    description:
+      'Lee el registro real de entrenamientos en el teléfono. Úsala SIEMPRE que el atleta pregunte qué hizo ayer, qué entrenó hoy, cuándo fue su último entreno, o pida detalles de ejercicios, series o marcas de sesiones pasadas.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        dia: {
+          type: 'STRING',
+          description: 'ayer, hoy, anteayer, o el grupo muscular consultado (ej. espalda, pierna). Dejar vacío para el más reciente.',
+        },
+      },
+    },
+  },
   {
     name: 'registrar_serie',
     description:
@@ -227,6 +242,9 @@ export async function executeToolCall(name, args) {
   if (name === 'consultar_creatina') {
     return creatineForFit();
   }
+  if (name === 'consultar_entrenamientos') {
+    return queryWorkoutHistoryForFit(args.dia);
+  }
   if (name === 'guardar_recuerdo') {
     const raw = (args.contenido || '').trim();
     if (!raw) return { error: 'Contenido vacío.' };
@@ -255,8 +273,111 @@ export async function executeToolCall(name, args) {
   return { error: 'Herramienta desconocida.' };
 }
 
+export async function getRecentWorkoutsForFit() {
+  try {
+    const summaries = await listWorkoutSummaries(5);
+    const nowD = new Date();
+    const diasSemana = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+    const diaSemanaHoy = diasSemana[nowD.getDay()];
+    const fechaHoy = toISO(nowD);
+    const fechaAyer = addDays(fechaHoy, -1);
+    const diaSemanaAyer = diasSemana[(nowD.getDay() + 6) % 7];
+
+    const lines = [
+      `\n\nCALENDARIO REAL DE LA APP:`,
+      `- HOY es: ${diaSemanaHoy}, ${fechaHoy}.`,
+      `- AYER fue: ${diaSemanaAyer}, ${fechaAyer}.`,
+    ];
+
+    if (!summaries || !summaries.length) {
+      lines.push('HISTORIAL DE ENTRENAMIENTOS: No hay entrenamientos finalizados registrados.');
+      return lines.join('\n');
+    }
+
+    lines.push('HISTORIAL REAL DE ENTRENAMIENTOS REGISTRADOS:');
+    for (const s of summaries) {
+      if (!s.totalSets && !s.finishedAt) continue;
+      const isToday = s.fecha === fechaHoy;
+      const isYesterday = s.fecha === fechaAyer;
+      const label = isToday ? `HOY (${diaSemanaHoy} ${s.fecha})` : isYesterday ? `AYER (${diaSemanaAyer} ${s.fecha})` : s.fecha;
+      const gruposStr = s.grupos?.length ? s.grupos.join(', ') : 'General';
+      lines.push(`- [${label}]: ${gruposStr} · ${s.totalSets} series · ${Math.round(s.volumen)} kg/lb volumen.`);
+    }
+
+    return lines.join('\n');
+  } catch (err) {
+    return '\n\nERROR AL LEER HISTORIAL DE ENTRENAMIENTO.';
+  }
+}
+
+export async function queryWorkoutHistoryForFit(target) {
+  try {
+    const summaries = await listWorkoutSummaries(10);
+    const nowD = new Date();
+    const fechaHoy = toISO(nowD);
+    const fechaAyer = addDays(fechaHoy, -1);
+
+    let matchSummary = null;
+    const t = String(target || '').toLowerCase().trim();
+
+    if (t.includes('ayer')) {
+      matchSummary = summaries.find((s) => s.fecha === fechaAyer);
+    } else if (t.includes('hoy')) {
+      matchSummary = summaries.find((s) => s.fecha === fechaHoy);
+    } else if (t.includes('anteayer')) {
+      matchSummary = summaries.find((s) => s.fecha === addDays(fechaHoy, -2));
+    }
+
+    if (!matchSummary && t) {
+      matchSummary = summaries.find((s) => (s.grupos || []).some((g) => t.includes(g.toLowerCase())));
+    }
+
+    if (!matchSummary && summaries.length > 0) {
+      matchSummary = summaries[0];
+    }
+
+    if (!matchSummary) {
+      return { ok: true, mensaje: 'No hay entrenamientos registrados en el cuaderno local.' };
+    }
+
+    const detail = await getWorkoutDetail(matchSummary.id);
+    if (!detail || !detail.groups?.length) {
+      return {
+        ok: true,
+        fecha: matchSummary.fecha,
+        mensaje: `Entrenamiento del ${matchSummary.fecha}: registrado pero sin series guardadas.`
+      };
+    }
+
+    const ejercicios = detail.groups.map((g) => {
+      const setsDesc = g.sets.map((s) => `${s.peso} kg × ${s.reps} reps${s.rir !== null ? ` (RIR ${s.rir})` : ''}`).join(', ');
+      return `${g.exercise.nombre} (${g.sets.length} series: ${setsDesc})`;
+    });
+
+    const isYesterday = matchSummary.fecha === fechaAyer;
+    const isToday = matchSummary.fecha === fechaHoy;
+    const temporalLabel = isToday ? 'hoy' : isYesterday ? 'ayer' : `el ${matchSummary.fecha}`;
+
+    return {
+      ok: true,
+      fecha: matchSummary.fecha,
+      temporal: temporalLabel,
+      grupos: matchSummary.grupos,
+      volumenTotal: Math.round(detail.volumen),
+      totalSeries: detail.totalSets,
+      ejercicios,
+      resumen: `Entrenamiento de ${temporalLabel} (${matchSummary.grupos.join(', ')}): ${detail.totalSets} series totales, ${Math.round(detail.volumen)} kg/lb de volumen. Ejercicios: ${ejercicios.join('; ')}.`
+    };
+  } catch (e) {
+    return { error: 'Error al consultar entrenamientos: ' + e.message };
+  }
+}
+
 async function buildSystemInstruction() {
-  const memories = await loadAllMemories();
+  const [memories, recentWorkoutsCtx] = await Promise.all([
+    loadAllMemories(),
+    getRecentWorkoutsForFit(),
+  ]);
   const memBlock =
     memories.length > 0
       ? '\n\nRECUERDOS GUARDADOS DEL ATLETA:\n' +
@@ -297,10 +418,12 @@ async function buildSystemInstruction() {
     '- El atleta manda el tema: tus objetivos de registro jamás pisan lo que él decida consultar.\n' +
     '- Si menciona datos personales (peso, marcas, objetivos, molestias o una preferencia, como cuándo toma la creatina), llama inmediatamente a guardar_recuerdo. La toma del día no es un recuerdo.\n' +
     '- Si pregunta por la creatina, si ya la tomó, la racha, la saturación o un día que falló, llama a consultar_creatina y contesta con una sola frase. Entre series y durante el descanso no la menciones.\n' +
+    '- Si el atleta pregunta qué hizo ayer, qué entrenó hoy, cuándo fue su última sesión, qué ejercicios hizo o cómo va su volumen, consulta el HISTORIAL REAL o llama a consultar_entrenamientos. Responde de inmediato con los grupos, ejercicios y series reales que hizo. NUNCA digas que no entrenó si en el historial aparece una sesión registrada ese día o recientemente.\n' +
     '- Usa los recuerdos guardados de forma natural, sin recitarlos como un informe.\n' +
     '- Nunca escribas HTML, comentarios, inglés ni instrucciones internas. Si no hay nada que decir, no generes texto. Tu única salida es la frase hablada al atleta, en español, en 1 o 2 oraciones.' +
     currentCtx +
-    memBlock
+    memBlock +
+    recentWorkoutsCtx
   );
 }
 
