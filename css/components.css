@@ -973,27 +973,16 @@ body.picker-open {
 
 /* Catálogo de ejercicios: se ajusta al alto visible (sobre el teclado), dejando margen superior */
 .picker-sheet--catalog {
-  inset: auto 0;
-  top: calc(var(--vvt, 0px) + max(env(safe-area-inset-top, 0px), 16px));
-  height: calc(var(--vvh, 100dvh) - max(env(safe-area-inset-top, 0px), 16px));
-  transition: top 0.2s ease, height 0.2s ease;
-}
-.picker-sheet--catalog .picker-backdrop {
-  position: fixed;
   inset: 0;
-  top: calc(-1 * (var(--vvt, 0px) + max(env(safe-area-inset-top, 0px), 16px)));
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 100dvh;
-  min-height: 100vh;
 }
 .picker-sheet--catalog .picker-panel {
   display: flex;
   flex-direction: column;
-  max-height: 100%;
   position: relative;
   z-index: 1;
+  max-height: calc(var(--vvh, 100dvh) - max(env(safe-area-inset-top, 0px), 16px));
+  margin-bottom: calc(100dvh - var(--vvh, 100dvh));
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), height 0.2s ease, margin-bottom 0.2s ease;
 }
 .picker-sheet--catalog .picker-list {
   min-height: 0;
@@ -1001,11 +990,11 @@ body.picker-open {
 }
 /* Modo búsqueda: conserva el margen superior de protección del sistema y esquinas redondeadas */
 .picker-sheet.is-searching .picker-panel {
-  height: 100%;
+  height: calc(var(--vvh, 100dvh) - max(env(safe-area-inset-top, 0px), 16px));
   border-bottom: 0;
   border-radius: var(--r-xl) var(--r-xl) 0 0;
   padding-top: 10px;
-  padding-bottom: 8px;
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
 }
 .picker-sheet.is-searching .picker-list {
   flex: 1 1 auto;
