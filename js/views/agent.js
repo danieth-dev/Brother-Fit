@@ -88,7 +88,6 @@ async function renderLiveChat(el, apiKey) {
   const hadHistory = history.length > 0;
   let currentBotText = '';
   let botBubble = null;
-  let renderedExerciseCard = null;
 
   el.innerHTML = `
     <div class="agent-view">
@@ -209,23 +208,8 @@ async function renderLiveChat(el, apiKey) {
     actionBtn.disabled = !on;
   }
 
-  function checkExerciseInText(text) {
-    if (!text) return null;
-    const lower = text.toLowerCase();
-    for (const ex of allExercises) {
-      const nameLower = ex.nombre.toLowerCase();
-      if (nameLower.length >= 4 && lower.includes(nameLower)) {
-        return ex;
-      }
-    }
-    return null;
-  }
-
-  function maybeAppendExerciseCard(text) {
-    if (renderedExerciseCard) return;
-    const ex = checkExerciseInText(text);
+  function renderExerciseActionCard(ex) {
     if (!ex) return;
-    renderedExerciseCard = ex.id;
     const gName = muscleName(ex.grupo) || ex.grupo || 'General';
     const card = document.createElement('div');
     card.className = 'agent-card-exercise';
@@ -252,7 +236,6 @@ async function renderLiveChat(el, apiKey) {
     updateActionButton();
     currentBotText = '';
     botBubble = null;
-    renderedExerciseCard = null;
     try {
       agent.sendText(text);
     } catch (e) {
@@ -278,7 +261,6 @@ async function renderLiveChat(el, apiKey) {
       persist('user', text);
       currentBotText = '';
       botBubble = null;
-      renderedExerciseCard = null;
     })
     .on('effort_saved', (res) => {
       const line = String(res?.mensaje || '').includes('sin esfuerzo') ? 'Quedó sin esfuerzo.' : 'Anotado.';
@@ -335,10 +317,12 @@ async function renderLiveChat(el, apiKey) {
       const shown = visibleFitText(currentBotText);
       if (shown) {
         persist('bot', shown);
-        maybeAppendExerciseCard(shown);
       }
       botBubble = null;
       currentBotText = '';
+    })
+    .on('exercise_selected', (exercise) => {
+      renderExerciseActionCard(exercise);
     })
     .on('memory_updated', (toolName, args, result) => {
       if (toolName === 'guardar_recuerdo') {

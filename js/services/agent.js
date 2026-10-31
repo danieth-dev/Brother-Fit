@@ -233,6 +233,7 @@ export async function executeToolCall(name, args) {
       ok: true,
       preguntar: false,
       ejercicio: resolved.exercise.nombre,
+      exercise: resolved.exercise,
       mensaje: `Entreno quedó en ${resolved.exercise.nombre}. No lo confirmes otra vez. Espera la serie.`,
     };
   }
@@ -936,6 +937,9 @@ export class FitAgent {
       for (const call of calls) {
         const result = await executeToolCall(call.name, call.args ?? {});
         responses.push({ id: call.id, name: call.name, response: { output: result } });
+        if (call.name === 'usar_ejercicio' && result.ok && result.exercise) {
+          this.#emit('exercise_selected', result.exercise);
+        }
         this.#emit('memory_updated', call.name, call.args, result);
       }
       this.#send({ toolResponse: { functionResponses: responses } });
