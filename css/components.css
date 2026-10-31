@@ -2536,6 +2536,7 @@ html[data-modo="claro"] .plate {
 
 /* Pastilla compacta de tipo en la cabecera (Trabajo / Calentamiento) */
 .seg.tipo-seg {
+  position: relative !important;
   display: inline-flex !important;
   width: auto !important;
   max-width: 100%;
@@ -2548,7 +2549,15 @@ html[data-modo="claro"] .plate {
   overflow: visible !important;
 }
 
+.seg.tipo-seg .seg-thumb {
+  background: var(--primary) !important;
+  border-radius: calc(var(--r-sm) - 2px) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25) !important;
+}
+
 .seg.tipo-seg button {
+  position: relative !important;
+  z-index: 1 !important;
   flex: 0 0 auto !important;
   width: auto !important;
   min-width: 0 !important;
@@ -2561,6 +2570,21 @@ html[data-modo="claro"] .plate {
   text-transform: capitalize !important;
   white-space: nowrap !important;
   box-sizing: border-box !important;
+  background: transparent !important;
+  color: var(--muted) !important;
+  border: none !important;
+  border-radius: calc(var(--r-sm) - 2px) !important;
+  cursor: pointer !important;
+  transition: color 0.15s ease !important;
+}
+
+.seg.tipo-seg button[aria-pressed="true"] {
+  color: #111111 !important;
+  font-weight: 800 !important;
+}
+
+.seg.tipo-seg button[aria-pressed="false"]:hover {
+  color: var(--text) !important;
 }
 
 /* ---------- Gráfico SVG de Progresión ---------- */

@@ -350,7 +350,24 @@ export async function clearActiveRest() {
 
 export async function startWorkout(fromWorkoutId = null) {
   const existing = await getActiveWorkout();
-  if (existing) return existing;
+  if (existing) {
+    if (fromWorkoutId) {
+      const sets = await getSets(existing.id);
+      if (!sets.length) {
+        // Sesión activa sin series: actualizarla con la rutina seleccionada
+        const detail = await getWorkoutDetail(fromWorkoutId);
+        if (detail && detail.groups) {
+          existing.routineExercises = detail.groups.map((g) => g.exercise.id);
+          const groups = [...new Set(detail.groups.map((g) => muscleName(g.exercise.grupo) || g.exercise.grupo).filter(Boolean))];
+          existing.routineTitle = groups.length ? groups.join(', ') : 'Rutina anterior';
+          existing.fromWorkoutId = fromWorkoutId;
+          await db.put('workouts', existing);
+        }
+        return existing;
+      }
+    }
+    return existing;
+  }
   let routineExercises = null;
   let routineTitle = null;
   if (fromWorkoutId) {
@@ -371,6 +388,16 @@ export async function startWorkout(fromWorkoutId = null) {
   w.id = await db.add('workouts', w);
   await db.put('meta', { key: 'activeWorkoutId', value: w.id });
   return w;
+}
+
+export async function getWorkoutExerciseSets(workoutId, exerciseId) {
+  const [sets, w] = await Promise.all([
+    db.byIndex('sets', 'workoutId', workoutId),
+    db.get('workouts', workoutId)
+  ]);
+  const exSets = (sets || []).filter((s) => s.exerciseId === exerciseId);
+  exSets.sort((a, b) => a.ts - b.ts);
+  return { workout: w, sets: exSets };
 }
 
 export async function finishWorkout(id) {

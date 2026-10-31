@@ -1,7 +1,7 @@
 import {
   getActiveWorkout, startWorkout, finishWorkout, finishWorkoutSummary, deleteWorkout, listExercises, muscleName, isOwnExercise, muscleFocus,
   deleteSet, getWorkoutDetail, lastSessionSetsFor, prByExercise,
-  loadActiveRest, saveActiveRest, clearActiveRest, listWorkoutSummaries
+  loadActiveRest, saveActiveRest, clearActiveRest, listWorkoutSummaries, getWorkoutExerciseSets
 } from '../services/workouts.js';
 import { registerSet, setEffort, setTipo, skipRestClock, AVISO_DUPLICADA } from '../services/effort.js';
 import { getActiveAgent, saveMemory } from '../services/agent.js';
@@ -46,6 +46,7 @@ let pendingNextEx = null;
 let activeNextExObj = null;
 let activeIsExCompleted = false;
 let activeCurExName = '';
+let lastConfiguredSetKey = '';
 
 document.addEventListener('bf-set', (e) => {
   if (!e.detail?.restEnd) return;
@@ -83,15 +84,15 @@ function restMarkup() {
   if (left <= 0) return '';
   const zone = restZoneLabel();
 
-  if (activeIsExCompleted && activeNextExObj) {
+  if (activeNextExObj) {
     return `<div class="rest rest--next-ex">
       <div class="rest-top">
         <span>${icons.clock({ size: 18, stroke: 'var(--primary)' })} Descanso <strong class="num">${mmss(left)}</strong></span>
-        <button class="btn btn-sm btn-primary" data-action="skip-rest" type="button">
+        <button class="btn btn-sm btn-primary" data-action="next-exercise" data-id="${activeNextExObj.id}" type="button">
           Pasar a ${esc(activeNextExObj.nombre)} ${icons.chevronRight({ size: 14 })}
         </button>
       </div>
-      <p class="rest-next-hint">Completaste las series de ${esc(activeCurExName || 'este ejercicio')} · Siguiente: ${esc(activeNextExObj.nombre)}</p>
+      <p class="rest-next-hint">${activeIsExCompleted ? `Completaste las series de ${esc(activeCurExName || 'este ejercicio')}` : `Siguiente en la rutina: ${esc(activeNextExObj.nombre)}`}</p>
     </div>`;
   }
 
@@ -331,21 +332,29 @@ export async function render(el) {
   const currentExObj = exs.find((e) => e.id === selectedEx);
   state.activeExercise = currentExObj ? { id: currentExObj.id, nombre: currentExObj.nombre, grupo: currentExObj.grupo } : null;
 
-  const [prev, pr] = await Promise.all([
-    selectedEx ? lastSessionSetsFor(selectedEx) : null,
-    selectedEx ? prByExercise(selectedEx) : null,
-  ]);
+  let prev = null;
+  if (w.fromWorkoutId && selectedEx) {
+    const fromSets = await getWorkoutExerciseSets(w.fromWorkoutId, selectedEx);
+    if (fromSets && fromSets.sets.length) {
+      prev = fromSets;
+    }
+  }
+  if (!prev && selectedEx) {
+    prev = await lastSessionSetsFor(selectedEx);
+  }
+  const pr = selectedEx ? await prByExercise(selectedEx) : null;
 
   const curExSets = detail?.groups?.find((g) => g.exercise.id === selectedEx)?.sets || [];
   const nextSetNum = curExSets.length + 1;
   const prevSets = prev?.sets || [];
   const targetSet = prevSets[curExSets.length] || prevSets[prevSets.length - 1];
 
-  // Si la serie objetivo de la rutina o sesión previa es calentamiento, precargar draftTipo
-  if (targetSet && curExSets.length < prevSets.length) {
-    draftTipo = targetSet.tipo || 'trabajo';
-  } else if (curExSets.length >= prevSets.length && prevSets.length > 0) {
-    draftTipo = 'trabajo';
+  // Si entramos a una nueva serie, preseleccionar Calentamiento/Trabajo según el objetivo anterior
+  const setKey = `${w.id}-${selectedEx}-${nextSetNum}`;
+  if (lastConfiguredSetKey !== setKey) {
+    lastConfiguredSetKey = setKey;
+    draftTipo = (targetSet && targetSet.tipo === 'calentamiento') ? 'calentamiento' : 'trabajo';
+    draftRir = null;
   }
 
   // Rutina guiada: estado, progreso y siguiente ejercicio
@@ -549,6 +558,24 @@ export async function render(el) {
       input.value = next === 0 ? '' : next;
       input.dispatchEvent(new Event('input', { bubbles: true }));
       input.dispatchEvent(new Event('change', { bubbles: true }));
+    },
+    'next-exercise': async (t) => {
+      const nextId = Number(t.dataset.id || pendingNextEx);
+      if (nextId) {
+        restEnd = 0;
+        await skipRestClock();
+        el.querySelector('#rest').innerHTML = '';
+        getActiveAgent()?.cancelPendingCheckIn();
+        getActiveAgent()?.muteMic();
+        pendingNextEx = null;
+        selectedEx = nextId;
+        const nextObj = exs.find((e) => e.id === nextId);
+        if (nextObj) {
+          state.activeExercise = { id: nextObj.id, nombre: nextObj.nombre, grupo: nextObj.grupo };
+          toast(`Siguiente ejercicio: ${nextObj.nombre}`);
+        }
+        await render(el);
+      }
     },
     'skip-rest': async () => {
       restEnd = 0;
