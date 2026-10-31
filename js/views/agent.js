@@ -539,7 +539,7 @@ async function renderLiveChat(el, config) {
 }
 
 /* --- Drawer de Recuerdos (Nuevo diseño agrupado) --- */
-async function showMemoriesPanel(parentEl, agent) {
+export async function showMemoriesPanel(parentEl, agent) {
   const [profile, routine, summaries, rawMemories] = await Promise.all([
     loadAthleteProfile(),
     loadWeeklyRoutine(),
@@ -921,7 +921,7 @@ async function showMemoriesPanel(parentEl, agent) {
 }
 
 /* --- Panel de Conexión y API Key --- */
-async function showConnectionPanel(parentEl, agent) {
+export async function showConnectionPanel(parentEl, agent) {
   const config = await getAgentConfig();
   let selectedProvider = config.provider || 'gemini';
   let selectedModel = config.openaiModel || 'gpt-4o-mini-realtime-preview';
