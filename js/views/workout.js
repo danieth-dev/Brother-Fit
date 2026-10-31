@@ -255,7 +255,7 @@ export async function render(el) {
 
       <div class="workout-empty-view">
         <button class="btn-start-hero" data-action="start" type="button" id="btn-start-empty">
-          ${icons.plus({ size: 22, stroke: '#111111' })} Iniciar entrenamiento vacío
+          ${icons.plus({ size: 22 })} Iniciar entrenamiento vacío
         </button>
 
         ${pastWorkouts.length ? `
