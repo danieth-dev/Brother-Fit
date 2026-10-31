@@ -141,6 +141,24 @@ function todayLogMarkup(groups, unidad) {
   </details>`;
 }
 
+/* El botón dice lo que falta; solo se habilita cuando la serie está completa. */
+function syncSubmit(el) {
+  const f = el.querySelector('form[data-form="set"]');
+  const btn = el.querySelector('[data-set-submit]');
+  if (!f || !btn) return;
+  const reps = parseInt(f.elements.reps.value, 10);
+  const peso = num(f.elements.peso.value);
+  let missing = '';
+  if (!(reps > 0)) missing = 'Indica las repeticiones';
+  else if (!Number.isFinite(peso)) missing = 'Indica el peso';
+  else if (draftTipo === 'trabajo' && (draftRir == null || !Number.isFinite(draftRir))) missing = 'Indica el esfuerzo';
+  const key = missing || 'ready';
+  if (btn.dataset.state === key) return;
+  btn.dataset.state = key;
+  btn.disabled = !!missing;
+  btn.innerHTML = missing || `${icons.plus({ size: 18 })} Guardar serie ${btn.dataset.n}`;
+}
+
 /* Cambia kg/lb sin repintar Entreno (si no, parpadea Trabajo/Calentamiento). */
 function applyUnitLive(root, next, pesoKg) {
   root.querySelectorAll('.unit-seg [data-unidad]').forEach((b) => {
@@ -236,7 +254,7 @@ export async function render(el) {
         <h1>Entreno</h1>
         <a class="head-link" href="#/agent" aria-label="Fit">${icons.bot({ size: 22 })}</a>
       </div>
-      <p class="elapsed" id="elapsed">${formatDuration(now() - w.startedAt)}</p>
+      <p class="workout-status"><span class="status-dot" aria-hidden="true"></span>En curso · <span class="elapsed" id="elapsed">${formatDuration(now() - w.startedAt)}</span></p>
     </header>
 
     <div id="rest">${restMarkup()}</div>
@@ -310,20 +328,18 @@ export async function render(el) {
         </div>
       </div>
 
-      <button class="btn btn-primary btn-block btn-lg" type="submit">
+      <button class="btn btn-primary btn-block btn-lg set-submit" type="submit" data-set-submit data-n="${nextSetNum}">
         ${icons.plus({ size: 18 })} Guardar serie ${nextSetNum}
       </button>
     </form>
 
     ${todayLogMarkup(detail.groups, unidad)}
 
-    <div class="grid-2 workout-actions">
-      <button class="btn btn-danger" data-action="discard" type="button">
-        ${icons.x({ size: 16 })} Descartar
+    <div class="workout-end">
+      <button class="btn btn-outline btn-block" data-action="finish" type="button">
+        ${icons.check({ size: 20 })} Terminar sesión
       </button>
-      <button class="btn btn-primary" data-action="finish" type="button">
-        ${icons.check({ size: 18 })} Terminar sesión
-      </button>
+      <button class="btn-text-danger" data-action="discard" type="button">Descartar entreno</button>
     </div>
   `;
 
@@ -333,6 +349,12 @@ export async function render(el) {
 
   let sessionPr = pr;
   await prefill(el, prev, curExSets);
+  syncSubmit(el);
+  if (el._submitSync) el.removeEventListener('input', el._submitSync);
+  el._submitSync = (e) => {
+    if (e.target?.name === 'reps' || e.target?.name === 'peso') syncSubmit(el);
+  };
+  el.addEventListener('input', el._submitSync);
   scrollTargetRefCard(el);
   startTicker(el, w);
   const tipoSeg = el.querySelector('#draft-tipo-seg');
@@ -403,12 +425,14 @@ export async function render(el) {
       });
       const legend = el.querySelector('#rir-scale-legend');
       if (legend) legend.hidden = warm;
+      syncSubmit(el);
     },
     'draft-rir': (t) => {
       draftRir = Number(t.dataset.rir);
       el.querySelectorAll('[data-action="draft-rir"]').forEach((b) => {
         b.setAttribute('aria-pressed', String(Number(b.dataset.rir) === draftRir));
       });
+      syncSubmit(el);
     },
     'effort-open': async (t) => {
       const id = Number(t.dataset.id);
@@ -427,11 +451,20 @@ export async function render(el) {
       await render(el);
     },
     finish: async () => {
+      const pre = await finishWorkoutSummary(w.id);
+      const u0 = weightUnit();
       const ok = await askConfirm({
-        title: 'Terminar sesión',
-        body: 'Se cierra este entrenamiento.',
-        confirmLabel: 'Terminar',
+        title: '¿Terminar el entreno?',
+        body: 'Se guardará en tu historial y verás el progreso.',
+        stats: [
+          { value: String(pre.totalSets), label: pre.totalSets === 1 ? 'serie' : 'series' },
+          { value: formatDuration(now() - w.startedAt), label: 'duración', mono: true },
+          { value: fmtVolume(pre.volumenTotal, u0) || '0', label: `${u0} movidos` },
+        ],
+        confirmLabel: 'Terminar y guardar',
+        cancelLabel: 'Seguir entrenando',
         danger: false,
+        stacked: true,
       });
       if (!ok) return;
       const summary = await finishWorkoutSummary(w.id);
@@ -456,10 +489,19 @@ export async function render(el) {
       go(`/history/${w.id}`);
     },
     discard: async () => {
+      const n = (detail?.groups || []).reduce((sum, g) => sum + g.sets.length, 0);
+      const dur = esc(formatDuration(now() - w.startedAt));
       const ok = await askConfirm({
-        title: 'Descartar entrenamiento',
-        body: 'Se borran este entreno y todas sus series. No se puede deshacer.',
-        confirmLabel: 'Descartar',
+        title: '¿Descartar este entreno?',
+        bodyHtml: n
+          ? `Se ${n === 1 ? 'perderá la' : 'perderán las'} <strong>${n} ${n === 1 ? 'serie guardada' : 'series guardadas'}</strong> (${dur}). Esta acción no se puede deshacer.`
+          : `Se borrará este entreno sin series (${dur}). Esta acción no se puede deshacer.`,
+        confirmLabel: 'Descartar entreno',
+        cancelLabel: 'Cancelar',
+        variant: 'alert',
+        icon: 'trash',
+        stacked: true,
+        safeFirst: true,
       });
       if (!ok) return;
       await deleteWorkout(w.id);
