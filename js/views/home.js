@@ -140,17 +140,19 @@ export async function render(el) {
         : `<button class="btn btn-primary btn-block btn-lg" data-action="start" type="button" id="btn-start-workout">${icons.plus({ size: 20 })} Iniciar entrenamiento</button>`}
     </div>
 
-    <!-- ═══ TELEMETRÍA SEMANAL ═══ -->
-    <div class="stats">
+    <!-- ═══ TELEMETRÍA SEMANAL (DOS BLOQUES BALANCEADOS) ═══ -->
+    <div class="stats stats--2">
       <div class="stat"><b>${fmtVolume(week.volumen, unidad)}</b><span>${esc(unidad)} de volumen</span></div>
       <div class="stat"><b>${cr.dias7}/7</b><span>días con creatina</span></div>
-      ${week.entrenos ? `
-      <div class="stat"><b>${week.efectivas}</b><span>series efectivas</span></div>
-      ${week.faciles > 0 ? `<div class="stat"><b>${week.faciles}</b><span>fáciles</span></div>` : ''}
-      ${week.sinEsfuerzo > 0 ? `<div class="stat"><b>${week.sinEsfuerzo}</b><span>sin esfuerzo</span></div>` : ''}
-      ` : ''}
     </div>
-    ${weekGroupLine(week)}
+
+    ${week.entrenos ? `
+    <div class="stats stats--3">
+      <div class="stat"><b>${week.efectivas}</b><span>series efectivas</span></div>
+      <div class="stat"><b>${week.faciles}</b><span>fáciles</span></div>
+      <div class="stat"><b>${week.sinEsfuerzo}</b><span>sin esfuerzo</span></div>
+    </div>
+    ${weekGroupLine(week)}` : ''}
 
     <!-- ═══ ÚLTIMOS ENTRENAMIENTOS ═══ -->
     <div class="home-recent-head">
