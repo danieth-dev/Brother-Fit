@@ -455,18 +455,9 @@ async function renderLiveChat(el, apiKey) {
 
   if (!el._changeKeyBound) {
     el._changeKeyBound = true;
-    el.addEventListener('click', async (e) => {
+    el.addEventListener('click', (e) => {
       if (!e.target.closest('[data-action="change-key"]')) return;
-      const ok = await askConfirm({
-        title: 'Cambiar API key',
-        body: 'Se desconecta Fit hasta que pegues otra clave.',
-        confirmLabel: 'Cambiar',
-        danger: false,
-      });
-      if (!ok) return;
-      getActiveAgent()?.disconnect();
-      await db.put('meta', { key: API_KEY_STORE, value: '' });
-      await render(el);
+      showConnectionPanel(el, agent);
     });
   }
 
@@ -858,11 +849,170 @@ async function showMemoriesPanel(parentEl, agent) {
       return;
     }
 
-    // 6. Cambiar API key
+    // 6. Conexión y API key
     if (e.target.closest('[data-action="change-key"]')) {
       close();
-      parentEl.dispatchEvent(new MouseEvent('click', { bubbles: true, target: e.target }));
+      showConnectionPanel(parentEl, agent);
       return;
     }
+  });
+}
+
+/* --- Panel de Conexión y API Key --- */
+async function showConnectionPanel(parentEl, agent) {
+  const currentKey = await getApiKey();
+  const isOnline = !!(agent && agent.connected);
+
+  const sheet = document.createElement('div');
+  sheet.className = 'agent-sheet';
+  sheet.innerHTML = `
+    <div class="agent-sheet-inner">
+      <div class="agent-sheet-drag" aria-hidden="true"></div>
+
+      <div class="agent-sheet-head">
+        <div class="agent-sheet-head-titles">
+          <h2>Conexión y API key</h2>
+          <p>Configuración de voz en tiempo real con Google Gemini Live.</p>
+        </div>
+        <button class="agent-sheet-close" id="conn-sheet-close" type="button" aria-label="Cerrar">
+          ${icons.close({ size: 22 })}
+        </button>
+      </div>
+
+      <!-- Estado de conexión -->
+      <section class="agent-rec-section">
+        <div class="agent-rec-section-head">
+          <h3 class="agent-rec-section-title">Estado del servicio</h3>
+        </div>
+        <div class="agent-rec-card" style="padding: 14px 16px; display: flex; align-items: center; justify-content: space-between;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="width: 10px; height: 10px; border-radius: 50%; background: ${isOnline ? '#00FF66' : '#FF4D4D'}; box-shadow: 0 0 10px ${isOnline ? 'rgba(0,255,102,0.45)' : 'rgba(255,77,77,0.45)'}"></span>
+            <div>
+              <span style="display: block; font-size: 15px; font-weight: 700; color: #F5F5F5;">
+                ${isOnline ? 'Fit en línea (Gemini Live)' : 'Desconectado'}
+              </span>
+              <span style="display: block; font-size: 12px; color: #A8A8A8;">Voz bidireccional y memoria activa</span>
+            </div>
+          </div>
+          <span style="font-size: 11px; color: ${isOnline ? '#00FF66' : '#FF4D4D'}; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;">
+            ${isOnline ? 'EN LÍNEA' : 'OFFLINE'}
+          </span>
+        </div>
+      </section>
+
+      <!-- Clave de API -->
+      <section class="agent-rec-section">
+        <div class="agent-rec-section-head">
+          <h3 class="agent-rec-section-title">Clave de API</h3>
+        </div>
+        <div class="agent-rec-card" style="padding: 16px; display: flex; flex-direction: column; gap: 12px;">
+          <label style="display: flex; flex-direction: column; gap: 6px;">
+            <span style="font-size: 13px; color: #A8A8A8; font-weight: 600;">API Key de Google AI Studio</span>
+            <div style="display: flex; gap: 8px;">
+              <input 
+                id="conn-key-input" 
+                type="password" 
+                value="${esc(currentKey)}" 
+                placeholder="AIza..." 
+                autocomplete="off" 
+                spellcheck="false"
+                class="agent-rec-edit-input"
+                style="flex: 1; height: 42px; font-family: monospace; font-size: 13px; letter-spacing: 0.04em;"
+              >
+              <button type="button" class="btn" id="btn-toggle-key-mask" style="padding: 0 14px; height: 42px; font-size: 13px;" title="Ver/Ocultar clave">
+                Ver
+              </button>
+            </div>
+          </label>
+          <button type="button" class="btn btn-primary btn-block" id="btn-save-conn-key" style="height: 44px; margin-top: 4px;">
+            Guardar clave
+          </button>
+          <a 
+            href="https://aistudio.google.com/app/apikey" 
+            target="_blank" 
+            rel="noopener" 
+            style="font-size: 13px; color: #FFE600; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; margin-top: 4px;"
+          >
+            ${icons.bolt({ size: 14 })} Obtener o cambiar clave en Google AI Studio ›
+          </a>
+        </div>
+      </section>
+
+      <!-- Desconectar -->
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; padding-top: 10px; padding-bottom: 24px;">
+        <button class="agent-rec-danger-btn" id="btn-disconnect-key" type="button">
+          Desconectar y borrar clave
+        </button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(sheet);
+  requestAnimationFrame(() => sheet.classList.add('open'));
+
+  const close = ({ immediate = false } = {}) => {
+    sheet.classList.remove('open');
+    if (immediate) {
+      sheet.remove();
+    } else {
+      sheet.addEventListener('transitionend', () => sheet.remove(), { once: true });
+      setTimeout(() => { if (sheet.parentElement) sheet.remove(); }, 260);
+    }
+  };
+
+  sheet.querySelector('#conn-sheet-close').addEventListener('click', () => close());
+  sheet.addEventListener('click', (e) => {
+    if (e.target === sheet) close();
+  });
+
+  bindSheetDrag({
+    sheet,
+    panel: sheet.querySelector('.agent-sheet-inner'),
+    backdrop: sheet,
+    zones: [
+      sheet.querySelector('.agent-sheet-drag'),
+      sheet.querySelector('.agent-sheet-head'),
+    ],
+    onClose: () => close({ immediate: true }),
+  });
+
+  const input = sheet.querySelector('#conn-key-input');
+  const toggleBtn = sheet.querySelector('#btn-toggle-key-mask');
+  toggleBtn.addEventListener('click', () => {
+    const isPass = input.type === 'password';
+    input.type = isPass ? 'text' : 'password';
+    toggleBtn.textContent = isPass ? 'Ocultar' : 'Ver';
+  });
+
+  sheet.querySelector('#btn-save-conn-key').addEventListener('click', async () => {
+    const newKey = input.value.trim();
+    if (!newKey || newKey.length < 15) {
+      toast('Ingresa una API key válida.');
+      return;
+    }
+    if (newKey === currentKey) {
+      toast('La API key no ha cambiado');
+      close();
+      return;
+    }
+    await setApiKey(newKey);
+    toast('API key actualizada');
+    close();
+    agent?.disconnect();
+    await render(parentEl);
+  });
+
+  sheet.querySelector('#btn-disconnect-key').addEventListener('click', async () => {
+    const ok = await askConfirm({
+      title: 'Desconectar API key',
+      body: 'Se borrará la clave guardada en este dispositivo y Fit se desconectará hasta que ingreses otra.',
+      confirmLabel: 'Desconectar',
+      danger: true,
+    });
+    if (!ok) return;
+    close();
+    agent?.disconnect();
+    await setApiKey('');
+    await render(parentEl);
   });
 }
