@@ -20,6 +20,7 @@ import {
 import { icons } from '../utils/icons.js';
 import { askConfirm } from '../utils/confirm-sheet.js';
 import { weightUnit, fmtWeight, fmtVolume } from '../utils/units.js';
+import { syncSegThumb } from '../utils/seg-swipe.js';
 
 let editingSetId = null;
 let editDraft = { peso: 0, reps: 0, tipo: 'trabajo', rir: 1 };
@@ -317,9 +318,9 @@ async function detail(el, id) {
                         </div>
                       </div>
 
-                      <div class="editor-tipo-bar" role="group" aria-label="Tipo de serie">
-                        <button type="button" class="editor-tipo-btn" data-action="edit-tipo" data-tipo="trabajo" aria-pressed="${editDraft.tipo === 'trabajo'}">Trabajo</button>
-                        <button type="button" class="editor-tipo-btn" data-action="edit-tipo" data-tipo="calentamiento" aria-pressed="${editDraft.tipo === 'calentamiento'}">Calentamiento</button>
+                      <div class="seg editor-tipo-seg" id="edit-tipo-seg" role="group" aria-label="Tipo de serie">
+                        <button type="button" data-action="edit-tipo" data-tipo="trabajo" aria-pressed="${editDraft.tipo === 'trabajo'}">Trabajo</button>
+                        <button type="button" data-action="edit-tipo" data-tipo="calentamiento" aria-pressed="${editDraft.tipo === 'calentamiento'}">Calentamiento</button>
                       </div>
 
                       <div class="editor-effort-wrap" id="editor-effort-wrap" style="display: ${editDraft.tipo === 'calentamiento' ? 'none' : 'block'};">
@@ -357,6 +358,11 @@ async function detail(el, id) {
   if (repsInp) {
     repsInp.addEventListener('input', () => { editDraft.reps = Number(repsInp.value) || 1; });
   }
+
+  requestAnimationFrame(() => {
+    const seg = el.querySelector('#edit-tipo-seg');
+    if (seg) syncSegThumb(seg);
+  });
 
   const handleToggleEditSet = async (btn) => {
     const sid = Number(btn.dataset.id);
@@ -401,9 +407,11 @@ async function detail(el, id) {
 
     'edit-tipo': (btn) => {
       editDraft.tipo = btn.dataset.tipo === 'calentamiento' ? 'calentamiento' : 'trabajo';
-      el.querySelectorAll('[data-action="edit-tipo"]').forEach((b) => {
+      const seg = el.querySelector('#edit-tipo-seg');
+      el.querySelectorAll('#edit-tipo-seg button').forEach((b) => {
         b.setAttribute('aria-pressed', b.dataset.tipo === editDraft.tipo ? 'true' : 'false');
       });
+      if (seg) syncSegThumb(seg);
       const effortWrap = el.querySelector('#editor-effort-wrap');
       if (effortWrap) effortWrap.style.display = editDraft.tipo === 'calentamiento' ? 'none' : 'block';
     },
