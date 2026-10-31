@@ -43,60 +43,140 @@ const FASE_DESC = {
   mantenimiento: 'Saturación completa. Los depósitos musculares están llenos. Mantén la dosis diaria.',
 };
 
-function saturationBar(pct, fase) {
-  const faseClass = fase === 'mantenimiento' ? 'sat-bar--full' : '';
+function saturationCard(pct, fase) {
+  const desc = FASE_DESC[fase] || 'Mantén la toma diaria para sostener los depósitos llenos.';
   return `
-    <div class="sat-panel">
-      <div class="sat-header">
-        <span class="sat-icon">${FASE_ICONS[fase]}</span>
-        <div class="sat-info">
-          <strong class="sat-label">${FASE_LABELS[fase]}</strong>
-          <small class="sat-pct-label">${pct}% de saturación muscular</small>
-        </div>
-        <span class="sat-pct num">${pct}%</span>
+    <div class="creatine-sat-card">
+      <div class="creatine-sat-head">
+        <span class="creatine-sat-label">Saturación muscular</span>
+        <span class="creatine-sat-pct">${pct}%</span>
       </div>
-      <div class="sat-track">
-        <div class="sat-fill ${faseClass}" style="width:${pct}%" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"></div>
+      <div class="creatine-sat-bar">
+        <div class="creatine-sat-fill" style="width:${pct}%" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"></div>
       </div>
-      <p class="sat-desc">${FASE_DESC[fase]}</p>
+      <p class="creatine-sat-desc">${desc}</p>
     </div>
   `;
 }
 
-function sciencePanel(sat) {
-  const { diasEfectivos, semanasEfecto, consistencia28, fase } = sat;
-
-  const efectoCls = fase === 'mantenimiento' ? 'sci-val sci-val--sm sci-val--ok' : 'sci-val sci-val--sm';
-  const efectoStr = fase === 'mantenimiento'
-    ? 'Efecto máximo activo'
-    : `~${semanasEfecto} sem. a saturación`;
-
-  const consistenciaCls = consistencia28 >= 85
-    ? 'sci-val num sci-val--ok'
-    : consistencia28 >= 60
-    ? 'sci-val num sci-val--primary'
-    : 'sci-val num sci-val--bad';
-
+function statsRow(cr) {
+  const rachaNum = cr.racha || 0;
   return `
-    <div class="sci-grid">
-      <div class="sci-card">
-        <span class="sci-val num sci-val--primary">${diasEfectivos}</span>
-        <span class="sci-key">días efectivos<small>(últimos 28)</small></span>
+    <div class="creatine-stats-grid">
+      <div class="creatine-stat-card">
+        <p class="creatine-stat-val">${rachaNum}</p>
+        <p class="creatine-stat-lbl">${rachaNum === 1 ? 'día de racha' : 'días de racha'}</p>
       </div>
-      <div class="sci-card">
-        <span class="${consistenciaCls}">${consistencia28}%</span>
-        <span class="sci-key">consistencia<small>28 días</small></span>
+      <div class="creatine-stat-card">
+        <p class="creatine-stat-val">${cr.dias7}/7</p>
+        <p class="creatine-stat-lbl">últimos 7 días</p>
       </div>
-      <div class="sci-card">
-        <span class="${efectoCls}">${efectoStr}</span>
-        <span class="sci-key">tiempo estimado</span>
+      <div class="creatine-stat-card">
+        <p class="creatine-stat-val">${cr.dias30}/30</p>
+        <p class="creatine-stat-lbl">últimos 30 días</p>
+      </div>
+    </div>
+  `;
+}
+
+const INTAKE_PREVIEW = 5;
+
+function intakeCard(i) {
+  return `
+    <div class="intake-card">
+      <div class="intake-card-info">
+        <strong class="intake-card-date">${esc(formatLong(i.fecha))}</strong>
+        <span class="intake-card-dose">${fmtNum(i.cantidad)} g</span>
+      </div>
+      <button class="btn-x intake-card-del" data-action="del" data-id="${i.id}" type="button" aria-label="Borrar toma del ${esc(formatLong(i.fecha))}">
+        ${icons.trash({ size: 18 })}
+      </button>
+    </div>`;
+}
+
+export async function render(el) {
+  const cr = await creatineSummary();
+  const g = DOSE_G;
+  const isCurrent = view.y === now.getFullYear() && view.m === now.getMonth();
+
+  el.innerHTML = `
+    <header class="page-head">
+      <div class="page-head-row">
+        <div style="display:flex;align-items:center">
+          <a class="head-back" href="#/" aria-label="Volver a Inicio">${icons.chevronLeft({ size: 22 })}</a>
+          <h1>Creatina</h1>
+        </div>
+      </div>
+    </header>
+
+    ${creatinePlate(cr, g, 'log', `
+      <div class="home-creatine-status">
+        <span class="home-creatine-dot ${cr.tomadaHoy ? 'is-taken' : ''}" aria-hidden="true"></span>
+        <span class="home-creatine-state">${cr.tomadaHoy ? 'Tomada hoy' : 'Pendiente hoy'}</span>
+        <span class="home-creatine-hint">· ${cr.tomadaHoy ? `${cr.hoy.count} toma${cr.hoy.count > 1 ? 's' : ''} (${fmtNum(cr.hoy.gramos)} g)` : 'aún no registras la toma'}</span>
+      </div>
+    `, { brand: null, showGrams: false, showSat: false })}
+
+    <!-- ═══ SATURACIÓN MUSCULAR VISIBLE ═══ -->
+    ${saturationCard(cr.saturacion.porcentajeSaturacion, cr.saturacion.fase)}
+
+    <!-- ═══ MÉTRICAS DIRECTAS (RACHA, 7 DÍAS, 30 DÍAS) ═══ -->
+    ${statsRow(cr)}
+
+    <!-- ═══ CALENDARIO MENSUAL ═══ -->
+    <div class="cal-block" style="margin-top:16px">
+      <div class="cal-head">
+        <button class="btn-x" data-action="prev" type="button" aria-label="Mes anterior">${icons.chevronLeft({ size: 20 })}</button>
+        <h2>${esc(formatMonth(view.y, view.m))}</h2>
+        <button class="btn-x" data-action="next" type="button" aria-label="Mes siguiente" ${isCurrent ? 'disabled' : ''}>${icons.chevronRight({ size: 20 })}</button>
+      </div>
+      <div class="cal">
+        ${['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((d) => `<span class="dow">${d}</span>`).join('')}
+        ${monthCells(view.y, view.m, cr.map)}
       </div>
     </div>
 
-    <details class="sci-facts">
-      <summary>
+    <!-- ═══ AÑADIR TOMA PASADA (ESTILO AMIGABLE) ═══ -->
+    <details class="creatine-retro-card">
+      <summary class="creatine-retro-btn">
+        <span>¿Olvidaste una toma? Añadir toma pasada</span>
+        <span class="creatine-retro-plus" aria-hidden="true">${icons.plus({ size: 20 })}</span>
+      </summary>
+      <form class="stack creatine-retro-form" data-form="manual">
+        <div class="grid-2">
+          <label class="field"><span>Día</span><input type="date" name="fecha" value="${todayISO()}" max="${todayISO()}" required></label>
+          <label class="field"><span>Gramos</span><input name="cantidad" inputmode="decimal" value="${fmtNum(g)}" required></label>
+        </div>
+        <button class="btn btn-primary btn-block" type="submit">Guardar toma pasada</button>
+      </form>
+    </details>
+
+    <!-- ═══ ÚLTIMAS TOMAS (TARJETAS INDIVIDUALES) ═══ -->
+    <div class="intake-section-head">
+      <h2 class="intake-section-title">Últimas tomas</h2>
+      ${cr.intakes.length ? `<span class="intake-section-total">${cr.intakes.length} en total</span>` : ''}
+    </div>
+    ${cr.intakes.length ? `
+      <div class="intake-cards-list">
+        ${cr.intakes.slice(0, INTAKE_PREVIEW).map(intakeCard).join('')}
+      </div>
+      ${cr.intakes.length > INTAKE_PREVIEW ? `
+        <details class="intake-more-wrap">
+          <summary class="intake-more-btn">Ver todas (${cr.intakes.length})</summary>
+          <div class="intake-cards-list" style="margin-top: 8px;">
+            ${cr.intakes.slice(INTAKE_PREVIEW).map(intakeCard).join('')}
+          </div>
+        </details>` : ''}`
+      : `<div class="empty">
+          ${icons.flask({ size: 36, stroke: 'var(--line-strong)' })}
+          <p>Aún no hay tomas registradas.</p>
+        </div>`}
+
+    <!-- ═══ GUÍA CIENTÍFICA ═══ -->
+    <details class="sci-facts-card">
+      <summary class="sci-facts-trigger">
         <span>¿Cómo funciona la creatina?</span>
-        ${icons.chevronDown({ size: 18, cls: 'muted' })}
+        <span class="sci-facts-chev" aria-hidden="true">${icons.chevronDown({ size: 20 })}</span>
       </summary>
       <div class="sci-facts-body">
         <div class="sci-fact-item">
@@ -125,112 +205,6 @@ function sciencePanel(sat) {
         </div>
       </div>
     </details>
-  `;
-}
-
-function rachaLine(cr) {
-  const rachaStr = cr.racha === 0
-    ? 'Sin racha activa'
-    : cr.racha === 1
-    ? '1 día de racha'
-    : `${cr.racha} días de racha`;
-  return `<p class="creatine-streak">${icons.flame({ size: 14, stroke: 'var(--primary)' })} ${esc(rachaStr)}</p>`;
-}
-
-const INTAKE_PREVIEW = 5;
-
-function intakeRow(i) {
-  return `
-    <div class="row">
-      <div>
-        <strong class="intake-date">${esc(formatLong(i.fecha))}</strong>
-        <small class="num">${fmtNum(i.cantidad)} g</small>
-      </div>
-      <button class="btn-x" data-action="del" data-id="${i.id}" type="button" aria-label="Borrar toma del ${esc(formatLong(i.fecha))}">
-        ${icons.trash({ size: 16 })}
-      </button>
-    </div>`;
-}
-
-export async function render(el) {
-  const cr = await creatineSummary();
-  const g = DOSE_G;
-  const isCurrent = view.y === now.getFullYear() && view.m === now.getMonth();
-
-  el.innerHTML = `
-    <header class="page-head"><h1>Creatina</h1></header>
-
-    ${creatinePlate(cr, g, 'log', `
-      <p>${cr.tomadaHoy
-        ? `${cr.hoy.count} toma${cr.hoy.count > 1 ? 's' : ''} · ${fmtNum(cr.hoy.gramos)} g registrados`
-        : 'Aún no registras la toma de hoy'}</p>
-      ${rachaLine(cr)}
-    `, { showSat: true })}
-
-    <div class="cal-block">
-      <div class="cal-head">
-        <button class="btn-x" data-action="prev" type="button" aria-label="Mes anterior">${icons.chevronLeft({ size: 20 })}</button>
-        <h2>${esc(formatMonth(view.y, view.m))}</h2>
-        <button class="btn-x" data-action="next" type="button" aria-label="Mes siguiente" ${isCurrent ? 'disabled' : ''}>${icons.chevronRight({ size: 20 })}</button>
-      </div>
-      <div class="cal">
-        ${['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((d) => `<span class="dow">${d}</span>`).join('')}
-        ${monthCells(view.y, view.m, cr.map)}
-      </div>
-    </div>
-
-    <details class="sci-fold form-card">
-      <summary>
-        <span>Progreso y ciencia</span>
-        ${icons.chevronDown({ size: 18, cls: 'muted' })}
-      </summary>
-      <div class="sci-fold-body">
-        <div class="stats">
-          <div class="stat"><b>${cr.racha}</b><span>días racha</span></div>
-          <div class="stat"><b>${cr.dias7}/7</b><span>últimos 7 días</span></div>
-          <div class="stat"><b>${cr.dias30}/30</b><span>últimos 30 días</span></div>
-        </div>
-        ${saturationBar(cr.saturacion.porcentajeSaturacion, cr.saturacion.fase)}
-        ${sciencePanel(cr.saturacion)}
-      </div>
-    </details>
-
-    <details class="form-card creatine-retro">
-      <summary>
-        <span>Añadir toma retroactiva</span>
-        ${icons.plus({ size: 18, cls: 'muted' })}
-      </summary>
-      <form class="stack" data-form="manual">
-        <div class="grid-2">
-          <label class="field"><span>Día</span><input type="date" name="fecha" value="${todayISO()}" max="${todayISO()}" required></label>
-          <label class="field"><span>Gramos</span><input name="cantidad" inputmode="decimal" value="${fmtNum(g)}" required></label>
-        </div>
-        <button class="btn btn-primary btn-block" type="submit">Guardar toma</button>
-      </form>
-    </details>
-
-    <h2 class="section-title">
-      <span>Últimas tomas</span>
-      ${cr.intakes.length ? `<span class="section-count">${cr.intakes.length}</span>` : ''}
-    </h2>
-    ${cr.intakes.length ? `
-      <div class="list">
-        ${cr.intakes.slice(0, INTAKE_PREVIEW).map(intakeRow).join('')}
-      </div>
-      ${cr.intakes.length > INTAKE_PREVIEW ? `
-        <details class="intake-more form-card">
-          <summary>
-            <span>Ver todas (${cr.intakes.length})</span>
-            ${icons.chevronDown({ size: 18, cls: 'muted' })}
-          </summary>
-          <div class="list intake-more-list">
-            ${cr.intakes.slice(INTAKE_PREVIEW).map(intakeRow).join('')}
-          </div>
-        </details>` : ''}`
-      : `<div class="empty">
-          ${icons.flask({ size: 36, stroke: 'var(--line-strong)' })}
-          <p>Aún no hay tomas registradas.</p>
-        </div>`}
   `;
 
   delegate(el, {

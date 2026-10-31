@@ -1658,6 +1658,9 @@ html[data-modo="claro"] .plate {
   align-items: center;
   gap: 6px;
 }
+.plate.plate--clean b {
+  font-size: clamp(1.4rem, 5.5vw, 1.75rem);
+}
 .plate small {
   color: var(--primary);
   font-size: var(--fs-xs);
@@ -1692,6 +1695,203 @@ html[data-modo="claro"] .plate {
   font-size: var(--fs-sm);
   color: var(--text);
   font-weight: 600;
+}
+
+/* ---------- Inicio: Pastillas de métricas de Creatina ---------- */
+.home-creatine-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text);
+  margin-top: 10px;
+}
+.home-creatine-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--r-full);
+  background: #4DA3FF;
+  flex-shrink: 0;
+}
+.home-creatine-dot.is-taken {
+  background: var(--green);
+}
+.home-creatine-state {
+  font-weight: 700;
+  color: var(--text);
+}
+.home-creatine-hint {
+  color: var(--muted);
+  font-weight: 500;
+  font-size: var(--fs-xs);
+}
+.home-creatine-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+.home-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: var(--r-full);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  font-size: 13px;
+  font-weight: 600;
+  color: #E6E6E6;
+}
+
+/* ---------- Inicio: Tarjeta de Entrenamiento de Hoy ---------- */
+.home-workout-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-xl);
+  padding: 18px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 26px 0 20px;
+  box-shadow: var(--shadow-sm);
+}
+.home-workout-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.home-workout-card-date {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.home-workout-badge {
+  padding: 4px 10px;
+  border: 1px solid var(--primary);
+  border-radius: var(--r-md);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--primary);
+  background: rgba(255, 230, 0, 0.08);
+}
+.home-workout-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.home-workout-card-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1.2;
+  color: var(--text);
+}
+.home-workout-card-sub {
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.35;
+}
+.home-timer {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  color: var(--text);
+}
+
+/* ---------- Inicio: Tarjetas de Últimos Entrenamientos ---------- */
+.home-recent-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 28px 0 12px;
+}
+.home-recent-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 800;
+  font-style: italic;
+  color: var(--text);
+}
+.home-recent-link {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--primary);
+  text-decoration: none;
+  padding: 4px;
+}
+.home-recent-link:hover {
+  text-decoration: underline;
+}
+.home-recent-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.recent-workout-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 72px;
+  padding: 14px 18px;
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--text);
+  text-decoration: none;
+  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+  touch-action: manipulation;
+}
+.recent-workout-card:hover {
+  background: var(--surface-2);
+  border-color: var(--line-strong);
+}
+.recent-workout-card:active {
+  transform: scale(0.99);
+  background: var(--surface-2);
+}
+.recent-workout-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.recent-workout-title {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.recent-workout-sub {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.3;
+}
+.recent-workout-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.recent-workout-arrow {
+  color: var(--muted);
+  display: grid;
+  place-items: center;
+  transition: transform 0.15s ease;
+}
+.recent-workout-card:hover .recent-workout-arrow {
+  color: var(--text);
+  transform: translateX(2px);
 }
 
 /* Meta información de creatina */
@@ -2530,6 +2730,278 @@ html[data-modo="claro"] .plate {
   .toast {
     animation: enter 0.01ms linear;
   }
+}
+
+/* ---------- Ver Creatina: Tarjeta de Saturación Muscular Visible ---------- */
+.creatine-sat-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-xl);
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 14px;
+  box-shadow: var(--shadow-sm);
+}
+.creatine-sat-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+.creatine-sat-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.creatine-sat-pct {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--green);
+}
+.creatine-sat-bar {
+  height: 10px;
+  border-radius: 5px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.creatine-sat-fill {
+  height: 10px;
+  border-radius: 5px;
+  background: var(--green);
+  transition: width 0.3s ease;
+}
+.creatine-sat-desc {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.45;
+  color: #C4C4C4;
+}
+
+/* ---------- Ver Creatina: Fila de 3 Métricas ---------- */
+.creatine-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 12px;
+}
+.creatine-stat-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: 14px 10px;
+  text-align: center;
+}
+.creatine-stat-val {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  line-height: 1.1;
+  font-weight: 800;
+  color: var(--text);
+}
+.creatine-stat-lbl {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* ---------- Ver Creatina: Añadir Toma Pasada (Estilo Amigable) ---------- */
+.creatine-retro-card {
+  margin-top: 16px;
+  border: none;
+  background: transparent;
+  padding: 0;
+}
+.creatine-retro-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 56px;
+  padding: 0 18px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--r-lg);
+  background: transparent;
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.creatine-retro-btn::-webkit-details-marker {
+  display: none;
+}
+.creatine-retro-btn:hover {
+  border-color: var(--primary);
+  background: rgba(255, 230, 0, 0.04);
+}
+.creatine-retro-plus {
+  color: var(--muted);
+  display: grid;
+  place-items: center;
+  transition: transform 0.2s ease;
+}
+.creatine-retro-card[open] .creatine-retro-plus {
+  transform: rotate(45deg);
+}
+.creatine-retro-card[open] .creatine-retro-btn {
+  border-style: solid;
+  border-color: var(--line-strong);
+  background: var(--surface);
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+}
+.creatine-retro-form {
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-top: none;
+  border-radius: 0 0 var(--r-lg) var(--r-lg);
+  padding: 16px;
+  margin-top: 0 !important;
+}
+
+/* ---------- Ver Creatina: Últimas Tomas (Tarjetas Táctiles) ---------- */
+.intake-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 26px 0 10px;
+}
+.intake-section-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 800;
+  font-style: italic;
+  color: var(--text);
+}
+.intake-section-total {
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 500;
+}
+.intake-cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.intake-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 60px;
+  box-sizing: border-box;
+  padding: 0 8px 0 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+.intake-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.intake-card-date {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+}
+.intake-card-dose {
+  font-size: 13px;
+  color: var(--muted);
+}
+.intake-card-del {
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: var(--r-full);
+  background: transparent;
+  color: var(--muted);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+.intake-card-del:hover {
+  color: var(--red);
+  background: var(--red-dim);
+}
+.intake-more-wrap {
+  margin-top: 10px;
+  border: none;
+  background: transparent;
+  padding: 0;
+}
+.intake-more-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 48px;
+  border: 1px solid var(--line-strong);
+  border-radius: 14px;
+  background: transparent;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.intake-more-btn::-webkit-details-marker {
+  display: none;
+}
+.intake-more-btn:hover {
+  background: var(--surface);
+  border-color: var(--muted);
+}
+.intake-more-wrap[open] .intake-more-btn {
+  display: none;
+}
+
+/* ---------- Ver Creatina: Acordeón Científico al Final ---------- */
+.sci-facts-card {
+  margin-top: 20px;
+  border: none;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-xl);
+  overflow: hidden;
+}
+.sci-facts-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  padding: 0 18px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+  transition: background 0.15s ease;
+}
+.sci-facts-trigger::-webkit-details-marker {
+  display: none;
+}
+.sci-facts-trigger:hover {
+  background: var(--surface-2);
+}
+.sci-facts-chev {
+  color: var(--muted);
+  display: grid;
+  place-items: center;
+  transition: transform 0.2s ease;
+}
+.sci-facts-card[open] .sci-facts-chev {
+  transform: rotate(180deg);
 }
 
 /* ---------- Panel Científico de Creatina ---------- */

@@ -1,13 +1,14 @@
 import { creatineSummary, toggleTodayIntake, DOSE_G } from '../services/creatine.js';
-import { getActiveWorkout, startWorkout, listWorkoutSummaries, weekStats, muscleName } from '../services/workouts.js';
+import { getActiveWorkout, startWorkout, listWorkoutSummaries, weekStats, muscleName, getWorkoutDetail } from '../services/workouts.js';
 import { scheduleAfterCreatine, cancelWaterReminders } from '../services/water-reminders.js';
 import { delegate, toast, esc, fmtNum, go } from '../utils/dom.js';
-import { formatLong, formatMedium, todayISO, startOfWeekISO, addDays } from '../utils/dates.js';
+import { formatLong, formatMedium, todayISO, startOfWeekISO, addDays, formatDuration } from '../utils/dates.js';
 import { icons } from '../utils/icons.js';
 import { creatinePlate } from '../utils/components.js';
 import { weightUnit, fmtVolume } from '../utils/units.js';
 import { maybePromptBackup } from '../utils/backup-nudge.js';
 import { askConfirm } from '../utils/confirm-sheet.js';
+import { now } from '../utils/clock.js';
 
 const WEEK_LETTERS = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
 const WEEK_NAMES = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'];
@@ -50,16 +51,35 @@ function workoutTitle(w) {
   return `${gs[0]}, ${gs[1]} (+${gs.length - 2})`;
 }
 
+function startHomeTicker(el, active) {
+  if (el._homeTickerId) clearInterval(el._homeTickerId);
+  if (!active) return;
+  const tick = () => {
+    const elapsed = el.querySelector('#home-elapsed');
+    if (!elapsed) {
+      clearInterval(el._homeTickerId);
+      el._homeTickerId = null;
+      return;
+    }
+    elapsed.textContent = formatDuration(now() - active.startedAt);
+  };
+  tick();
+  el._homeTickerId = setInterval(tick, 1000);
+}
+
 export async function render(el) {
   const [cr, active, recent, week] = await Promise.all([
     creatineSummary(), getActiveWorkout(), listWorkoutSummaries(3), weekStats()
   ]);
+  const activeDetail = active ? await getWorkoutDetail(active.id) : null;
+  const activeSetsCount = activeDetail?.totalSets || 0;
+  const activeVol = activeDetail?.volumen || 0;
   const g = DOSE_G;
   const unidad = weightUnit();
 
   const estadoCreatina = cr.tomadaHoy
-    ? `${cr.hoy.count} toma${cr.hoy.count > 1 ? 's' : ''} · ${fmtNum(cr.hoy.gramos)} g registrados`
-    : 'Toca el disco para registrar la toma de hoy';
+    ? `${cr.hoy.count} toma${cr.hoy.count > 1 ? 's' : ''} (${fmtNum(cr.hoy.gramos)} g)`
+    : 'toca el disco para registrar';
 
   const rachaStr = cr.racha === 0
     ? 'Sin racha activa'
@@ -86,24 +106,38 @@ export async function render(el) {
 
     <!-- ═══ DISCO OLÍMPICO HERO: CREATINA DIARIA ═══ -->
     ${creatinePlate(cr, g, 'creatine', `
-      <p>${esc(estadoCreatina)}</p>
-      <p class="home-creatine-meta">
-        <span>${icons.flame({ size: 14, stroke: 'var(--primary)' })} ${esc(rachaStr)}</span>
-        <span class="home-creatine-sat">${icons.bolt({ size: 14, stroke: 'var(--primary)' })} ${esc(satMsg)}</span>
-      </p>
+      <div class="home-creatine-status">
+        <span class="home-creatine-dot ${cr.tomadaHoy ? 'is-taken' : ''}" aria-hidden="true"></span>
+        <span class="home-creatine-state">${cr.tomadaHoy ? 'Tomada hoy' : 'Pendiente hoy'}</span>
+        <span class="home-creatine-hint">· ${esc(estadoCreatina)}</span>
+      </div>
+      <div class="home-creatine-chips">
+        <span class="home-chip">${esc(rachaStr)}</span>
+        <span class="home-chip">${esc(satMsg)}</span>
+        <span class="home-chip">${cr.dias7}/7 últimos 7 días</span>
+      </div>
     `)}
-    <p class="home-creatine-more"><a href="#/creatine">Ver creatina</a></p>
+    <p class="home-creatine-more">
+      <a href="#/creatine">Ver creatina ${icons.chevronRight({ size: 16 })}</a>
+    </p>
 
-    <!-- ═══ DIVISOR TÉCNICO (SEPARA SUPLEMENTO DE SESIÓN) ═══ -->
-    <div class="home-divider" role="separator">
-      <span>Entrenamiento</span>
-    </div>
-
-    <!-- ═══ BOTÓN DE ACCIÓN DE ENTRENAMIENTO ═══ -->
-    <div>
+    <!-- ═══ TARJETA DE ENTRENAMIENTO DE HOY ═══ -->
+    <div class="home-workout-card">
+      <div class="home-workout-card-head">
+        <span class="home-workout-card-date">Hoy · ${esc(formatMedium(todayISO()))}</span>
+        ${active ? '<span class="home-workout-badge">En curso</span>' : ''}
+      </div>
+      <div class="home-workout-card-body">
+        <h3 class="home-workout-card-title">${active ? esc(workoutTitle(activeDetail?.workout || active)) : 'Entrenamiento'}</h3>
+        <p class="home-workout-card-sub">
+          ${active
+            ? `${activeSetsCount} ${activeSetsCount === 1 ? 'serie' : 'series'} · ${fmtVolume(activeVol, unidad)} ${esc(unidad)} · <span class="home-timer" id="home-elapsed">${formatDuration(now() - active.startedAt)}</span>`
+            : 'Listo para levantar · Registra tus series y pesos'}
+        </p>
+      </div>
       ${active
-        ? `<a class="btn btn-primary btn-block" href="#/workout" id="btn-continue-workout">${icons.dumbbell({ size: 20 })} Continuar entrenamiento →</a>`
-        : `<button class="btn btn-primary btn-block" data-action="start" type="button" id="btn-start-workout">${icons.plus({ size: 20 })} Iniciar entrenamiento</button>`}
+        ? `<a class="btn btn-primary btn-block btn-lg" href="#/workout" id="btn-continue-workout">${icons.dumbbell({ size: 20 })} Continuar entrenamiento</a>`
+        : `<button class="btn btn-primary btn-block btn-lg" data-action="start" type="button" id="btn-start-workout">${icons.plus({ size: 20 })} Iniciar entrenamiento</button>`}
     </div>
 
     <!-- ═══ TELEMETRÍA SEMANAL ═══ -->
@@ -118,22 +152,24 @@ export async function render(el) {
     </div>
     ${weekGroupLine(week)}
 
-    <h2 class="section-title">
-      <span>Últimos entrenamientos</span>
-      <a href="#/history" class="muted" style="font-size:var(--fs-xs)">Ver historial</a>
-    </h2>
+    <!-- ═══ ÚLTIMOS ENTRENAMIENTOS ═══ -->
+    <div class="home-recent-head">
+      <h2 class="home-recent-title">Últimos entrenamientos</h2>
+      <a href="#/history" class="home-recent-link">Ver historial</a>
+    </div>
 
     ${recent.length ? `
-      <div class="list">
+      <div class="home-recent-list">
         ${recent.map((w) => `
-          <a class="row" href="#/history/${w.id}">
-            <div>
-              <strong>${esc(workoutTitle(w))}</strong>
-              <small>${esc(formatMedium(w.fecha))} · ${w.totalSets} series · ${fmtVolume(w.volumen, unidad)} ${esc(unidad)}</small>
+          <a class="recent-workout-card" href="#/history/${w.id}">
+            <div class="recent-workout-info">
+              <strong class="recent-workout-title">${esc(workoutTitle(w))}</strong>
+              <span class="recent-workout-sub">${esc(formatMedium(w.fecha))} · ${w.totalSets} ${w.totalSets === 1 ? 'serie' : 'series'} · ${fmtVolume(w.volumen, unidad)} ${esc(unidad)}</span>
             </div>
-            ${w.finishedAt
-              ? ''
-              : '<span class="chip chip-warn">En curso</span>'}
+            <div class="recent-workout-right">
+              ${w.finishedAt ? '' : '<span class="chip chip-warn">En curso</span>'}
+              <span class="recent-workout-arrow" aria-hidden="true">${icons.chevronRight({ size: 20 })}</span>
+            </div>
           </a>`).join('')}
       </div>`
       : `<div class="empty">
@@ -142,6 +178,7 @@ export async function render(el) {
         </div>`}
   `;
 
+  startHomeTicker(el, active);
   queueMicrotask(() => { maybePromptBackup().catch(() => {}); });
 
   delegate(el, {
