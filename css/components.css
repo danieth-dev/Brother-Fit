@@ -2933,17 +2933,14 @@ html[data-modo="claro"] .plate {
   color: var(--red);
   background: var(--red-dim);
 }
-.intake-more-wrap {
-  margin-top: 10px;
-  border: none;
-  background: transparent;
-  padding: 0;
-}
 .intake-more-btn {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
+  width: 100%;
   height: 48px;
+  margin-top: 10px;
   border: 1px solid var(--line-strong);
   border-radius: 14px;
   background: transparent;
@@ -2951,18 +2948,24 @@ html[data-modo="claro"] .plate {
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  list-style: none;
-  transition: background 0.15s ease, border-color 0.15s ease;
-}
-.intake-more-btn::-webkit-details-marker {
-  display: none;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+  touch-action: manipulation;
 }
 .intake-more-btn:hover {
   background: var(--surface);
   border-color: var(--muted);
 }
-.intake-more-wrap[open] .intake-more-btn {
-  display: none;
+.intake-more-btn:active {
+  transform: scale(0.99);
+}
+.intake-more-btn .intake-more-icon {
+  display: inline-flex;
+  align-items: center;
+  color: var(--muted);
+  transition: transform 0.2s ease, color 0.15s ease;
+}
+.intake-more-btn:hover .intake-more-icon {
+  color: var(--text);
 }
 
 /* ---------- Ver Creatina: Acordeón Científico al Final ---------- */

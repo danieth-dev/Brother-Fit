@@ -8,6 +8,7 @@ import { askConfirm } from '../utils/confirm-sheet.js';
 
 const now = new Date();
 let view = { y: now.getFullYear(), m: now.getMonth() };
+let showAllIntakes = false;
 
 function monthCells(y, m, map) {
   const lead = (new Date(y, m, 1).getDay() + 6) % 7; // lunes primero
@@ -157,16 +158,17 @@ export async function render(el) {
       ${cr.intakes.length ? `<span class="intake-section-total">${cr.intakes.length} en total</span>` : ''}
     </div>
     ${cr.intakes.length ? `
-      <div class="intake-cards-list">
+      <div class="intake-cards-list" id="intake-preview-list">
         ${cr.intakes.slice(0, INTAKE_PREVIEW).map(intakeCard).join('')}
       </div>
       ${cr.intakes.length > INTAKE_PREVIEW ? `
-        <details class="intake-more-wrap">
-          <summary class="intake-more-btn">Ver todas (${cr.intakes.length})</summary>
-          <div class="intake-cards-list" style="margin-top: 8px;">
-            ${cr.intakes.slice(INTAKE_PREVIEW).map(intakeCard).join('')}
-          </div>
-        </details>` : ''}`
+        <div class="intake-cards-list intake-extra-list" id="intake-extra-list" style="display: ${showAllIntakes ? 'flex' : 'none'}; margin-top: 8px;">
+          ${cr.intakes.slice(INTAKE_PREVIEW).map(intakeCard).join('')}
+        </div>
+        <button class="intake-more-btn" data-action="toggle-intakes" type="button" aria-expanded="${showAllIntakes}">
+          <span class="intake-more-label">${showAllIntakes ? 'Ocultar tomas' : `Ver todas (${cr.intakes.length})`}</span>
+          <span class="intake-more-icon" aria-hidden="true">${showAllIntakes ? icons.chevronUp({ size: 18 }) : icons.chevronDown({ size: 18 })}</span>
+        </button>` : ''}`
       : `<div class="empty">
           ${icons.flask({ size: 36, stroke: 'var(--line-strong)' })}
           <p>Aún no hay tomas registradas.</p>
@@ -207,7 +209,34 @@ export async function render(el) {
     </details>
   `;
 
+  const handleToggleIntakes = async (btn) => {
+    showAllIntakes = !showAllIntakes;
+    const extraList = el.querySelector('#intake-extra-list');
+    const labelSpan = btn.querySelector('.intake-more-label');
+    const iconSpan = btn.querySelector('.intake-more-icon');
+
+    if (extraList && labelSpan && iconSpan) {
+      if (showAllIntakes) {
+        extraList.style.display = 'flex';
+        labelSpan.textContent = 'Ocultar tomas';
+        iconSpan.innerHTML = icons.chevronUp({ size: 18 });
+        btn.setAttribute('aria-expanded', 'true');
+      } else {
+        extraList.style.display = 'none';
+        const total = el.querySelectorAll('.intake-card').length;
+        labelSpan.textContent = `Ver todas (${total})`;
+        iconSpan.innerHTML = icons.chevronDown({ size: 18 });
+        btn.setAttribute('aria-expanded', 'false');
+        el.querySelector('.intake-section-head')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    } else {
+      await render(el);
+    }
+  };
+
   delegate(el, {
+    'toggle-intakes': handleToggleIntakes,
+    toggleIntakes: handleToggleIntakes,
     log: async (btn) => {
       if (cr.tomadaHoy) {
         const ok = await askConfirm({
