@@ -42,6 +42,10 @@ let draftTipo = 'trabajo';
 let draftRir = null;
 let openEffortId = null;
 let todayLogOpen = false;
+let pendingNextEx = null;
+let activeNextExObj = null;
+let activeIsExCompleted = false;
+let activeCurExName = '';
 
 document.addEventListener('bf-set', (e) => {
   if (!e.detail?.restEnd) return;
@@ -51,7 +55,10 @@ document.addEventListener('bf-set', (e) => {
 
 document.addEventListener('bf-exercise', (e) => {
   const id = Number(e.detail?.id);
-  if (id) selectedEx = id;
+  if (id) {
+    selectedEx = id;
+    pendingNextEx = null;
+  }
 });
 
 const mmss = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
@@ -75,6 +82,31 @@ function restMarkup() {
   const left = Math.ceil((restEnd - now()) / 1000);
   if (left <= 0) return '';
   const zone = restZoneLabel();
+
+  if (activeIsExCompleted && activeNextExObj) {
+    return `<div class="rest rest--next-ex">
+      <div class="rest-top">
+        <span>${icons.clock({ size: 18, stroke: 'var(--primary)' })} Descanso <strong class="num">${mmss(left)}</strong></span>
+        <button class="btn btn-sm btn-primary" data-action="skip-rest" type="button">
+          Pasar a ${esc(activeNextExObj.nombre)} ${icons.chevronRight({ size: 14 })}
+        </button>
+      </div>
+      <p class="rest-next-hint">Completaste las series de ${esc(activeCurExName || 'este ejercicio')} · Siguiente: ${esc(activeNextExObj.nombre)}</p>
+    </div>`;
+  }
+
+  if (activeIsExCompleted && !activeNextExObj) {
+    return `<div class="rest rest--next-ex">
+      <div class="rest-top">
+        <span>${icons.clock({ size: 18, stroke: 'var(--primary)' })} Descanso <strong class="num">${mmss(left)}</strong></span>
+        <button class="btn btn-sm btn-primary" data-action="finish" type="button">
+          ${icons.check({ size: 16 })} Terminar sesión
+        </button>
+      </div>
+      <p class="rest-next-hint">🎉 ¡Completaste todos los ejercicios de la rutina!</p>
+    </div>`;
+  }
+
   return `<div class="rest">
     <span>${icons.clock({ size: 18, stroke: 'var(--primary)' })} Descanso <strong class="num">${mmss(left)}</strong></span>
     ${zone ? `<span class="rest-zone">${zone}</span>` : ''}
@@ -308,6 +340,28 @@ export async function render(el) {
   const nextSetNum = curExSets.length + 1;
   const prevSets = prev?.sets || [];
   const targetSet = prevSets[curExSets.length] || prevSets[prevSets.length - 1];
+
+  // Si la serie objetivo de la rutina o sesión previa es calentamiento, precargar draftTipo
+  if (targetSet && curExSets.length < prevSets.length) {
+    draftTipo = targetSet.tipo || 'trabajo';
+  } else if (curExSets.length >= prevSets.length && prevSets.length > 0) {
+    draftTipo = 'trabajo';
+  }
+
+  // Rutina guiada: estado, progreso y siguiente ejercicio
+  const inRoutine = Boolean(w.routineExercises && w.routineExercises.length);
+  const routineIdx = inRoutine ? w.routineExercises.indexOf(selectedEx) : -1;
+  const routineTotal = inRoutine ? w.routineExercises.length : 0;
+  const isExCompleted = Boolean(prevSets.length > 0 && curExSets.length >= prevSets.length);
+  const nextRoutineExId = (inRoutine && routineIdx >= 0 && routineIdx < routineTotal - 1)
+    ? w.routineExercises[routineIdx + 1]
+    : null;
+  const nextRoutineExObj = nextRoutineExId ? exs.find((e) => e.id === nextRoutineExId) : null;
+
+  activeNextExObj = nextRoutineExObj;
+  activeIsExCompleted = isExCompleted;
+  activeCurExName = currentExObj?.nombre || '';
+
   const todayRank = new Map((detail?.groups || []).map((g, i) => [g.exercise.id, i]));
   const routineRank = new Map((w.routineExercises || []).map((id, i) => [id, i]));
   const orderedExs = exs.map((e, i) => ({ e, i })).sort((a, b) => {
@@ -332,6 +386,23 @@ export async function render(el) {
       </div>
       <p class="workout-status"><span class="status-dot" aria-hidden="true"></span>En curso · <span class="elapsed" id="elapsed">${formatDuration(now() - w.startedAt)}</span></p>
     </header>
+
+    ${inRoutine ? `
+      <div class="routine-progress-bar">
+        <div class="routine-progress-info">
+          <span class="routine-tag">${icons.repeat({ size: 12 })} ${esc(w.routineTitle || 'Rutina')}</span>
+          <span class="routine-step">${routineIdx >= 0 ? `Ejercicio ${routineIdx + 1} de ${routineTotal}` : 'Ejercicio adicional'}</span>
+        </div>
+        <div class="routine-dots">
+          ${w.routineExercises.map((id) => {
+            const done = (detail?.groups || []).some((g) => g.exercise.id === id && g.sets.length > 0);
+            const isCur = id === selectedEx;
+            const exName = exs.find((e) => e.id === id)?.nombre || '';
+            return `<span class="routine-dot ${done ? 'is-done' : ''} ${isCur ? 'is-cur' : ''}" title="${esc(exName)}" aria-hidden="true"></span>`;
+          }).join('')}
+        </div>
+      </div>
+    ` : ''}
 
     <div id="rest">${restMarkup()}</div>
 
@@ -485,6 +556,20 @@ export async function render(el) {
       el.querySelector('#rest').innerHTML = '';
       getActiveAgent()?.cancelPendingCheckIn();
       getActiveAgent()?.muteMic();
+      if (pendingNextEx && pendingNextEx !== 'DONE') {
+        const nextId = pendingNextEx;
+        pendingNextEx = null;
+        selectedEx = nextId;
+        const nextObj = exs.find((e) => e.id === nextId);
+        if (nextObj) {
+          state.activeExercise = { id: nextObj.id, nombre: nextObj.nombre, grupo: nextObj.grupo };
+          toast(`Siguiente ejercicio: ${nextObj.nombre}`);
+        }
+        await render(el);
+      } else {
+        pendingNextEx = null;
+        await render(el);
+      }
     },
     'draft-tipo': (t) => {
       draftTipo = t.dataset.tipo === 'calentamiento' ? 'calentamiento' : 'trabajo';
@@ -592,6 +677,7 @@ export async function render(el) {
   changes(el, {
     exercise: async (t) => {
       selectedEx = Number(t.value);
+      pendingNextEx = null;
       const curEx = exs.find((e) => e.id === selectedEx);
       state.activeExercise = curEx ? { id: curEx.id, nombre: curEx.nombre, grupo: curEx.grupo } : null;
       getActiveAgent()?.sendContext(`Ejercicio seleccionado: ${curEx?.nombre} (${curEx?.grupo}).`);
@@ -635,6 +721,25 @@ export async function render(el) {
       selectedEx = exerciseId;
       lastReps = reps;
       await saveActiveRest(restEnd, lastReps);
+
+      // En modo rutina: detectar si completamos las series planeadas de este ejercicio
+      if (w.routineExercises && w.routineExercises.length) {
+        const plannedCount = prevSets.length;
+        const newCurSetsCount = curExSets.length + 1;
+        if (plannedCount > 0 && newCurSetsCount >= plannedCount) {
+          const curIdx = w.routineExercises.indexOf(exerciseId);
+          if (curIdx >= 0 && curIdx < w.routineExercises.length - 1) {
+            pendingNextEx = w.routineExercises[curIdx + 1];
+          } else if (curIdx === w.routineExercises.length - 1) {
+            pendingNextEx = 'DONE';
+          }
+        } else {
+          pendingNextEx = null;
+        }
+      } else {
+        pendingNextEx = null;
+      }
+
       draftTipo = 'trabajo';
       draftRir = null;
 
@@ -674,6 +779,7 @@ async function prefill(el, prev, curSets = []) {
   const target = sets[curSets.length] || sets[sets.length - 1];
   if (!target) return;
   if (!f.elements.peso.value) f.elements.peso.value = fmtWeight(target.peso);
+  if (!f.elements.reps.value && target.reps) f.elements.reps.value = target.reps;
 }
 
 function startTicker(el, w) {
@@ -699,6 +805,14 @@ function startTicker(el, w) {
       restEnd = 0;
       clearActiveRest();
       getActiveAgent()?.muteMic();
+      if (pendingNextEx && pendingNextEx !== 'DONE') {
+        const nextId = pendingNextEx;
+        pendingNextEx = null;
+        selectedEx = nextId;
+        render(el);
+        return;
+      }
+      pendingNextEx = null;
       const exName = state.activeExercise?.nombre || 'el ejercicio';
       const curSets = el.querySelectorAll('.group .sets li').length;
       getActiveAgent()?.triggerCheckIn(

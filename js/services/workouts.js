@@ -352,10 +352,13 @@ export async function startWorkout(fromWorkoutId = null) {
   const existing = await getActiveWorkout();
   if (existing) return existing;
   let routineExercises = null;
+  let routineTitle = null;
   if (fromWorkoutId) {
     const detail = await getWorkoutDetail(fromWorkoutId);
     if (detail && detail.groups) {
       routineExercises = detail.groups.map((g) => g.exercise.id);
+      const groups = [...new Set(detail.groups.map((g) => muscleName(g.exercise.grupo) || g.exercise.grupo).filter(Boolean))];
+      routineTitle = groups.length ? groups.join(', ') : 'Rutina anterior';
     }
   }
   const w = {
@@ -363,7 +366,7 @@ export async function startWorkout(fromWorkoutId = null) {
     startedAt: now(),
     finishedAt: null,
     notas: '',
-    ...(routineExercises ? { routineExercises, fromWorkoutId } : {})
+    ...(routineExercises ? { routineExercises, routineTitle, fromWorkoutId } : {})
   };
   w.id = await db.add('workouts', w);
   await db.put('meta', { key: 'activeWorkoutId', value: w.id });
