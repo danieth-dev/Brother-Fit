@@ -3530,6 +3530,74 @@ body.in-agent-view #app .view {
   margin-bottom: 16px;
 }
 
+/* Multi-Provider Selector */
+.agent-provider-tabs {
+  display: flex;
+  background: #1C1C1C;
+  border-radius: 14px;
+  padding: 4px;
+  gap: 6px;
+  border: 1px solid #2E2E2E;
+  margin-bottom: 16px;
+}
+.agent-provider-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  color: #A8A8A8;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.16s ease;
+  font-family: inherit;
+}
+.agent-provider-tab:hover {
+  color: #FFFFFF;
+  background: rgba(255, 255, 255, 0.04);
+}
+.agent-provider-tab.is-active {
+  background: #2A2A2A;
+  color: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+.agent-provider-tab.is-active[data-provider="gemini"] {
+  border-bottom: 2px solid #FFE600;
+}
+.agent-provider-tab.is-active[data-provider="openai"] {
+  border-bottom: 2px solid #10A37F;
+}
+
+.agent-model-select {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+  margin-bottom: 8px;
+}
+.agent-model-btn {
+  flex: 1;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #333333;
+  background: #1C1C1C;
+  color: #A8A8A8;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.14s ease;
+}
+.agent-model-btn.is-active {
+  background: #2A2A2A;
+  color: #FFFFFF;
+  border-color: #10A37F;
+}
+
 /* Mensajes / Chat Bubbles */
 .agent-msgs {
   flex: 1;

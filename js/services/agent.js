@@ -498,16 +498,54 @@ function pcm16ToFloat32(bytes) {
   return float32;
 }
 
+/* --- Multi-Provider Configuration --- */
+export async function getAgentConfig() {
+  const [providerRow, geminiKeyRow, openaiKeyRow, openaiModelRow] = await Promise.all([
+    db.get('meta', 'voiceProvider'),
+    db.get('meta', 'geminiApiKey'),
+    db.get('meta', 'openaiApiKey'),
+    db.get('meta', 'openaiModel'),
+  ]);
+
+  const provider = providerRow?.value || 'gemini';
+  const geminiKey = geminiKeyRow?.value || '';
+  const openaiKey = openaiKeyRow?.value || '';
+  const openaiModel = openaiModelRow?.value || 'gpt-4o-mini-realtime-preview';
+
+  return {
+    provider,
+    geminiKey,
+    openaiKey,
+    openaiModel,
+    activeKey: provider === 'openai' ? openaiKey : geminiKey,
+    voice: provider === 'openai' ? 'coral' : 'Aoede',
+  };
+}
+
+export async function setAgentConfig({ provider, geminiKey, openaiKey, openaiModel }) {
+  if (provider !== undefined) await db.put('meta', { key: 'voiceProvider', value: provider });
+  if (geminiKey !== undefined) await db.put('meta', { key: 'geminiApiKey', value: geminiKey });
+  if (openaiKey !== undefined) await db.put('meta', { key: 'openaiApiKey', value: openaiKey });
+  if (openaiModel !== undefined) await db.put('meta', { key: 'openaiModel', value: openaiModel });
+}
+
 let currentAgentInstance = null;
 
 export function getActiveAgent() {
   return currentAgentInstance;
 }
 
-/* --- FitAgent Class (Gemini 3.8 Live Engine) --- */
+/* --- FitAgent Class (Multi-Provider: Gemini Live Aoede & OpenAI Realtime Coral) --- */
 export class FitAgent {
+  #provider = 'gemini';
   #apiKey = '';
+  #model = '';
+  #voice = 'Aoede';
   #ws = null;
+  #pc = null;
+  #dc = null;
+  #mediaStream = null;
+  #audioEl = null;
   #handlers = {};
   #playbackTime = 0;
   #activeSources = [];
@@ -523,10 +561,24 @@ export class FitAgent {
   #pendingCheckIn = null;
   #speakingTimeout = null;
 
-  constructor(apiKey) {
-    this.#apiKey = apiKey.trim();
+  constructor(config) {
+    if (typeof config === 'string') {
+      this.#apiKey = config.trim();
+      this.#provider = 'gemini';
+      this.#model = LIVE_MODEL;
+      this.#voice = 'Aoede';
+    } else if (config && typeof config === 'object') {
+      this.#provider = config.provider || 'gemini';
+      this.#apiKey = (config.activeKey || config.apiKey || '').trim();
+      this.#model = config.model || (this.#provider === 'openai' ? (config.openaiModel || 'gpt-4o-mini-realtime-preview') : LIVE_MODEL);
+      this.#voice = this.#provider === 'openai' ? 'coral' : 'Aoede';
+    }
     currentAgentInstance = this;
   }
+
+  get provider() { return this.#provider; }
+  get voice() { return this.#voice; }
+  get model() { return this.#model; }
 
   on(event, fn) { this.#handlers[event] = fn; return this; }
   #emit(event, data) { this.#handlers[event]?.(data); }
@@ -534,6 +586,178 @@ export class FitAgent {
   async connect() {
     const sysInstruction = await buildSystemInstruction();
 
+    if (this.#provider === 'openai') {
+      return this.#connectOpenAI(sysInstruction);
+    }
+    return this.#connectGemini(sysInstruction);
+  }
+
+  /* Conexión nativa OpenAI Realtime WebRTC con voz Coral (equivalente gemela de Aoede) */
+  async #connectOpenAI(sysInstruction) {
+    const openaiTools = TOOL_DECLARATIONS.map((t) => ({
+      type: 'function',
+      name: t.name,
+      description: t.description,
+      parameters: {
+        type: 'object',
+        properties: t.parameters.properties,
+        required: t.parameters.required || [],
+      },
+    }));
+
+    const sessionRes = await fetch('https://api.openai.com/v1/realtime/sessions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.#apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: this.#model || 'gpt-4o-mini-realtime-preview',
+        voice: 'coral',
+        instructions: sysInstruction,
+        modalities: ['audio', 'text'],
+        input_audio_transcription: {
+          model: 'whisper-1',
+        },
+        tools: openaiTools,
+        tool_choice: 'auto',
+      }),
+    });
+
+    if (!sessionRes.ok) {
+      const err = await sessionRes.json().catch(() => ({}));
+      throw new Error(err.error?.message || `Error ${sessionRes.status} al autenticar con OpenAI`);
+    }
+
+    const sessionData = await sessionRes.json();
+    const ephemeralKey = sessionData.client_secret.value;
+
+    const pc = new RTCPeerConnection();
+    this.#pc = pc;
+
+    const audioEl = document.createElement('audio');
+    audioEl.autoplay = true;
+    this.#audioEl = audioEl;
+
+    pc.ontrack = (e) => {
+      audioEl.srcObject = e.streams[0];
+      audioEl.play().catch(() => {});
+    };
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+      });
+      this.#mediaStream = stream;
+      stream.getTracks().forEach((track) => pc.addTrack(track, stream));
+    } catch (e) {
+      console.warn('Microfono WebRTC no accesible:', e);
+    }
+
+    const dc = pc.createDataChannel('oai-events');
+    this.#dc = dc;
+
+    dc.onmessage = async (e) => {
+      let msg;
+      try { msg = JSON.parse(e.data); } catch { return; }
+      await this.#handleOpenAIMessage(msg);
+    };
+
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+
+    const sdpRes = await fetch(`https://api.openai.com/v1/realtime?model=${this.#model || 'gpt-4o-mini-realtime-preview'}`, {
+      method: 'POST',
+      body: offer.sdp,
+      headers: {
+        'Authorization': `Bearer ${ephemeralKey}`,
+        'Content-Type': 'application/sdp',
+      },
+    });
+
+    if (!sdpRes.ok) {
+      throw new Error('Fallo al conectar canal de audio WebRTC con OpenAI');
+    }
+
+    const answer = {
+      type: 'answer',
+      sdp: await sdpRes.text(),
+    };
+    await pc.setRemoteDescription(answer);
+
+    this.#sessionReady = true;
+    this.#emit('ready');
+  }
+
+  async #handleOpenAIMessage(msg) {
+    if (msg.type === 'response.audio_transcript.delta') {
+      this.#emit('bot_text_chunk', msg.delta);
+      this.#emit('speaking_start');
+      this.#isSpeaking = true;
+      return;
+    }
+
+    if (msg.type === 'response.audio_transcript.done') {
+      this.#emit('bot_text', msg.transcript);
+      this.#emit('speaking_end');
+      this.#isSpeaking = false;
+      return;
+    }
+
+    if (msg.type === 'conversation.item.input_audio_transcription.completed') {
+      const text = (msg.transcript || '').trim();
+      if (text) {
+        this.#emit('user_speaking_finished', text);
+      }
+      return;
+    }
+
+    if (msg.type === 'input_audio_buffer.speech_started') {
+      this.#isUserSpeaking = true;
+      this.#stopCurrentAudio();
+      this.#emit('user_speaking_start');
+      return;
+    }
+
+    if (msg.type === 'input_audio_buffer.speech_stopped') {
+      this.#isUserSpeaking = false;
+      return;
+    }
+
+    if (msg.type === 'response.output_item.done' && msg.item?.type === 'function_call') {
+      const { name, call_id } = msg.item;
+      let args = {};
+      try { args = JSON.parse(msg.item.arguments || '{}'); } catch {}
+      const result = await handleToolCall(name, args);
+      if (result?.exercise) {
+        this.#emit('exercise_selected', result.exercise);
+      }
+      this.#emit('memory_updated', name, args, result);
+
+      this.#sendOpenAI({
+        type: 'conversation.item.create',
+        item: {
+          type: 'function_call_output',
+          call_id: call_id,
+          output: JSON.stringify(result),
+        },
+      });
+      this.#sendOpenAI({ type: 'response.create' });
+    }
+  }
+
+  #sendOpenAI(payload) {
+    if (this.#dc?.readyState === 'open') {
+      this.#dc.send(JSON.stringify(payload));
+    }
+  }
+
+  /* Conexión nativa Google Gemini Live WebSocket con voz Aoede */
+  async #connectGemini(sysInstruction) {
     return new Promise((resolve, reject) => {
       try {
         this.#ws = new WebSocket(WS_URL(this.#apiKey));
@@ -599,13 +823,30 @@ export class FitAgent {
 
   disconnect() {
     this.stopLiveMode();
-    this.#ws?.close();
-    this.#ws = null;
+    if (this.#ws) {
+      try { this.#ws.close(); } catch {}
+      this.#ws = null;
+    }
+    if (this.#pc) {
+      try { this.#pc.close(); } catch {}
+      this.#pc = null;
+    }
+    if (this.#mediaStream) {
+      try { this.#mediaStream.getTracks().forEach((t) => t.stop()); } catch {}
+      this.#mediaStream = null;
+    }
+    if (this.#audioEl) {
+      try { this.#audioEl.srcObject = null; } catch {}
+      this.#audioEl = null;
+    }
     this.#sessionReady = false;
     if (currentAgentInstance === this) currentAgentInstance = null;
   }
 
   get connected() {
+    if (this.#provider === 'openai') {
+      return this.#sessionReady && (this.#pc?.connectionState === 'connected' || this.#pc?.iceConnectionState === 'connected');
+    }
     return this.#sessionReady && this.#ws?.readyState === WebSocket.OPEN;
   }
 
@@ -654,6 +895,17 @@ export class FitAgent {
   /* --- Inyección 2: Nota de estado invisible (turnComplete: false, no genera habla) --- */
   sendContext(note) {
     if (!this.connected) return;
+    if (this.#provider === 'openai') {
+      this.#sendOpenAI({
+        type: 'conversation.item.create',
+        item: {
+          type: 'message',
+          role: 'user',
+          content: [{ type: 'input_text', text: `[CONTEXTO DE ENTRENAMIENTO - NO LO DIGAS EN VOZ ALTA]: ${note}. Usa esto únicamente como contexto para tus próximas intervenciones.` }],
+        },
+      });
+      return;
+    }
     this.#send({
       clientContent: {
         turns: [{
@@ -683,6 +935,18 @@ export class FitAgent {
       return;
     }
     this.#stopCurrentAudio();
+    if (this.#provider === 'openai') {
+      this.#sendOpenAI({
+        type: 'conversation.item.create',
+        item: {
+          type: 'message',
+          role: 'user',
+          content: [{ type: 'input_text', text: `[EVENTO DEL SISTEMA]: ${instruction}` }],
+        },
+      });
+      this.#sendOpenAI({ type: 'response.create' });
+      return;
+    }
     this.#send({
       clientContent: {
         turns: [{
@@ -707,6 +971,18 @@ export class FitAgent {
     if (saved) {
       this.#emit('effort_saved', saved);
       this.sendContext('El esfuerzo ya quedó anotado. No hables, no preguntes y no escribas comentarios.');
+      return;
+    }
+    if (this.#provider === 'openai') {
+      this.#sendOpenAI({
+        type: 'conversation.item.create',
+        item: {
+          type: 'message',
+          role: 'user',
+          content: [{ type: 'input_text', text }],
+        },
+      });
+      this.#sendOpenAI({ type: 'response.create' });
       return;
     }
     this.#send({

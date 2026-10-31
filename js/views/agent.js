@@ -6,7 +6,8 @@
 
 import {
   FitAgent, getActiveAgent, loadAllMemories, deleteMemory, visibleFitText,
-  loadAthleteProfile, saveAthleteProfile, loadWeeklyRoutine, saveWeeklyRoutine, clearAllMemories
+  loadAthleteProfile, saveAthleteProfile, loadWeeklyRoutine, saveWeeklyRoutine, clearAllMemories,
+  getAgentConfig, setAgentConfig
 } from '../services/agent.js';
 import { loadFitChat, appendFitChat, clearFitChat, formatChatForContext } from '../services/fit-chat.js';
 import { getActiveWorkout, startWorkout, listExercises, listWorkoutSummaries, muscleName } from '../services/workouts.js';
@@ -17,74 +18,135 @@ import { toast, esc, go } from '../utils/dom.js';
 import { askConfirm } from '../utils/confirm-sheet.js';
 import { bindSheetDrag } from '../utils/sheet-drag.js';
 
-const API_KEY_STORE = 'geminiApiKey';
-
-async function getApiKey() {
-  const row = await db.get('meta', API_KEY_STORE);
-  return row?.value ?? '';
-}
-
-async function setApiKey(key) {
-  await db.put('meta', { key: API_KEY_STORE, value: key });
-}
-
 export async function render(el) {
-  const apiKey = await getApiKey();
+  const config = await getAgentConfig();
 
-  if (!apiKey) {
-    renderKeyPrompt(el);
+  if (!config.activeKey) {
+    renderKeyPrompt(el, config);
     return;
   }
 
-  await renderLiveChat(el, apiKey);
+  await renderLiveChat(el, config);
 }
 
-/* --- API Key entry screen --- */
-function renderKeyPrompt(el) {
+/* --- Multi-Provider Setup screen --- */
+function renderKeyPrompt(el, config = {}) {
+  let selectedProvider = config.provider || 'gemini';
+  let selectedModel = config.openaiModel || 'gpt-4o-mini-realtime-preview';
+
   el.innerHTML = `
     <header class="page-head">
-      <h1>Fit AI · Gemini Live</h1>
-      <p>Compañera técnica por voz. Puedes llamarla Fit o Bía.</p>
+      <h1>Fit AI · Voz en vivo</h1>
+      <p>Compañera técnica por voz. Elige tu motor de inteligencia artificial.</p>
     </header>
 
     <div class="agent-key-card">
-      <p class="agent-key-desc">
-        Tu cuaderno de entrenamientos, series y marcas quedan <b>100% en tu teléfono</b> de forma local. 
-        Al activar la voz, tu audio se transmite a Google (Gemini Live) para el diálogo bidireccional. 
-        Tu clave se guarda exclusivamente en tu dispositivo.
-      </p>
-      <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener" class="btn btn-block" id="btn-get-key">
-        ${icons.bolt({ size: 18 })} Obtener clave gratis en Google AI Studio
-      </a>
-      <div class="field" style="margin-top:16px">
-        <label class="field">
-          <span>API Key de Gemini (AIza...)</span>
-          <input id="agent-key-input" type="password" placeholder="AIza..." autocomplete="off" spellcheck="false">
-        </label>
+      <div class="agent-provider-tabs">
+        <button type="button" class="agent-provider-tab ${selectedProvider === 'gemini' ? 'is-active' : ''}" data-provider="gemini">
+          Google Gemini (Recomendado)
+        </button>
+        <button type="button" class="agent-provider-tab ${selectedProvider === 'openai' ? 'is-active' : ''}" data-provider="openai">
+          OpenAI Realtime
+        </button>
       </div>
-      <button class="btn btn-primary btn-block" id="btn-save-key" type="button" style="margin-top:12px">
+
+      <!-- Sección Gemini -->
+      <div id="section-prompt-gemini" style="${selectedProvider === 'gemini' ? '' : 'display:none'}">
+        <p class="agent-key-desc">
+          Conexión multimodal nativa de Google con voz <b>Aoede</b> (cálida y motivadora). 
+          Acceso ultrarrápido y cuota gratuita para tu uso diario.
+        </p>
+        <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener" class="btn btn-block" id="btn-get-gemini-key">
+          ${icons.bolt({ size: 18 })} Obtener clave gratis en Google AI Studio
+        </a>
+        <div class="field" style="margin-top:16px">
+          <label class="field">
+            <span>API Key de Gemini (AIza...)</span>
+            <input id="agent-gemini-input" type="password" value="${esc(config.geminiKey || '')}" placeholder="AIza..." autocomplete="off" spellcheck="false">
+          </label>
+        </div>
+      </div>
+
+      <!-- Sección OpenAI -->
+      <div id="section-prompt-openai" style="${selectedProvider === 'openai' ? '' : 'display:none'}">
+        <p class="agent-key-desc">
+          Voz ultraexpresiva <b>Coral</b> (equivalente gemela de Aoede: cálida, segura y natural). 
+          Requiere cuenta con créditos activos en OpenAI.
+        </p>
+        <label style="display:block;margin-bottom:6px;font-size:13px;color:#A8A8A8;font-weight:600">Modelo de voz:</label>
+        <div class="agent-model-select">
+          <button type="button" class="agent-model-btn ${selectedModel === 'gpt-4o-mini-realtime-preview' ? 'is-active' : ''}" data-model="gpt-4o-mini-realtime-preview">
+            gpt-4o-mini (Económico)
+          </button>
+          <button type="button" class="agent-model-btn ${selectedModel === 'gpt-4o-realtime-preview' ? 'is-active' : ''}" data-model="gpt-4o-realtime-preview">
+            gpt-4o (Ultra)
+          </button>
+        </div>
+        <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener" class="btn btn-block" id="btn-get-openai-key">
+          ${icons.bolt({ size: 18 })} Obtener clave en OpenAI Platform
+        </a>
+        <div class="field" style="margin-top:16px">
+          <label class="field">
+            <span>API Key de OpenAI (sk-...)</span>
+            <input id="agent-openai-input" type="password" value="${esc(config.openaiKey || '')}" placeholder="sk-..." autocomplete="off" spellcheck="false">
+          </label>
+        </div>
+      </div>
+
+      <button class="btn btn-primary btn-block" id="btn-save-key" type="button" style="margin-top:16px">
         Guardar y conectar en vivo
       </button>
     </div>
   `;
 
+  // Selector de tabs
+  el.querySelectorAll('.agent-provider-tab').forEach((tab) => {
+    tab.addEventListener('click', () => {
+      selectedProvider = tab.dataset.provider;
+      el.querySelectorAll('.agent-provider-tab').forEach((t) => t.classList.remove('is-active'));
+      tab.classList.add('is-active');
+
+      const isGemini = selectedProvider === 'gemini';
+      el.querySelector('#section-prompt-gemini').style.display = isGemini ? '' : 'none';
+      el.querySelector('#section-prompt-openai').style.display = isGemini ? 'none' : '';
+    });
+  });
+
+  // Selector de modelo OpenAI
+  el.querySelectorAll('.agent-model-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      selectedModel = btn.dataset.model;
+      el.querySelectorAll('.agent-model-btn').forEach((b) => b.classList.remove('is-active'));
+      btn.classList.add('is-active');
+    });
+  });
+
   el.querySelector('#btn-save-key').addEventListener('click', async () => {
-    const val = el.querySelector('#agent-key-input').value.trim();
-    if (!val || val.length < 15) {
-      toast('Pega una API key valida de Google AI Studio.');
+    const isGemini = selectedProvider === 'gemini';
+    const key = (isGemini ? el.querySelector('#agent-gemini-input').value : el.querySelector('#agent-openai-input').value).trim();
+
+    if (!key || key.length < 15) {
+      toast(`Pega una API key válida de ${isGemini ? 'Google AI Studio' : 'OpenAI'}.`);
       return;
     }
-    await setApiKey(val);
-    await renderLiveChat(el, val);
+
+    if (isGemini) {
+      await setAgentConfig({ provider: 'gemini', geminiKey: key });
+    } else {
+      await setAgentConfig({ provider: 'openai', openaiKey: key, openaiModel: selectedModel });
+    }
+
+    const updatedConfig = await getAgentConfig();
+    await renderLiveChat(el, updatedConfig);
   });
 }
 
 /* --- Live Chat Interface --- */
-async function renderLiveChat(el, apiKey) {
+async function renderLiveChat(el, config) {
   let agent = getActiveAgent();
   const isExisting = !!(agent && agent.connected);
   if (!agent) {
-    agent = new FitAgent(apiKey);
+    agent = new FitAgent(config);
   }
 
   const allExercises = await listExercises();
@@ -104,7 +166,7 @@ async function renderLiveChat(el, apiKey) {
             <h1>Fit</h1>
             <p class="agent-chat-status" id="agent-status" data-ok="${isExisting ? '1' : '0'}">
               <span class="agent-chat-status-dot" aria-hidden="true"></span>
-              <span id="agent-status-text">${isExisting ? 'En línea' : 'Conectando con Gemini Live...'}</span>
+              <span id="agent-status-text">${isExisting ? 'En línea' : `Conectando con ${agent.provider === 'openai' ? 'OpenAI Realtime' : 'Gemini Live'}...`}</span>
             </p>
           </div>
         </div>
@@ -450,7 +512,7 @@ async function renderLiveChat(el, apiKey) {
     if (!ok) return;
     agent.disconnect();
     await clearFitChat();
-    await renderLiveChat(el, apiKey);
+    await renderLiveChat(el, config);
   });
 
   if (!el._changeKeyBound) {
@@ -471,7 +533,7 @@ async function renderLiveChat(el, apiKey) {
   } else {
     agent.connect().catch((err) => {
       setStatus('Fallo al conectar', false);
-      toast('No se pudo conectar a Gemini 3.8 Live: ' + err.message);
+      toast(`No se pudo conectar a ${agent.provider === 'openai' ? 'OpenAI Realtime' : 'Gemini Live'}: ${err.message}`);
     });
   }
 }
@@ -860,8 +922,13 @@ async function showMemoriesPanel(parentEl, agent) {
 
 /* --- Panel de Conexión y API Key --- */
 async function showConnectionPanel(parentEl, agent) {
-  const currentKey = await getApiKey();
+  const config = await getAgentConfig();
+  let selectedProvider = config.provider || 'gemini';
+  let selectedModel = config.openaiModel || 'gpt-4o-mini-realtime-preview';
   const isOnline = !!(agent && agent.connected);
+
+  const activeProviderName = agent?.provider === 'openai' ? 'OpenAI Realtime' : 'Gemini Live';
+  const activeVoiceName = agent?.provider === 'openai' ? 'Coral' : 'Aoede';
 
   const sheet = document.createElement('div');
   sheet.className = 'agent-sheet';
@@ -872,7 +939,7 @@ async function showConnectionPanel(parentEl, agent) {
       <div class="agent-sheet-head">
         <div class="agent-sheet-head-titles">
           <h2>Conexión y API key</h2>
-          <p>Configuración de voz en tiempo real con Google Gemini Live.</p>
+          <p>Configuración de voz en tiempo real con Gemini o OpenAI.</p>
         </div>
         <button class="agent-sheet-close" id="conn-sheet-close" type="button" aria-label="Cerrar">
           ${icons.close({ size: 22 })}
@@ -889,9 +956,11 @@ async function showConnectionPanel(parentEl, agent) {
             <span style="width: 10px; height: 10px; border-radius: 50%; background: ${isOnline ? '#00FF66' : '#FF4D4D'}; box-shadow: 0 0 10px ${isOnline ? 'rgba(0,255,102,0.45)' : 'rgba(255,77,77,0.45)'}"></span>
             <div>
               <span style="display: block; font-size: 15px; font-weight: 700; color: #F5F5F5;">
-                ${isOnline ? 'Fit en línea (Gemini Live)' : 'Desconectado'}
+                ${isOnline ? `Fit en línea (${activeProviderName})` : 'Desconectado'}
               </span>
-              <span style="display: block; font-size: 12px; color: #A8A8A8;">Voz bidireccional y memoria activa</span>
+              <span style="display: block; font-size: 12px; color: #A8A8A8;">
+                Voz activa: <b>${activeVoiceName}</b> · Bidireccional
+              </span>
             </div>
           </div>
           <span style="font-size: 11px; color: ${isOnline ? '#00FF66' : '#FF4D4D'}; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;">
@@ -900,33 +969,49 @@ async function showConnectionPanel(parentEl, agent) {
         </div>
       </section>
 
-      <!-- Clave de API -->
+      <!-- Selector de Proveedor -->
       <section class="agent-rec-section">
         <div class="agent-rec-section-head">
-          <h3 class="agent-rec-section-title">Clave de API</h3>
+          <h3 class="agent-rec-section-title">Proveedor de Inteligencia Artificial</h3>
         </div>
-        <div class="agent-rec-card" style="padding: 16px; display: flex; flex-direction: column; gap: 12px;">
+
+        <div class="agent-provider-tabs" style="margin-bottom:12px">
+          <button type="button" class="agent-provider-tab ${selectedProvider === 'gemini' ? 'is-active' : ''}" data-provider="gemini">
+            Google Gemini
+          </button>
+          <button type="button" class="agent-provider-tab ${selectedProvider === 'openai' ? 'is-active' : ''}" data-provider="openai">
+            OpenAI Realtime
+          </button>
+        </div>
+
+        <!-- Panel Google Gemini -->
+        <div class="agent-rec-card" id="conn-panel-gemini" style="padding: 16px; display: ${selectedProvider === 'gemini' ? 'flex' : 'none'}; flex-direction: column; gap: 12px;">
+          <div>
+            <span style="display:block;font-size:14px;font-weight:700;color:#F5F5F5">Gemini 2.0 Flash Live</span>
+            <span style="display:block;font-size:12px;color:#A8A8A8;margin-top:2px">
+              Voz: <b style="color:#FFE600">Aoede</b> (cálida, motivadora y clara) · Cuota gratuita
+            </span>
+          </div>
+
           <label style="display: flex; flex-direction: column; gap: 6px;">
             <span style="font-size: 13px; color: #A8A8A8; font-weight: 600;">API Key de Google AI Studio</span>
             <div style="display: flex; gap: 8px;">
               <input 
-                id="conn-key-input" 
+                id="conn-gemini-input" 
                 type="password" 
-                value="${esc(currentKey)}" 
+                value="${esc(config.geminiKey || '')}" 
                 placeholder="AIza..." 
                 autocomplete="off" 
                 spellcheck="false"
                 class="agent-rec-edit-input"
                 style="flex: 1; height: 42px; font-family: monospace; font-size: 13px; letter-spacing: 0.04em;"
               >
-              <button type="button" class="btn" id="btn-toggle-key-mask" style="padding: 0 14px; height: 42px; font-size: 13px;" title="Ver/Ocultar clave">
+              <button type="button" class="btn btn-toggle-mask" data-target="conn-gemini-input" style="padding: 0 14px; height: 42px; font-size: 13px;" title="Ver/Ocultar clave">
                 Ver
               </button>
             </div>
           </label>
-          <button type="button" class="btn btn-primary btn-block" id="btn-save-conn-key" style="height: 44px; margin-top: 4px;">
-            Guardar clave
-          </button>
+
           <a 
             href="https://aistudio.google.com/app/apikey" 
             target="_blank" 
@@ -936,12 +1021,65 @@ async function showConnectionPanel(parentEl, agent) {
             ${icons.bolt({ size: 14 })} Obtener o cambiar clave en Google AI Studio ›
           </a>
         </div>
+
+        <!-- Panel OpenAI Realtime -->
+        <div class="agent-rec-card" id="conn-panel-openai" style="padding: 16px; display: ${selectedProvider === 'openai' ? 'flex' : 'none'}; flex-direction: column; gap: 12px;">
+          <div>
+            <span style="display:block;font-size:14px;font-weight:700;color:#F5F5F5">OpenAI Realtime WebRTC</span>
+            <span style="display:block;font-size:12px;color:#A8A8A8;margin-top:2px">
+              Voz: <b style="color:#10A37F">Coral</b> (equivalente gemela de Aoede: cálida y segura)
+            </span>
+          </div>
+
+          <label style="display:block;font-size:13px;color:#A8A8A8;font-weight:600">Modelo:</label>
+          <div class="agent-model-select">
+            <button type="button" class="agent-model-btn ${selectedModel === 'gpt-4o-mini-realtime-preview' ? 'is-active' : ''}" data-model="gpt-4o-mini-realtime-preview">
+              gpt-4o-mini (Económico)
+            </button>
+            <button type="button" class="agent-model-btn ${selectedModel === 'gpt-4o-realtime-preview' ? 'is-active' : ''}" data-model="gpt-4o-realtime-preview">
+              gpt-4o (Ultra)
+            </button>
+          </div>
+
+          <label style="display: flex; flex-direction: column; gap: 6px;">
+            <span style="font-size: 13px; color: #A8A8A8; font-weight: 600;">API Key de OpenAI</span>
+            <div style="display: flex; gap: 8px;">
+              <input 
+                id="conn-openai-input" 
+                type="password" 
+                value="${esc(config.openaiKey || '')}" 
+                placeholder="sk-..." 
+                autocomplete="off" 
+                spellcheck="false"
+                class="agent-rec-edit-input"
+                style="flex: 1; height: 42px; font-family: monospace; font-size: 13px; letter-spacing: 0.04em;"
+              >
+              <button type="button" class="btn btn-toggle-mask" data-target="conn-openai-input" style="padding: 0 14px; height: 42px; font-size: 13px;" title="Ver/Ocultar clave">
+                Ver
+              </button>
+            </div>
+          </label>
+
+          <a 
+            href="https://platform.openai.com/api-keys" 
+            target="_blank" 
+            rel="noopener" 
+            style="font-size: 13px; color: #10A37F; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; margin-top: 4px;"
+          >
+            ${icons.bolt({ size: 14 })} Obtener o cambiar clave en OpenAI Platform ›
+          </a>
+        </div>
       </section>
 
+      <!-- Botón guardar -->
+      <button type="button" class="btn btn-primary btn-block" id="btn-save-conn-config" style="height: 44px; margin-top: 4px;">
+        Guardar y activar proveedor
+      </button>
+
       <!-- Desconectar -->
-      <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; padding-top: 10px; padding-bottom: 24px;">
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; padding-top: 6px; padding-bottom: 24px;">
         <button class="agent-rec-danger-btn" id="btn-disconnect-key" type="button">
-          Desconectar y borrar clave
+          Desconectar Fit
         </button>
       </div>
     </div>
@@ -976,43 +1114,80 @@ async function showConnectionPanel(parentEl, agent) {
     onClose: () => close({ immediate: true }),
   });
 
-  const input = sheet.querySelector('#conn-key-input');
-  const toggleBtn = sheet.querySelector('#btn-toggle-key-mask');
-  toggleBtn.addEventListener('click', () => {
-    const isPass = input.type === 'password';
-    input.type = isPass ? 'text' : 'password';
-    toggleBtn.textContent = isPass ? 'Ocultar' : 'Ver';
+  // Selector de tabs
+  sheet.querySelectorAll('.agent-provider-tab').forEach((tab) => {
+    tab.addEventListener('click', () => {
+      selectedProvider = tab.dataset.provider;
+      sheet.querySelectorAll('.agent-provider-tab').forEach((t) => t.classList.remove('is-active'));
+      tab.classList.add('is-active');
+
+      const isGemini = selectedProvider === 'gemini';
+      sheet.querySelector('#conn-panel-gemini').style.display = isGemini ? 'flex' : 'none';
+      sheet.querySelector('#conn-panel-openai').style.display = isGemini ? 'none' : 'flex';
+    });
   });
 
-  sheet.querySelector('#btn-save-conn-key').addEventListener('click', async () => {
-    const newKey = input.value.trim();
-    if (!newKey || newKey.length < 15) {
-      toast('Ingresa una API key válida.');
+  // Selector de modelo OpenAI
+  sheet.querySelectorAll('.agent-model-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      selectedModel = btn.dataset.model;
+      sheet.querySelectorAll('.agent-model-btn').forEach((b) => b.classList.remove('is-active'));
+      btn.classList.add('is-active');
+    });
+  });
+
+  // Toggle mask de passwords
+  sheet.querySelectorAll('.btn-toggle-mask').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const targetInput = sheet.querySelector(`#${btn.dataset.target}`);
+      if (!targetInput) return;
+      const isPass = targetInput.type === 'password';
+      targetInput.type = isPass ? 'text' : 'password';
+      btn.textContent = isPass ? 'Ocultar' : 'Ver';
+    });
+  });
+
+  // Guardar configuración
+  sheet.querySelector('#btn-save-conn-config').addEventListener('click', async () => {
+    const isGemini = selectedProvider === 'gemini';
+    const geminiVal = sheet.querySelector('#conn-gemini-input').value.trim();
+    const openaiVal = sheet.querySelector('#conn-openai-input').value.trim();
+
+    const activeKey = isGemini ? geminiVal : openaiVal;
+    if (!activeKey || activeKey.length < 15) {
+      toast(`Ingresa una clave válida para ${isGemini ? 'Google Gemini' : 'OpenAI'}.`);
       return;
     }
-    if (newKey === currentKey) {
-      toast('La API key no ha cambiado');
-      close();
-      return;
-    }
-    await setApiKey(newKey);
-    toast('API key actualizada');
+
+    await setAgentConfig({
+      provider: selectedProvider,
+      geminiKey: geminiVal,
+      openaiKey: openaiVal,
+      openaiModel: selectedModel,
+    });
+
+    toast(`Conectado a ${isGemini ? 'Google Gemini (Voz Aoede)' : 'OpenAI (Voz Coral)'}`);
     close();
     agent?.disconnect();
     await render(parentEl);
   });
 
+  // Desconectar
   sheet.querySelector('#btn-disconnect-key').addEventListener('click', async () => {
     const ok = await askConfirm({
-      title: 'Desconectar API key',
-      body: 'Se borrará la clave guardada en este dispositivo y Fit se desconectará hasta que ingreses otra.',
+      title: 'Desconectar Fit',
+      body: 'Se desconectará el asistente de voz hasta que vuelvas a activar una clave.',
       confirmLabel: 'Desconectar',
       danger: true,
     });
     if (!ok) return;
     close();
     agent?.disconnect();
-    await setApiKey('');
+    if (selectedProvider === 'gemini') {
+      await setAgentConfig({ geminiKey: '' });
+    } else {
+      await setAgentConfig({ openaiKey: '' });
+    }
     await render(parentEl);
   });
 }
