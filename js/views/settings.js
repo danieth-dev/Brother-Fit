@@ -140,7 +140,7 @@ export async function render(el) {
           `
               : `
             <div style="padding:0 16px 14px; display:flex; align-items:center; gap:10px;">
-              <span style="font-size:13px; color:#A8A8A8;">Segundos de descanso:</span>
+              <span style="font-size:13px; color:var(--muted);">Segundos de descanso:</span>
               <input 
                 id="input-descanso-manual" 
                 type="number" 
@@ -185,7 +185,7 @@ export async function render(el) {
                 <span class="settings-row-label">Cuándo avisar</span>
               </div>
               <div class="settings-row-val">
-                <span style="color:#A8A8A8">Tras registrar la creatina</span>
+                <span style="color:var(--muted)">Tras registrar la creatina</span>
               </div>
             </div>
           `
@@ -218,7 +218,7 @@ export async function render(el) {
               <span class="settings-row-sub">Lo que Fit recuerda de ti entre charlas</span>
             </div>
             <div class="settings-row-val">
-              ${icons.chevronRight({ size: 18, stroke: '#8A8A8A' })}
+              ${icons.chevronRight({ size: 18 })}
             </div>
           </button>
 
@@ -228,7 +228,7 @@ export async function render(el) {
               <span class="settings-row-sub">API key, proveedor y voz del asistente</span>
             </div>
             <div class="settings-row-val">
-              ${icons.chevronRight({ size: 18, stroke: '#8A8A8A' })}
+              ${icons.chevronRight({ size: 18 })}
             </div>
           </button>
         </div>
@@ -285,7 +285,7 @@ export async function render(el) {
       <section class="settings-section">
         <h2 class="settings-section-title is-danger">Zona de riesgo</h2>
         <div class="settings-card is-danger">
-          <p style="margin:0; font-size:14px; line-height:1.45; color:#C4C4C4;">
+          <p style="margin:0; font-size:14px; line-height:1.45; color:var(--muted);">
             Borra entrenamientos, creatina y recuerdos de este teléfono. No se puede deshacer, así que crea un respaldo antes.
           </p>
           <button class="settings-btn-danger" type="button" id="btn-danger-reset">

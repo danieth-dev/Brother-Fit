@@ -102,7 +102,7 @@ html[data-modo="claro"] {
   --surface-elevated: #ffffff;
   --line: #cbd5e1;
   --line-strong: #94a3b8;
-  --line-accent: rgba(217, 119, 6, 0.35);
+  --line-accent: rgba(180, 83, 9, 0.35);
 
   --text: #090b0f;
   --muted: #475569;
@@ -111,16 +111,16 @@ html[data-modo="claro"] {
   --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.08);
   --shadow-md: 0 4px 16px -2px rgba(15, 23, 42, 0.12);
   --shadow-lg: 0 10px 28px -4px rgba(15, 23, 42, 0.16);
-  --shadow-primary: 0 2px 8px rgba(217, 119, 6, 0.25);
+  --shadow-primary: 0 2px 8px rgba(180, 83, 9, 0.25);
 
   /* Amarillo de alto contraste sobre fondo blanco (Ámbar Dorado atlético) */
-  --primary: #d97706;
-  --primary-hover: #b45309;
-  --primary-active: #92400e;
+  --primary: #b45309;
+  --primary-hover: #92400e;
+  --primary-active: #78350f;
   --primary-ink: #ffffff;
-  --primary-glow: 0 0 20px rgba(217, 119, 6, 0.2);
-  --yellow: #d97706;
-  --yellow-dim: rgba(217, 119, 6, 0.14);
+  --primary-glow: 0 0 20px rgba(180, 83, 9, 0.2);
+  --yellow: #b45309;
+  --yellow-dim: rgba(180, 83, 9, 0.14);
   --yellow-ink: #ffffff;
 
   color-scheme: light;
@@ -152,24 +152,24 @@ html:not([data-modo="claro"])[data-tema="rosado"] {
 
 /* Colores de acento: Claro */
 html[data-modo="claro"][data-tema="azul"] {
-  --primary: #0284c7;
-  --primary-hover: #0369a1;
-  --primary-active: #075985;
+  --primary: #0369a1;
+  --primary-hover: #075985;
+  --primary-active: #0c4a6e;
   --primary-ink: #ffffff;
-  --primary-glow: 0 0 20px rgba(2, 132, 199, 0.22);
-  --yellow: #0284c7;
-  --yellow-dim: rgba(2, 132, 199, 0.14);
+  --primary-glow: 0 0 20px rgba(3, 105, 161, 0.22);
+  --yellow: #0369a1;
+  --yellow-dim: rgba(3, 105, 161, 0.14);
   --yellow-ink: #ffffff;
-  --line-accent: rgba(2, 132, 199, 0.35);
+  --line-accent: rgba(3, 105, 161, 0.35);
 }
 html[data-modo="claro"][data-tema="rosado"] {
-  --primary: #db2777;
-  --primary-hover: #be185d;
-  --primary-active: #9d174d;
+  --primary: #be185d;
+  --primary-hover: #9d174d;
+  --primary-active: #831843;
   --primary-ink: #ffffff;
-  --primary-glow: 0 0 20px rgba(219, 39, 119, 0.22);
-  --yellow: #db2777;
-  --yellow-dim: rgba(219, 39, 119, 0.14);
+  --primary-glow: 0 0 20px rgba(190, 24, 93, 0.22);
+  --yellow: #be185d;
+  --yellow-dim: rgba(190, 24, 93, 0.14);
   --yellow-ink: #ffffff;
-  --line-accent: rgba(219, 39, 119, 0.35);
+  --line-accent: rgba(190, 24, 93, 0.35);
 }

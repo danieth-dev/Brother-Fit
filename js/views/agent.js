@@ -73,7 +73,7 @@ function renderKeyPrompt(el, config = {}) {
           Voz ultraexpresiva <b>Coral</b> (equivalente gemela de Aoede: cálida, segura y natural). 
           Requiere cuenta con créditos activos en OpenAI.
         </p>
-        <label style="display:block;margin-bottom:6px;font-size:13px;color:#A8A8A8;font-weight:600">Modelo de voz:</label>
+        <label style="display:block;margin-bottom:6px;font-size:13px;color:var(--muted);font-weight:600">Modelo de voz:</label>
         <div class="agent-model-select">
           <button type="button" class="agent-model-btn ${selectedModel === 'gpt-4o-mini-realtime-preview' ? 'is-active' : ''}" data-model="gpt-4o-mini-realtime-preview">
             gpt-4o-mini (Económico)
@@ -658,8 +658,8 @@ export async function showMemoriesPanel(parentEl, agent) {
                     (m) => `
               <div class="agent-rec-row" data-id="${m.id}" id="rec-item-${m.id}">
                 <div>
-                  <span style="display:block;font-size:16px;font-weight:600;color:#F5F5F5">${esc(m.contenido)}</span>
-                  <span style="display:block;font-size:13px;color:#A8A8A8;margin-top:2px">Nota de memoria</span>
+                  <span style="display:block;font-size:16px;font-weight:600;color:var(--text)">${esc(m.contenido)}</span>
+                  <span style="display:block;font-size:13px;color:var(--muted);margin-top:2px">Nota de memoria</span>
                 </div>
                 <button class="agent-rec-icon-btn is-trash" data-action="del-memory" data-id="${m.id}" type="button" aria-label="Borrar">
                   ${icons.trash({ size: 18 })}
@@ -668,7 +668,7 @@ export async function showMemoriesPanel(parentEl, agent) {
             `
                   )
                   .join('')
-              : '<p style="padding:18px;text-align:center;color:#8A8A8A;margin:0;font-size:14px">No hay notas ni descansos adicionales.</p>'
+              : '<p style="padding:18px;text-align:center;color:var(--muted);margin:0;font-size:14px">No hay notas ni descansos adicionales.</p>'
           }
         </div>
       </section>
@@ -775,7 +775,7 @@ export async function showMemoriesPanel(parentEl, agent) {
       const badge = sheet.querySelector('#badge-rests-count');
       if (badge) badge.textContent = count;
       if (count === 0) {
-        sheet.querySelector('#agent-card-rests').innerHTML = '<p style="padding:18px;text-align:center;color:#8A8A8A;margin:0;font-size:14px">No hay notas ni descansos adicionales.</p>';
+        sheet.querySelector('#agent-card-rests').innerHTML = '<p style="padding:18px;text-align:center;color:var(--muted);margin:0;font-size:14px">No hay notas ni descansos adicionales.</p>';
       }
     }, 4500);
   }
@@ -903,7 +903,7 @@ export async function showMemoriesPanel(parentEl, agent) {
       await clearAllMemories();
       const restsCard = sheet.querySelector('#agent-card-rests');
       if (restsCard) {
-        restsCard.innerHTML = '<p style="padding:18px;text-align:center;color:#8A8A8A;margin:0;font-size:14px">No hay notas ni descansos adicionales.</p>';
+        restsCard.innerHTML = '<p style="padding:18px;text-align:center;color:var(--muted);margin:0;font-size:14px">No hay notas ni descansos adicionales.</p>';
       }
       const badge = sheet.querySelector('#badge-rests-count');
       if (badge) badge.textContent = '0';
@@ -955,10 +955,10 @@ export async function showConnectionPanel(parentEl, agent) {
           <div style="display: flex; align-items: center; gap: 12px;">
             <span style="width: 10px; height: 10px; border-radius: 50%; background: ${isOnline ? '#00FF66' : '#FF4D4D'}; box-shadow: 0 0 10px ${isOnline ? 'rgba(0,255,102,0.45)' : 'rgba(255,77,77,0.45)'}"></span>
             <div>
-              <span style="display: block; font-size: 15px; font-weight: 700; color: #F5F5F5;">
+              <span style="display: block; font-size: 15px; font-weight: 700; color: var(--text);">
                 ${isOnline ? `Fit en línea (${activeProviderName})` : 'Desconectado'}
               </span>
-              <span style="display: block; font-size: 12px; color: #A8A8A8;">
+              <span style="display: block; font-size: 12px; color: var(--muted);">
                 Voz activa: <b>${activeVoiceName}</b> · Bidireccional
               </span>
             </div>
@@ -987,14 +987,14 @@ export async function showConnectionPanel(parentEl, agent) {
         <!-- Panel Google Gemini -->
         <div class="agent-rec-card" id="conn-panel-gemini" style="padding: 16px; display: ${selectedProvider === 'gemini' ? 'flex' : 'none'}; flex-direction: column; gap: 12px;">
           <div>
-            <span style="display:block;font-size:14px;font-weight:700;color:#F5F5F5">Gemini 2.0 Flash Live</span>
-            <span style="display:block;font-size:12px;color:#A8A8A8;margin-top:2px">
-              Voz: <b style="color:#FFE600">Aoede</b> (cálida, motivadora y clara) · Cuota gratuita
+            <span style="display:block;font-size:14px;font-weight:700;color:var(--text)">Gemini 2.0 Flash Live</span>
+            <span style="display:block;font-size:12px;color:var(--muted);margin-top:2px">
+              Voz: <b style="color:var(--primary)">Aoede</b> (cálida, motivadora y clara) · Cuota gratuita
             </span>
           </div>
 
           <label style="display: flex; flex-direction: column; gap: 6px;">
-            <span style="font-size: 13px; color: #A8A8A8; font-weight: 600;">API Key de Google AI Studio</span>
+            <span style="font-size: 13px; color: var(--muted); font-weight: 600;">API Key de Google AI Studio</span>
             <div style="display: flex; gap: 8px;">
               <input 
                 id="conn-gemini-input" 
@@ -1016,7 +1016,7 @@ export async function showConnectionPanel(parentEl, agent) {
             href="https://aistudio.google.com/app/apikey" 
             target="_blank" 
             rel="noopener" 
-            style="font-size: 13px; color: #FFE600; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; margin-top: 4px;"
+            style="font-size: 13px; color: var(--primary); text-decoration: none; display: inline-flex; align-items: center; gap: 6px; margin-top: 4px;"
           >
             ${icons.bolt({ size: 14 })} Obtener o cambiar clave en Google AI Studio ›
           </a>
@@ -1025,13 +1025,13 @@ export async function showConnectionPanel(parentEl, agent) {
         <!-- Panel OpenAI Realtime -->
         <div class="agent-rec-card" id="conn-panel-openai" style="padding: 16px; display: ${selectedProvider === 'openai' ? 'flex' : 'none'}; flex-direction: column; gap: 12px;">
           <div>
-            <span style="display:block;font-size:14px;font-weight:700;color:#F5F5F5">OpenAI Realtime WebRTC</span>
-            <span style="display:block;font-size:12px;color:#A8A8A8;margin-top:2px">
+            <span style="display:block;font-size:14px;font-weight:700;color:var(--text)">OpenAI Realtime WebRTC</span>
+            <span style="display:block;font-size:12px;color:var(--muted);margin-top:2px">
               Voz: <b style="color:#10A37F">Coral</b> (equivalente gemela de Aoede: cálida y segura)
             </span>
           </div>
 
-          <label style="display:block;font-size:13px;color:#A8A8A8;font-weight:600">Modelo:</label>
+          <label style="display:block;font-size:13px;color:var(--muted);font-weight:600">Modelo:</label>
           <div class="agent-model-select">
             <button type="button" class="agent-model-btn ${selectedModel === 'gpt-4o-mini-realtime-preview' ? 'is-active' : ''}" data-model="gpt-4o-mini-realtime-preview">
               gpt-4o-mini (Económico)
@@ -1042,7 +1042,7 @@ export async function showConnectionPanel(parentEl, agent) {
           </div>
 
           <label style="display: flex; flex-direction: column; gap: 6px;">
-            <span style="font-size: 13px; color: #A8A8A8; font-weight: 600;">API Key de OpenAI</span>
+            <span style="font-size: 13px; color: var(--muted); font-weight: 600;">API Key de OpenAI</span>
             <div style="display: flex; gap: 8px;">
               <input 
                 id="conn-openai-input" 
