@@ -1,6 +1,7 @@
 /* El calendario nativo del teléfono no hereda la paleta. El campo real sigue en el formulario. */
 import { icons } from './icons.js';
 import { formatDay, formatMonth, parseISO, todayISO, toISO } from './dates.js';
+import { bindSheetDrag } from './sheet-drag.js';
 
 const WEEK = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
 
@@ -22,6 +23,7 @@ function ensureSheet() {
   sheet.innerHTML = `
     <button type="button" class="picker-backdrop" aria-label="Cerrar"></button>
     <div class="picker-panel" role="dialog" aria-modal="true" aria-labelledby="cal-title">
+      <div class="picker-grabber" aria-hidden="true"><span></span></div>
       <div class="picker-head">
         <p class="picker-title" id="cal-title"></p>
         <button type="button" class="picker-close" aria-label="Cerrar">${icons.x({ size: 18 })}</button>
@@ -45,6 +47,17 @@ function ensureSheet() {
   prevBtn.addEventListener('click', () => shiftMonth(-1));
   nextBtn.addEventListener('click', () => shiftMonth(1));
   sheet.addEventListener('keydown', onKey);
+
+  bindSheetDrag({
+    sheet,
+    panel: sheet.querySelector('.picker-panel'),
+    backdrop: sheet.querySelector('.picker-backdrop'),
+    zones: [
+      sheet.querySelector('.picker-grabber'),
+      sheet.querySelector('.picker-head'),
+    ],
+    onClose: () => closeCal({ immediate: true }),
+  });
 }
 
 function onKey(e) {

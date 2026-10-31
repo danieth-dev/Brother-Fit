@@ -15,6 +15,7 @@ import { db } from '../db.js';
 import { icons } from '../utils/icons.js';
 import { toast, esc, go } from '../utils/dom.js';
 import { askConfirm } from '../utils/confirm-sheet.js';
+import { bindSheetDrag } from '../utils/sheet-drag.js';
 
 const API_KEY_STORE = 'geminiApiKey';
 
@@ -652,12 +653,30 @@ async function showMemoriesPanel(parentEl, agent) {
   document.body.appendChild(sheet);
   requestAnimationFrame(() => sheet.classList.add('open'));
 
-  const close = () => {
+  const close = ({ immediate = false } = {}) => {
     sheet.classList.remove('open');
-    sheet.addEventListener('transitionend', () => sheet.remove(), { once: true });
+    if (immediate) {
+      sheet.remove();
+    } else {
+      sheet.addEventListener('transitionend', () => sheet.remove(), { once: true });
+      setTimeout(() => {
+        if (sheet.parentElement) sheet.remove();
+      }, 260);
+    }
   };
 
-  sheet.querySelector('#agent-sheet-close').addEventListener('click', close);
+  sheet.querySelector('#agent-sheet-close').addEventListener('click', () => close());
+
+  bindSheetDrag({
+    sheet,
+    panel: sheet.querySelector('.agent-sheet-inner'),
+    backdrop: sheet,
+    zones: [
+      sheet.querySelector('.agent-sheet-drag'),
+      sheet.querySelector('.agent-sheet-head'),
+    ],
+    onClose: () => close({ immediate: true }),
+  });
 
   // Undo manager
   let pendingDeleteTimer = null;

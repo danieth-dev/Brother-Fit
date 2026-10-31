@@ -1,5 +1,6 @@
 /* El reloj nativo del teléfono no hereda la paleta. El campo real sigue en el formulario. */
 import { icons } from './icons.js';
+import { bindSheetDrag } from './sheet-drag.js';
 
 let sheet;
 let faceEl;
@@ -61,6 +62,7 @@ function ensureSheet() {
   sheet.innerHTML = `
     <button type="button" class="picker-backdrop" aria-label="Cerrar"></button>
     <div class="picker-panel" role="dialog" aria-modal="true" aria-labelledby="time-title">
+      <div class="picker-grabber" aria-hidden="true"><span></span></div>
       <div class="picker-head">
         <p class="picker-title" id="time-title">Hora</p>
         <button type="button" class="picker-close" aria-label="Cerrar">${icons.x({ size: 18 })}</button>
@@ -105,6 +107,17 @@ function ensureSheet() {
     btn.addEventListener('click', () => setPeriod(btn.dataset.period));
   });
   sheet.addEventListener('keydown', onKey);
+
+  bindSheetDrag({
+    sheet,
+    panel: sheet.querySelector('.picker-panel'),
+    backdrop: sheet.querySelector('.picker-backdrop'),
+    zones: [
+      sheet.querySelector('.picker-grabber'),
+      sheet.querySelector('.picker-head'),
+    ],
+    onClose: () => closeTime({ immediate: true }),
+  });
 }
 
 function onKey(e) {

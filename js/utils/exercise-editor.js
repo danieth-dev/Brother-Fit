@@ -6,6 +6,7 @@ import { dismissPicker, mountPickers } from './picker.js';
 import { askConfirm } from './confirm-sheet.js';
 import { icons } from './icons.js';
 import { esc, toast } from './dom.js';
+import { bindSheetDrag } from './sheet-drag.js';
 
 let sheet;
 let titleEl;
@@ -25,6 +26,7 @@ function ensureSheet() {
   sheet.innerHTML = `
     <button type="button" class="picker-backdrop" aria-label="Cerrar"></button>
     <div class="picker-panel" role="dialog" aria-modal="true" aria-labelledby="editor-title">
+      <div class="picker-grabber" aria-hidden="true"><span></span></div>
       <div class="picker-head">
         <p class="picker-title" id="editor-title">Editar ejercicio</p>
         <button type="button" class="picker-close" aria-label="Cerrar">${icons.x({ size: 18 })}</button>
@@ -56,6 +58,17 @@ function ensureSheet() {
   });
   form.querySelector('.editor-delete').addEventListener('click', remove);
   window.addEventListener('hashchange', () => closeEditor({ immediate: true }));
+
+  bindSheetDrag({
+    sheet,
+    panel: sheet.querySelector('.picker-panel'),
+    backdrop: sheet.querySelector('.picker-backdrop'),
+    zones: [
+      sheet.querySelector('.picker-grabber'),
+      sheet.querySelector('.picker-head'),
+    ],
+    onClose: () => closeEditor({ immediate: true }),
+  });
 }
 
 function closeEditor({ immediate = false } = {}) {

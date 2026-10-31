@@ -1,6 +1,7 @@
 /* Pregunta de confirmación con la hoja de la app. No usa el aviso del teléfono. */
 import { icons } from './icons.js';
 import { esc } from './dom.js';
+import { bindSheetDrag } from './sheet-drag.js';
 
 let sheet;
 let panelEl;
@@ -74,9 +75,20 @@ function ensureSheet() {
   window.addEventListener('hashchange', () => {
     if (sheet && !sheet.hidden) close(false);
   });
+
+  bindSheetDrag({
+    sheet,
+    panel: panelEl,
+    backdrop: sheet.querySelector('.picker-backdrop'),
+    zones: [
+      sheet.querySelector('.confirm-grabber'),
+      sheet.querySelector('.picker-head'),
+    ],
+    onClose: () => close(false, { immediate: true }),
+  });
 }
 
-function close(ok) {
+function close(ok, { immediate = false } = {}) {
   if (!settle) return;
   const done = settle;
   settle = null;
@@ -90,7 +102,7 @@ function close(ok) {
     if (!otherPickerOpen()) document.body.classList.remove('picker-open');
   };
 
-  if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  if (immediate || matchMedia('(prefers-reduced-motion: reduce)').matches) {
     hide();
   } else {
     panelTransitionHandler = hide;
