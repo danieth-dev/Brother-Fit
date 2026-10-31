@@ -3822,19 +3822,19 @@ body.in-agent-view #app .view {
   100% { transform: scale(1); }
 }
 
-/* Modal / Sheet de Recuerdos */
+/* Modal / Sheet de Recuerdos (High-Tech Athletic Design) */
 .agent-sheet {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  z-index: 50;
+  background: rgba(0, 0, 0, 0.78);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 60;
   display: flex;
   align-items: flex-end;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.22s ease;
 }
 .agent-sheet.open {
   opacity: 1;
@@ -3845,102 +3845,327 @@ body.in-agent-view #app .view {
   width: 100%;
   max-width: 560px;
   margin: 0 auto;
-  background: var(--surface);
-  border-top: 1px solid var(--line-strong);
-  border-radius: var(--r-xl) var(--r-xl) 0 0;
-  padding: 24px 20px calc(env(safe-area-inset-bottom, 0px) + 24px);
-  max-height: 80vh;
+  background: #161616;
+  border-top: 1px solid #333333;
+  border-radius: 24px 24px 0 0;
+  padding: 12px 18px calc(env(safe-area-inset-bottom, 0px) + 24px);
+  max-height: 88vh;
   overflow-y: auto;
   overscroll-behavior: contain;
   touch-action: pan-y;
   transform: translateY(100%);
-  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.26s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  position: relative;
+  box-sizing: border-box;
 }
 .agent-sheet.open .agent-sheet-inner {
   transform: translateY(0);
 }
 
+.agent-sheet-drag {
+  width: 40px;
+  height: 4px;
+  border-radius: 2px;
+  background: #4A4A4A;
+  margin: 0 auto 2px;
+  flex-shrink: 0;
+}
+
 .agent-sheet-head {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  margin-bottom: 12px;
+  gap: 12px;
+  flex-shrink: 0;
 }
-.agent-sheet-head h2 {
-  font-family: var(--font-display);
-  font-size: var(--fs-lg);
-  font-weight: 400;
-  font-synthesis: none;
-  letter-spacing: -0.015em;
-  color: var(--text);
+.agent-sheet-head-titles h2 {
+  margin: 0;
+  font-size: 28px;
+  line-height: 1.15;
+  font-weight: 800;
+  font-style: italic;
+  letter-spacing: -0.02em;
+  color: #F5F5F5;
+}
+.agent-sheet-head-titles p {
+  margin: 4px 0 0;
+  font-size: 14px;
+  line-height: 1.45;
+  color: #A8A8A8;
 }
 
 .agent-sheet-close {
+  width: 44px;
+  height: 44px;
+  margin-top: -6px;
+  margin-right: -6px;
+  border: none;
   background: transparent;
-  border: 0;
-  color: var(--muted);
-  cursor: pointer;
-  padding: 6px;
+  color: #F5F5F5;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--r-sm);
+  cursor: pointer;
+  border-radius: var(--r-md);
+  transition: background-color 0.14s ease;
+  flex-shrink: 0;
 }
 .agent-sheet-close:hover {
-  color: var(--text);
+  background: rgba(255, 255, 255, 0.08);
 }
 
-.agent-sheet-desc {
-  font-size: var(--fs-xs);
-  color: var(--muted);
-  line-height: 1.5;
-  margin-bottom: 20px;
-}
-
-.agent-mem-list {
+/* Secciones de Recuerdos */
+.agent-rec-section {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+}
+.agent-rec-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 0 4px 8px;
+}
+.agent-rec-section-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #A8A8A8;
+}
+.agent-rec-section-badge {
+  font-size: 12px;
+  color: #8A8A8A;
+  font-weight: 600;
 }
 
-.agent-mem-item {
+/* Tarjeta agrupada con bordes redondeados 18px */
+.agent-rec-card {
+  background: #1C1C1C;
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+.agent-rec-row {
+  min-height: 52px;
+  padding: 0 4px 0 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 12px 14px;
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  border-radius: var(--r-md);
-  font-size: var(--fs-sm);
-  color: var(--text);
+  border-top: 1px solid #2A2A2A;
+  box-sizing: border-box;
+}
+.agent-rec-row:first-child {
+  border-top: none;
 }
 
-.agent-mem-del {
+.agent-rec-label {
+  font-size: 15px;
+  color: #A8A8A8;
+}
+
+.agent-rec-val-wrap {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.agent-rec-value {
+  font-size: 17px;
+  font-weight: 700;
+  color: #F5F5F5;
+}
+
+.agent-rec-icon-btn {
+  width: 44px;
+  height: 44px;
+  border: none;
   background: transparent;
-  border: 0;
-  color: var(--muted);
-  cursor: pointer;
-  padding: 4px;
+  color: #8A8A8A;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--r-xs);
-  transition: color 0.14s ease;
+  cursor: pointer;
+  border-radius: var(--r-sm);
+  transition: color 0.14s ease, background-color 0.14s ease;
 }
-.agent-mem-del:hover {
-  color: var(--red);
+.agent-rec-icon-btn:hover {
+  color: #F5F5F5;
+  background: rgba(255, 255, 255, 0.06);
 }
-.agent-mem-del:active {
-  color: var(--red);
-  background: var(--red-dim);
+.agent-rec-icon-btn.is-trash:hover {
+  color: #FF6B7A;
 }
 
-.agent-mem-empty {
-  text-align: center;
-  padding: 24px 0;
-  font-size: var(--fs-sm);
-  color: var(--muted);
+/* Edición inline */
+.agent-rec-edit-form {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  justify-content: flex-end;
+  padding: 4px 8px 4px 0;
+}
+.agent-rec-edit-input {
+  background: #121212;
+  border: 1px solid var(--primary);
+  border-radius: 8px;
+  color: #F5F5F5;
+  font-size: 15px;
+  font-weight: 700;
+  padding: 6px 10px;
+  outline: none;
+  max-width: 150px;
+  text-align: right;
+  font-family: inherit;
+}
+.agent-rec-edit-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.agent-rec-edit-save {
+  background: var(--primary);
+  color: #111111;
+}
+.agent-rec-edit-cancel {
+  background: #2A2A2A;
+  color: #A8A8A8;
+}
+
+/* Rutina semanal */
+.agent-rec-day {
+  width: 40px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #A8A8A8;
+}
+.agent-rec-day-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+.agent-rec-day-text {
+  font-size: 16px;
+  font-weight: 600;
+  color: #F5F5F5;
+}
+
+/* Entrenamientos fila enlace */
+.agent-rec-workout-card {
+  background: #1C1C1C;
+  border-radius: 18px;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 68px;
+  padding: 12px 14px 12px 16px;
+  border: none;
+  color: #F5F5F5;
+  text-align: left;
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: background-color 0.14s ease;
+}
+.agent-rec-workout-card:hover {
+  background: #242424;
+}
+.agent-rec-workout-title {
+  display: block;
+  font-size: 16px;
+  font-weight: 600;
+  color: #F5F5F5;
+}
+.agent-rec-workout-sub {
+  display: block;
+  font-size: 13px;
+  color: #A8A8A8;
+  margin-top: 2px;
+}
+
+/* Pie de pantalla */
+.agent-rec-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding-top: 8px;
+  padding-bottom: 24px;
+}
+.agent-rec-danger-btn {
+  height: 44px;
+  padding: 0 12px;
+  border: none;
+  background: transparent;
+  color: #FF6B7A;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+.agent-rec-danger-btn:hover {
+  text-decoration: underline;
+}
+.agent-rec-quiet-btn {
+  height: 44px;
+  padding: 0 12px;
+  border: none;
+  background: transparent;
+  color: #A8A8A8;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+.agent-rec-quiet-btn:hover {
+  color: #F5F5F5;
+}
+
+/* Barra flotante inferior de Deshacer */
+.agent-undo-bar {
+  position: sticky;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
+  left: 0;
+  right: 0;
+  height: 54px;
+  box-sizing: border-box;
+  padding: 0 8px 0 16px;
+  border: 1px solid #3A3A3A;
+  border-radius: 14px;
+  background: #222222;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  animation: slideUp 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 10;
+}
+.agent-undo-bar span {
+  font-size: 15px;
+  font-weight: 600;
+  color: #F5F5F5;
+}
+.agent-undo-btn {
+  height: 44px;
+  padding: 0 12px;
+  border: none;
+  background: transparent;
+  color: var(--primary);
+  font-size: 14px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
 }
 
 /* ═══════════════════════════════════════════════════

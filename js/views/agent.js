@@ -4,9 +4,12 @@
  * Athletic Dark Chat with Interactive Action Cards & Prompt Chips.
  */
 
-import { FitAgent, getActiveAgent, loadAllMemories, deleteMemory, visibleFitText } from '../services/agent.js';
+import {
+  FitAgent, getActiveAgent, loadAllMemories, deleteMemory, visibleFitText,
+  loadAthleteProfile, saveAthleteProfile, loadWeeklyRoutine, saveWeeklyRoutine, clearAllMemories
+} from '../services/agent.js';
 import { loadFitChat, appendFitChat, clearFitChat, formatChatForContext } from '../services/fit-chat.js';
-import { getActiveWorkout, startWorkout, listExercises, muscleName } from '../services/workouts.js';
+import { getActiveWorkout, startWorkout, listExercises, listWorkoutSummaries, muscleName } from '../services/workouts.js';
 import { state } from '../store.js';
 import { db } from '../db.js';
 import { icons } from '../utils/icons.js';
@@ -481,39 +484,168 @@ async function renderLiveChat(el, apiKey) {
   }
 }
 
-/* --- Drawer de Recuerdos --- */
+/* --- Drawer de Recuerdos (Nuevo diseño agrupado) --- */
 async function showMemoriesPanel(parentEl, agent) {
-  const memories = await loadAllMemories();
+  const [profile, routine, summaries, rawMemories] = await Promise.all([
+    loadAthleteProfile(),
+    loadWeeklyRoutine(),
+    listWorkoutSummaries(),
+    loadAllMemories(),
+  ]);
+
+  // Filtrar recuerdos de texto para excluir duplicados corruptos de sesiones si existían
+  const customMemories = rawMemories.filter((m) => {
+    const text = String(m.contenido || '').toLowerCase();
+    if (text.includes('×') || text.includes('entrenó el') || text.includes('sesión guardada')) return false;
+    return true;
+  });
+
+  const sessionCount = summaries.filter((s) => s.finishedAt || (s.totalSets && s.totalSets > 0)).length || summaries.length;
 
   const sheet = document.createElement('div');
   sheet.className = 'agent-sheet';
   sheet.innerHTML = `
     <div class="agent-sheet-inner">
-      <header class="agent-sheet-head">
-        <h2>Recuerdos guardados</h2>
-        <button class="agent-sheet-close" id="agent-sheet-close" type="button" aria-label="Cerrar">${icons.close({ size: 20 })}</button>
-      </header>
-      <p class="agent-sheet-desc">
-        Fit recuerda estos datos sobre ti entre sesiones con <b>gemini-3.8-live</b>. Puedes borrarlos cuando quieras.
-      </p>
-      <div class="agent-mem-list" id="agent-mem-list">
-        ${
-          memories.length > 0
-            ? memories
-                .map(
-                  (m) => `
-              <div class="agent-mem-item" data-id="${m.id}">
-                <span>${esc(m.contenido)}</span>
-                <button class="agent-mem-del" data-id="${m.id}" type="button" aria-label="Borrar recuerdo">${icons.trash({ size: 16 })}</button>
-              </div>`
-                )
-                .join('')
-            : '<p class="agent-mem-empty">Todavía no hay recuerdos guardados.</p>'
-        }
+      <div class="agent-sheet-drag" aria-hidden="true"></div>
+
+      <div class="agent-sheet-head">
+        <div class="agent-sheet-head-titles">
+          <h2>Recuerdos</h2>
+          <p>Lo que Fit recuerda de ti entre conversaciones. Edítalo o bórralo cuando quieras.</p>
+        </div>
+        <button class="agent-sheet-close" id="agent-sheet-close" type="button" aria-label="Cerrar">
+          ${icons.close({ size: 22 })}
+        </button>
       </div>
-      <button class="btn btn-block" data-action="change-key" type="button" style="margin-top:24px;border-color:var(--red);color:var(--red)">
-        Cambiar API key
-      </button>
+
+      <!-- 1. Sobre ti -->
+      <section class="agent-rec-section">
+        <div class="agent-rec-section-head">
+          <h3 class="agent-rec-section-title">Sobre ti</h3>
+          <span class="agent-rec-section-badge">4</span>
+        </div>
+        <div class="agent-rec-card" id="agent-card-profile">
+          <div class="agent-rec-row" data-field="nombre">
+            <span class="agent-rec-label">Nombre</span>
+            <div class="agent-rec-val-wrap">
+              <span class="agent-rec-value" id="val-nombre">${esc(profile.nombre || 'Daniel')}</span>
+              <button class="agent-rec-icon-btn" data-action="edit-profile" data-field="nombre" type="button" aria-label="Editar Nombre">
+                ${icons.pencil({ size: 18 })}
+              </button>
+            </div>
+          </div>
+          <div class="agent-rec-row" data-field="peso">
+            <span class="agent-rec-label">Peso</span>
+            <div class="agent-rec-val-wrap">
+              <span class="agent-rec-value" id="val-peso">${esc(profile.peso || '49 kg')}</span>
+              <button class="agent-rec-icon-btn" data-action="edit-profile" data-field="peso" type="button" aria-label="Editar Peso">
+                ${icons.pencil({ size: 18 })}
+              </button>
+            </div>
+          </div>
+          <div class="agent-rec-row" data-field="estatura">
+            <span class="agent-rec-label">Estatura</span>
+            <div class="agent-rec-val-wrap">
+              <span class="agent-rec-value" id="val-estatura">${esc(profile.estatura || '1,63 m')}</span>
+              <button class="agent-rec-icon-btn" data-action="edit-profile" data-field="estatura" type="button" aria-label="Editar Estatura">
+                ${icons.pencil({ size: 18 })}
+              </button>
+            </div>
+          </div>
+          <div class="agent-rec-row" data-field="creatina">
+            <span class="agent-rec-label">Creatina</span>
+            <div class="agent-rec-val-wrap">
+              <span class="agent-rec-value" id="val-creatina">${esc(profile.creatina || '5 g al día')}</span>
+              <button class="agent-rec-icon-btn" data-action="edit-profile" data-field="creatina" type="button" aria-label="Editar Creatina">
+                ${icons.pencil({ size: 18 })}
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. Rutina semanal -->
+      <section class="agent-rec-section">
+        <div class="agent-rec-section-head">
+          <h3 class="agent-rec-section-title">Rutina semanal</h3>
+          <span class="agent-rec-section-badge">${routine.length} días</span>
+        </div>
+        <div class="agent-rec-card" id="agent-card-routine">
+          ${routine
+            .map(
+              (r, i) => `
+            <div class="agent-rec-row" data-index="${i}">
+              <div style="display:flex;align-items:center;gap:12px">
+                <span class="agent-rec-day">${esc(r.dia)}</span>
+                <span class="agent-rec-day-dot" style="background:${r.dot || '#FFD166'}"></span>
+                <span class="agent-rec-day-text" id="val-routine-${i}">${esc(r.grupo)}</span>
+              </div>
+              <button class="agent-rec-icon-btn" data-action="edit-routine" data-index="${i}" type="button" aria-label="Editar ${r.dia}">
+                ${icons.pencil({ size: 18 })}
+              </button>
+            </div>
+          `
+            )
+            .join('')}
+        </div>
+      </section>
+
+      <!-- 3. Descansos y notas -->
+      <section class="agent-rec-section" id="section-rests">
+        <div class="agent-rec-section-head">
+          <h3 class="agent-rec-section-title">Descansos y notas</h3>
+          <span class="agent-rec-section-badge" id="badge-rests-count">${customMemories.length}</span>
+        </div>
+        <div class="agent-rec-card" id="agent-card-rests">
+          ${
+            customMemories.length > 0
+              ? customMemories
+                  .map(
+                    (m) => `
+              <div class="agent-rec-row" data-id="${m.id}" id="rec-item-${m.id}">
+                <div>
+                  <span style="display:block;font-size:16px;font-weight:600;color:#F5F5F5">${esc(m.contenido)}</span>
+                  <span style="display:block;font-size:13px;color:#A8A8A8;margin-top:2px">Nota de memoria</span>
+                </div>
+                <button class="agent-rec-icon-btn is-trash" data-action="del-memory" data-id="${m.id}" type="button" aria-label="Borrar">
+                  ${icons.trash({ size: 18 })}
+                </button>
+              </div>
+            `
+                  )
+                  .join('')
+              : '<p style="padding:18px;text-align:center;color:#8A8A8A;margin:0;font-size:14px">No hay notas ni descansos adicionales.</p>'
+          }
+        </div>
+      </section>
+
+      <!-- 4. Entrenamientos -->
+      <section class="agent-rec-section">
+        <div class="agent-rec-section-head">
+          <h3 class="agent-rec-section-title">Entrenamientos</h3>
+          <span class="agent-rec-section-badge">${sessionCount}</span>
+        </div>
+        <button class="agent-rec-workout-card" id="btn-go-history" type="button">
+          <div>
+            <span class="agent-rec-workout-title">${sessionCount} sesiones guardadas</span>
+            <span class="agent-rec-workout-sub">Ya están en tu Historial. Fit puede consultarlas.</span>
+          </div>
+          ${icons.chevronRight({ size: 20, stroke: '#8A8A8A' })}
+        </button>
+      </section>
+
+      <!-- Pie de pantalla -->
+      <div class="agent-rec-footer">
+        <button class="agent-rec-danger-btn" id="btn-clear-all-memories" type="button">
+          Borrar todos los recuerdos
+        </button>
+        <button class="agent-rec-quiet-btn" data-action="change-key" type="button">
+          Conexión y API key ›
+        </button>
+      </div>
+
+      <!-- Barra flotante de deshacer -->
+      <div id="agent-undo-container" style="display:none"></div>
     </div>
   `;
 
@@ -526,30 +658,192 @@ async function showMemoriesPanel(parentEl, agent) {
   };
 
   sheet.querySelector('#agent-sheet-close').addEventListener('click', close);
+
+  // Undo manager
+  let pendingDeleteTimer = null;
+  let pendingDeleteId = null;
+  let pendingDeleteRow = null;
+
+  function triggerUndo(id, row) {
+    if (pendingDeleteTimer) {
+      clearTimeout(pendingDeleteTimer);
+      deleteMemory(pendingDeleteId);
+      pendingDeleteRow?.remove();
+    }
+
+    pendingDeleteId = id;
+    pendingDeleteRow = row;
+    row.style.display = 'none';
+
+    const undoBox = sheet.querySelector('#agent-undo-container');
+    undoBox.style.display = 'block';
+    undoBox.innerHTML = `
+      <div class="agent-undo-bar">
+        <span>Recuerdo borrado</span>
+        <button type="button" class="agent-undo-btn" id="btn-undo-action">Deshacer</button>
+      </div>
+    `;
+
+    undoBox.querySelector('#btn-undo-action').onclick = () => {
+      clearTimeout(pendingDeleteTimer);
+      row.style.display = '';
+      undoBox.style.display = 'none';
+      pendingDeleteId = null;
+      pendingDeleteRow = null;
+      toast('Recuerdo restaurado');
+    };
+
+    pendingDeleteTimer = setTimeout(async () => {
+      await deleteMemory(id);
+      row.remove();
+      undoBox.style.display = 'none';
+      pendingDeleteId = null;
+      pendingDeleteRow = null;
+      const count = sheet.querySelectorAll('#agent-card-rests .agent-rec-row').length;
+      const badge = sheet.querySelector('#badge-rests-count');
+      if (badge) badge.textContent = count;
+      if (count === 0) {
+        sheet.querySelector('#agent-card-rests').innerHTML = '<p style="padding:18px;text-align:center;color:#8A8A8A;margin:0;font-size:14px">No hay notas ni descansos adicionales.</p>';
+      }
+    }, 4500);
+  }
+
   sheet.addEventListener('click', async (e) => {
     if (e.target === sheet) close();
 
-    const delBtn = e.target.closest('.agent-mem-del');
-    if (delBtn) {
-      const id = Number(delBtn.dataset.id);
-      const ok = await askConfirm({
-        title: 'Borrar recuerdo',
-        body: 'Fit deja de usar este dato en las próximas sesiones.',
-      });
-      if (!ok) return;
-      await deleteMemory(id);
-      delBtn.closest('.agent-mem-item')?.remove();
-      const list = sheet.querySelector('#agent-mem-list');
-      if (!list.querySelector('.agent-mem-item')) {
-        list.innerHTML = '<p class="agent-mem-empty">Todavia no hay recuerdos guardados.</p>';
-      }
-      toast('Recuerdo eliminado');
+    // 1. Editar perfil (Nombre, Peso, Estatura, Creatina)
+    const editProfBtn = e.target.closest('[data-action="edit-profile"]');
+    if (editProfBtn) {
+      const field = editProfBtn.dataset.field;
+      const row = editProfBtn.closest('.agent-rec-row');
+      const wrap = row.querySelector('.agent-rec-val-wrap');
+      const valSpan = row.querySelector('.agent-rec-value');
+      const currVal = profile[field] || valSpan.textContent.trim();
+
+      wrap.style.display = 'none';
+      const form = document.createElement('div');
+      form.className = 'agent-rec-edit-form';
+      form.innerHTML = `
+        <input type="text" class="agent-rec-edit-input" value="${esc(currVal)}" autocomplete="off" spellcheck="false">
+        <button type="button" class="agent-rec-edit-btn agent-rec-edit-save" title="Guardar">${icons.check({ size: 16 })}</button>
+        <button type="button" class="agent-rec-edit-btn agent-rec-edit-cancel" title="Cancelar">${icons.close({ size: 16 })}</button>
+      `;
+      row.appendChild(form);
+      const input = form.querySelector('input');
+      input.focus();
+      input.select();
+
+      const finishEdit = async (save) => {
+        if (save) {
+          const newVal = input.value.trim();
+          if (newVal) {
+            profile[field] = newVal;
+            await saveAthleteProfile({ [field]: newVal });
+            valSpan.textContent = newVal;
+            toast(`${field.charAt(0).toUpperCase() + field.slice(1)} actualizado`);
+          }
+        }
+        form.remove();
+        wrap.style.display = 'flex';
+      };
+
+      form.querySelector('.agent-rec-edit-save').onclick = () => finishEdit(true);
+      form.querySelector('.agent-rec-edit-cancel').onclick = () => finishEdit(false);
+      input.onkeydown = (ev) => {
+        if (ev.key === 'Enter') finishEdit(true);
+        if (ev.key === 'Escape') finishEdit(false);
+      };
       return;
     }
 
+    // 2. Editar rutina semanal
+    const editRoutBtn = e.target.closest('[data-action="edit-routine"]');
+    if (editRoutBtn) {
+      const idx = Number(editRoutBtn.dataset.index);
+      const row = editRoutBtn.closest('.agent-rec-row');
+      const textSpan = row.querySelector('.agent-rec-day-text');
+      const currVal = routine[idx].grupo;
+
+      editRoutBtn.style.display = 'none';
+      textSpan.style.display = 'none';
+
+      const form = document.createElement('div');
+      form.className = 'agent-rec-edit-form';
+      form.innerHTML = `
+        <input type="text" class="agent-rec-edit-input" value="${esc(currVal)}" autocomplete="off" spellcheck="false" style="max-width:170px">
+        <button type="button" class="agent-rec-edit-btn agent-rec-edit-save" title="Guardar">${icons.check({ size: 16 })}</button>
+        <button type="button" class="agent-rec-edit-btn agent-rec-edit-cancel" title="Cancelar">${icons.close({ size: 16 })}</button>
+      `;
+      row.appendChild(form);
+      const input = form.querySelector('input');
+      input.focus();
+      input.select();
+
+      const finishRout = async (save) => {
+        if (save) {
+          const newVal = input.value.trim();
+          if (newVal) {
+            routine[idx].grupo = newVal;
+            await saveWeeklyRoutine(routine);
+            textSpan.textContent = newVal;
+            toast('Rutina actualizada');
+          }
+        }
+        form.remove();
+        textSpan.style.display = '';
+        editRoutBtn.style.display = '';
+      };
+
+      form.querySelector('.agent-rec-edit-save').onclick = () => finishRout(true);
+      form.querySelector('.agent-rec-edit-cancel').onclick = () => finishRout(false);
+      input.onkeydown = (ev) => {
+        if (ev.key === 'Enter') finishRout(true);
+        if (ev.key === 'Escape') finishRout(false);
+      };
+      return;
+    }
+
+    // 3. Borrar recuerdo individual
+    const delBtn = e.target.closest('[data-action="del-memory"]');
+    if (delBtn) {
+      const id = Number(delBtn.dataset.id);
+      const row = delBtn.closest('.agent-rec-row');
+      triggerUndo(id, row);
+      return;
+    }
+
+    // 4. Ir a Historial
+    if (e.target.closest('#btn-go-history')) {
+      close();
+      go('history');
+      return;
+    }
+
+    // 5. Borrar todos los recuerdos
+    if (e.target.closest('#btn-clear-all-memories')) {
+      const ok = await askConfirm({
+        title: 'Borrar todos los recuerdos',
+        body: 'Se eliminarán las notas y descansos adicionales. Los entrenamientos en tu historial y tus datos personales no se tocan.',
+        confirmLabel: 'Borrar todo',
+        danger: true,
+      });
+      if (!ok) return;
+      await clearAllMemories();
+      const restsCard = sheet.querySelector('#agent-card-rests');
+      if (restsCard) {
+        restsCard.innerHTML = '<p style="padding:18px;text-align:center;color:#8A8A8A;margin:0;font-size:14px">No hay notas ni descansos adicionales.</p>';
+      }
+      const badge = sheet.querySelector('#badge-rests-count');
+      if (badge) badge.textContent = '0';
+      toast('Recuerdos adicionales eliminados');
+      return;
+    }
+
+    // 6. Cambiar API key
     if (e.target.closest('[data-action="change-key"]')) {
       close();
       parentEl.dispatchEvent(new MouseEvent('click', { bubbles: true, target: e.target }));
+      return;
     }
   });
 }

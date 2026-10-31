@@ -118,7 +118,7 @@ const TOOL_DECLARATIONS = [
   },
 ];
 
-/* --- IndexedDB Memory Helpers --- */
+/* --- IndexedDB Memory & Profile Helpers --- */
 export async function loadAllMemories() {
   return db.getAll('agentMemory');
 }
@@ -129,6 +129,50 @@ export async function saveMemory(contenido) {
 
 export async function deleteMemory(id) {
   return db.remove('agentMemory', Number(id));
+}
+
+export async function clearAllMemories() {
+  const all = await loadAllMemories();
+  for (const m of all) {
+    await deleteMemory(m.id);
+  }
+}
+
+const DEFAULT_PROFILE = {
+  nombre: 'Daniel',
+  peso: '49 kg',
+  estatura: '1,63 m',
+  creatina: '5 g al día',
+};
+
+export async function loadAthleteProfile() {
+  const row = await db.get('meta', 'athleteProfile');
+  return { ...DEFAULT_PROFILE, ...(row?.value || {}) };
+}
+
+export async function saveAthleteProfile(patch) {
+  const current = await loadAthleteProfile();
+  const updated = { ...current, ...patch };
+  await db.put('meta', { key: 'athleteProfile', value: updated });
+  return updated;
+}
+
+const DEFAULT_ROUTINE = [
+  { dia: 'LUN', grupo: 'Pecho', dot: '#FF6B7A' },
+  { dia: 'MAR', grupo: 'Pierna · cuádriceps', dot: '#FFD166' },
+  { dia: 'MIÉ', grupo: 'Espalda', dot: '#2EC4B6' },
+  { dia: 'JUE', grupo: 'Glúteo o cardio', dot: '#F78FB3' },
+  { dia: 'VIE', grupo: 'Brazo completo', dot: '#4D8DFF' },
+];
+
+export async function loadWeeklyRoutine() {
+  const row = await db.get('meta', 'weeklyRoutine');
+  return row?.value || DEFAULT_ROUTINE;
+}
+
+export async function saveWeeklyRoutine(routine) {
+  await db.put('meta', { key: 'weeklyRoutine', value: routine });
+  return routine;
 }
 
 function restSeconds(reps) {
@@ -375,10 +419,17 @@ export async function queryWorkoutHistoryForFit(target) {
 }
 
 async function buildSystemInstruction() {
-  const [memories, recentWorkoutsCtx] = await Promise.all([
+  const [memories, recentWorkoutsCtx, profile, routine] = await Promise.all([
     loadAllMemories(),
     getRecentWorkoutsForFit(),
+    loadAthleteProfile(),
+    loadWeeklyRoutine(),
   ]);
+
+  const profileBlock =
+    `\n\nPERFIL DEL ATLETA: Nombre: ${profile.nombre}, Peso: ${profile.peso}, Estatura: ${profile.estatura}, Creatina: ${profile.creatina}.\n` +
+    `RUTINA SEMANAL DEL ATLETA: ${routine.map((r) => `${r.dia}: ${r.grupo}`).join(', ')}.\n`;
+
   const memBlock =
     memories.length > 0
       ? '\n\nRECUERDOS GUARDADOS DEL ATLETA:\n' +
@@ -423,6 +474,7 @@ async function buildSystemInstruction() {
     '- Usa los recuerdos guardados de forma natural, sin recitarlos como un informe.\n' +
     '- Nunca escribas HTML, comentarios, inglés ni instrucciones internas. Si no hay nada que decir, no generes texto. Tu única salida es la frase hablada al atleta, en español, en 1 o 2 oraciones.' +
     currentCtx +
+    profileBlock +
     memBlock +
     recentWorkoutsCtx
   );
