@@ -344,6 +344,48 @@ export function removeLoggedSet(id) {
   });
 }
 
+export function updateSet(setId, { peso, reps, tipo, rir }) {
+  const sid = Number(setId);
+  const nextTipo = tipo === 'calentamiento' ? 'calentamiento' : 'trabajo';
+  let nextRpe = null;
+  if (nextTipo === 'trabajo' && rir != null) {
+    const kind = classifyRir(rir);
+    if (kind === 'ok') nextRpe = rpeFromRir(Number(rir));
+  }
+
+  return db.mutate(['sets', 'meta'], (tx) => {
+    const box = { ok: false };
+    const sets = tx.objectStore('sets');
+    const meta = tx.objectStore('meta');
+    const req = sets.get(sid);
+    req.onsuccess = () => {
+      const set = req.result;
+      if (!set) return;
+      if (peso != null && !Number.isNaN(Number(peso))) set.peso = Math.max(0, Number(peso));
+      if (reps != null && Number(reps) > 0) set.reps = Math.max(1, Math.round(Number(reps)));
+      set.tipo = nextTipo;
+      if (nextTipo === 'calentamiento') {
+        set.rpe = null;
+      } else if (nextRpe != null) {
+        set.rpe = nextRpe;
+      }
+      sets.put(set);
+      const pReq = meta.get(PENDING_KEY);
+      pReq.onsuccess = () => {
+        const pending = pReq.result?.value;
+        if (pending && pending.setId === set.id) {
+          if (nextTipo === 'calentamiento' || set.rpe != null) {
+            meta.delete(PENDING_KEY);
+          }
+        }
+        box.ok = true;
+        box.set = set;
+      };
+    };
+    return box;
+  });
+}
+
 /* Saltar el descanso es el único caso que reescribe el plazo: ahora más un minuto, en la misma operación que apaga el reloj. */
 export function skipRestClock() {
   return db.mutate(['meta'], (tx) => {

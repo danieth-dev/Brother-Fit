@@ -426,7 +426,7 @@ export async function deleteWorkout(id) {
 
 /* ---------- Series ---------- */
 export const addSet = (s) => db.add('sets', { ...s, ts: now() });
-export { removeLoggedSet as deleteSet } from './effort.js';
+export { removeLoggedSet as deleteSet, updateSet } from './effort.js';
 export const getSets = (workoutId) => db.byIndex('sets', 'workoutId', workoutId);
 
 export async function lastSetFor(exerciseId) {
