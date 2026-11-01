@@ -286,8 +286,19 @@ Reglas:
 2. Si es un plato cocinado, incluye una estimación prudente del aceite o grasa de cocción (ej. Aceite de oliva 10 g).
 3. Asegúrate de que las kcal y macros (proteina, carbos, grasa) sean nutricionalmente coherentes con los gramos indicados.`;
 
+function extractJsonObject(raw) {
+  const cleaned = String(raw || '').replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    const match = cleaned.match(/\{[\s\S]*\}/);
+    if (match) return JSON.parse(match[0]);
+    throw new Error('Respuesta sin JSON válido.');
+  }
+}
+
 async function callGeminiNutrition({ base64, mimeType, textPrompt }, apiKey) {
-  const models = ['gemini-2.0-flash', 'gemini-1.5-flash'];
+  const models = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-flash-latest'];
   let lastError = null;
 
   const parts = [];
@@ -322,9 +333,13 @@ async function callGeminiNutrition({ base64, mimeType, textPrompt }, apiKey) {
       }
 
       const data = await res.json();
-      const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-      const cleaned = rawText.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
-      const parsed = JSON.parse(cleaned);
+      const candParts = data?.candidates?.[0]?.content?.parts || [];
+      const nonThoughtText = candParts
+        .filter((p) => !p.thought && typeof p.text === 'string')
+        .map((p) => p.text)
+        .join('\n') || candParts.map((p) => p.text || '').join('\n');
+
+      const parsed = extractJsonObject(nonThoughtText);
       if (parsed && Array.isArray(parsed.items) && parsed.items.length > 0) {
         return {
           plato: parsed.plato || buildMealTitle(parsed.items),
@@ -366,7 +381,7 @@ async function callOpenAINutrition({ base64, mimeType, textPrompt }, apiKey) {
   }
 
   const data = await res.json();
-  const parsed = JSON.parse(data?.choices?.[0]?.message?.content || '{}');
+  const parsed = extractJsonObject(data?.choices?.[0]?.message?.content || '{}');
   if (parsed && Array.isArray(parsed.items) && parsed.items.length > 0) {
     return {
       plato: parsed.plato || buildMealTitle(parsed.items),
@@ -376,7 +391,7 @@ async function callOpenAINutrition({ base64, mimeType, textPrompt }, apiKey) {
   throw new Error('OpenAI no devolvió ingredientes válidos.');
 }
 
-/* Ejemplo por defecto (Arroz, pechuga, ensalada y aceite) cuando se prueba sin API key configurada. */
+/* Ejemplo por defecto (Arroz, pechuga, ensalada y aceite) cuando se abre en modo demostración. */
 export function getDemoPhotoResult() {
   const items = [
     normalizeMealItem({ nombre: 'Arroz blanco', gramos: 180, kcal: 234, proteina: 4.9, carbos: 50.8, grasa: 0.5 }),
@@ -391,24 +406,34 @@ export function getDemoPhotoResult() {
   };
 }
 
-export async function analyzeMealImage( { base64, mimeType } ) {
+export async function analyzeMealImage({ base64, mimeType }) {
   const cfg = await getAgentConfig();
   const geminiKey = (cfg.geminiKey || '').trim();
   const openaiKey = (cfg.openaiKey || '').trim();
 
   if (cfg.provider === 'openai' && openaiKey) {
-    return callOpenAINutrition({ base64, mimeType }, openaiKey);
+    try {
+      return await callOpenAINutrition({ base64, mimeType }, openaiKey);
+    } catch (err) {
+      if (geminiKey) return callGeminiNutrition({ base64, mimeType }, geminiKey);
+      throw err;
+    }
   }
   if (geminiKey) {
-    return callGeminiNutrition({ base64, mimeType }, geminiKey);
+    try {
+      return await callGeminiNutrition({ base64, mimeType }, geminiKey);
+    } catch (err) {
+      if (openaiKey) return callOpenAINutrition({ base64, mimeType }, openaiKey);
+      throw err;
+    }
   }
   if (openaiKey) {
     return callOpenAINutrition({ base64, mimeType }, openaiKey);
   }
 
-  /* Si el usuario aún no ha puesto su API Key, devolvemos el desglose base editable
-   * para que pueda probar y ajustar los gramos igualmente. */
-  return getDemoPhotoResult();
+  const err = new Error('Configura tu API Key en Fit para analizar fotos con IA.');
+  err.code = 'NO_API_KEY';
+  throw err;
 }
 
 /* Analiza una descripción escrita o hablada ("200g de arroz con 150g de pollo y 2 huevos") */
@@ -456,3 +481,4 @@ export async function analyzeMealText(text) {
 
   return getDemoPhotoResult();
 }
+

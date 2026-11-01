@@ -71,14 +71,16 @@ export async function openMealResultSheet({
     activeOverlay = null;
   }
 
-  let previewUrl = null;
-  let isAnalyzing = Boolean(file);
+  let currentFile = file || null;
+  let previewUrl = currentFile ? URL.createObjectURL(currentFile) : null;
+  let isAnalyzing = Boolean(currentFile);
+  let analysisError = '';
   let selectedTipo = existingMeal?.tipo || defaultTipo || defaultMealTypeByHour();
   if (!MEAL_TYPES.includes(selectedTipo)) selectedTipo = 'Almuerzo';
 
   let items = [];
   let customPlatoName = existingMeal?.nombre || '';
-  let showAddForm = Boolean(manualMode && !existingMeal && !initialResult && !file);
+  let showAddForm = Boolean(manualMode && !existingMeal && !initialResult && !currentFile);
 
   if (existingMeal) {
     items = (existingMeal.items && existingMeal.items.length)
@@ -99,7 +101,7 @@ export async function openMealResultSheet({
   } else if (initialResult) {
     items = (initialResult.items || []).map((i) => recalcItemGrams(i, i.gramos));
     customPlatoName = initialResult.plato || '';
-  } else if (!file && !manualMode) {
+  } else if (!currentFile && !manualMode) {
     const demo = getDemoPhotoResult();
     items = demo.items;
     customPlatoName = demo.plato;
@@ -155,18 +157,30 @@ export async function openMealResultSheet({
     const listEl = overlay.querySelector('#meal-items-list');
     const totalsEl = overlay.querySelector('#meal-totals-box');
     const saveBtn = overlay.querySelector('#btn-save-meal');
+    const retakeBtn = overlay.querySelector('#btn-retake-photo');
+
+    if (retakeBtn) {
+      retakeBtn.textContent = previewUrl ? 'Repetir foto' : 'Subir foto';
+    }
 
     if (listEl) {
       if (isAnalyzing) {
         listEl.innerHTML = `
-          <div style="padding: 28px 16px; text-align: center; color: var(--muted); font-size: 14px">
+          <div class="meal-items-placeholder">
             Detectando ingredientes y calculando porciones…
+          </div>
+        `;
+      } else if (!items.length && analysisError) {
+        listEl.innerHTML = `
+          <div class="meal-items-placeholder">
+            <p style="margin:0 0 10px;color:var(--text);font-weight:600">${esc(analysisError)}</p>
+            <button type="button" class="btn btn-sm" data-action="retry-scan">Reintentar análisis con IA</button>
           </div>
         `;
       } else if (!items.length) {
         listEl.innerHTML = `
-          <div style="padding: 24px 16px; text-align: center; color: var(--muted); font-size: 14px">
-            Aún no hay alimentos en el plato. Pulsa «Añadir alimento que falta» abajo.
+          <div class="meal-items-placeholder">
+            Aún no hay alimentos en el plato. Usa las opciones de abajo para añadirlos.
           </div>
         `;
       } else {
@@ -210,66 +224,68 @@ export async function openMealResultSheet({
   const renderFull = () => {
     overlay.innerHTML = `
       <div class="meal-sheet-modal">
-        <div id="meal-hero-slot">
-          ${renderHeroPlate()}
-        </div>
-
         <div class="meal-photo-topbar">
           <button type="button" class="meal-topbar-close" data-action="close" aria-label="Cerrar">
             ${icons.close({ size: 22 })}
           </button>
-          <button type="button" class="meal-topbar-retake" data-action="retake">
+          <button type="button" class="meal-topbar-retake" id="btn-retake-photo" data-action="retake">
             ${previewUrl ? 'Repetir foto' : 'Subir foto'}
           </button>
         </div>
 
-        <div class="meal-sheet-body">
-          <div class="meal-sheet-handle" aria-hidden="true"></div>
-
-          <div class="meal-sheet-head">
-            <h1 class="meal-sheet-title">${existingMeal ? 'Editar comida' : 'Esto es lo que veo'}</h1>
-            <span class="meal-est-badge">
-              ${icons.info({ size: 14 })}
-              Estimado · revisa porciones
-            </span>
+        <div class="meal-sheet-scroll">
+          <div id="meal-hero-slot">
+            ${renderHeroPlate()}
           </div>
 
-          <div class="meal-type-pills" role="group" aria-label="Momento de la comida">
-            ${MEAL_TYPES.map((t) => `
-              <button type="button" class="meal-type-pill" data-action="select-type" data-tipo="${esc(t)}" aria-pressed="${t === selectedTipo}">
-                ${esc(t)}
-              </button>
-            `).join('')}
-          </div>
+          <div class="meal-sheet-body">
+            <div class="meal-sheet-handle" aria-hidden="true"></div>
 
-          <div class="meal-items-card" id="meal-items-list"></div>
+            <div class="meal-sheet-head">
+              <h1 class="meal-sheet-title">${existingMeal ? 'Editar comida' : 'Esto es lo que veo'}</h1>
+              <span class="meal-est-badge">
+                ${icons.info({ size: 14 })}
+                Estimado · revisa porciones
+              </span>
+            </div>
 
-          <button type="button" class="meal-add-missing-btn" data-action="toggle-add-food">
-            ${icons.plus({ size: 18 })}
-            Añadir alimento que falta
-          </button>
-
-          <div class="meal-add-drawer" id="meal-add-drawer" ${showAddForm ? '' : 'hidden'}>
-            <div class="meal-add-quick-chips">
-              ${COMMON_FOODS.slice(0, 10).map((f, i) => `
-                <button type="button" class="meal-quick-food-chip" data-action="quick-food" data-food-idx="${i}">
-                  + ${esc(f.nombre)} (${f.porcion}g)
+            <div class="meal-type-pills" role="group" aria-label="Momento de la comida">
+              ${MEAL_TYPES.map((t) => `
+                <button type="button" class="meal-type-pill" data-action="select-type" data-tipo="${esc(t)}" aria-pressed="${t === selectedTipo}">
+                  ${esc(t)}
                 </button>
               `).join('')}
             </div>
-            <div class="meal-add-custom-row">
-              <input type="text" id="meal-custom-input" class="meal-custom-input" placeholder="Ej: 2 huevos revueltos o 150g salmón…" autocomplete="off" />
-              <button type="button" class="meal-custom-add-btn" data-action="add-custom-text">Añadir</button>
-            </div>
-          </div>
 
-          <div class="meal-total-card" id="meal-totals-box"></div>
+            <div class="meal-items-card" id="meal-items-list"></div>
 
-          ${existingMeal ? `
-            <button type="button" class="meal-delete-btn" data-action="delete-meal">
-              ${icons.trash({ size: 16 })} Eliminar esta comida del día
+            <button type="button" class="meal-add-missing-btn" data-action="toggle-add-food">
+              ${icons.plus({ size: 18 })}
+              Añadir alimento que falta
             </button>
-          ` : ''}
+
+            <div class="meal-add-drawer" id="meal-add-drawer" ${showAddForm ? '' : 'hidden'}>
+              <div class="meal-add-quick-chips">
+                ${COMMON_FOODS.slice(0, 10).map((f, i) => `
+                  <button type="button" class="meal-quick-food-chip" data-action="quick-food" data-food-idx="${i}">
+                    + ${esc(f.nombre)} (${f.porcion}g)
+                  </button>
+                `).join('')}
+              </div>
+              <div class="meal-add-custom-row">
+                <input type="text" id="meal-custom-input" class="meal-custom-input" placeholder="Ej: 2 huevos fritos, 150g papas…" autocomplete="off" />
+                <button type="button" class="meal-custom-add-btn" data-action="add-custom-text">Añadir</button>
+              </div>
+            </div>
+
+            <div class="meal-total-card" id="meal-totals-box"></div>
+
+            ${existingMeal ? `
+              <button type="button" class="meal-delete-btn" data-action="delete-meal">
+                ${icons.trash({ size: 16 })} Eliminar esta comida del día
+              </button>
+            ` : ''}
+          </div>
         </div>
 
         <div class="meal-sheet-footer">
@@ -282,16 +298,21 @@ export async function openMealResultSheet({
     renderItemsAndTotals();
   };
 
-  renderFull();
-  document.body.appendChild(overlay);
+  const runPhotoAnalysis = async (targetFile) => {
+    if (!targetFile) return;
+    currentFile = targetFile;
+    isAnalyzing = true;
+    analysisError = '';
+    const heroSlot = overlay.querySelector('#meal-hero-slot');
+    if (heroSlot) heroSlot.innerHTML = renderHeroPlate();
+    renderItemsAndTotals();
 
-  // Si recibimos un archivo de foto, comprimirlo y analizarlo con IA
-  if (file) {
     try {
-      const compressed = await compressImageFile(file);
+      const compressed = await compressImageFile(targetFile);
+      revokeIfNeeded(previewUrl);
       previewUrl = compressed.previewUrl;
-      const heroSlot = overlay.querySelector('#meal-hero-slot');
       if (heroSlot) heroSlot.innerHTML = renderHeroPlate();
+      renderItemsAndTotals();
 
       const result = await analyzeMealImage({
         base64: compressed.base64,
@@ -302,20 +323,25 @@ export async function openMealResultSheet({
       customPlatoName = result.plato || '';
       if (heroSlot) heroSlot.innerHTML = renderHeroPlate();
       renderItemsAndTotals();
-      if (result.isDemo) {
-        toast('Modo estimado local (configura tu API Key en Fit para visión IA real)');
-      }
     } catch (err) {
       console.warn('Error al analizar imagen:', err);
       isAnalyzing = false;
-      const demo = getDemoPhotoResult();
-      items = demo.items;
-      customPlatoName = demo.plato;
-      const heroSlot = overlay.querySelector('#meal-hero-slot');
+      analysisError = err?.code === 'NO_API_KEY'
+        ? 'Configura tu API Key en Fit para que la IA reconozca la foto, o añade los alimentos abajo.'
+        : 'No se pudo analizar la foto en este momento. Reintenta o añade los alimentos abajo.';
+      const drawer = overlay.querySelector('#meal-add-drawer');
+      if (drawer) drawer.hidden = false;
       if (heroSlot) heroSlot.innerHTML = renderHeroPlate();
       renderItemsAndTotals();
-      toast('No se pudo conectar con la IA; puedes ajustar el plato manualmente');
+      toast(err?.code === 'NO_API_KEY' ? 'Configura tu API Key en Fit' : 'Error al analizar la foto con IA');
     }
+  };
+
+  renderFull();
+  document.body.appendChild(overlay);
+
+  if (currentFile) {
+    runPhotoAnalysis(currentFile);
   }
 
   overlay.addEventListener('click', async (e) => {
@@ -332,6 +358,11 @@ export async function openMealResultSheet({
       return;
     }
 
+    if (action === 'retry-scan' && currentFile) {
+      await runPhotoAnalysis(currentFile);
+      return;
+    }
+
     if (action === 'retake') {
       const fileInput = document.createElement('input');
       fileInput.type = 'file';
@@ -342,27 +373,7 @@ export async function openMealResultSheet({
         const nextFile = fileInput.files?.[0];
         fileInput.remove();
         if (!nextFile) return;
-        revokeIfNeeded(previewUrl);
-        isAnalyzing = true;
-        renderItemsAndTotals();
-        try {
-          const compressed = await compressImageFile(nextFile);
-          previewUrl = compressed.previewUrl;
-          const heroSlot = overlay.querySelector('#meal-hero-slot');
-          if (heroSlot) heroSlot.innerHTML = renderHeroPlate();
-          const result = await analyzeMealImage({
-            base64: compressed.base64,
-            mimeType: compressed.mimeType,
-          });
-          isAnalyzing = false;
-          items = (result.items || []).map((i) => recalcItemGrams(i, i.gramos));
-          customPlatoName = result.plato || '';
-          if (heroSlot) heroSlot.innerHTML = renderHeroPlate();
-          renderItemsAndTotals();
-        } catch {
-          isAnalyzing = false;
-          renderItemsAndTotals();
-        }
+        await runPhotoAnalysis(nextFile);
       });
       fileInput.click();
       return;
@@ -472,3 +483,4 @@ export async function openMealResultSheet({
     }
   });
 }
+
