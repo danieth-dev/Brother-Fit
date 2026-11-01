@@ -1731,23 +1731,45 @@ html[data-modo="claro"] .plate {
 }
 .home-creatine-chips {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   justify-content: center;
-  gap: 8px;
+  align-items: center;
+  gap: 6px;
   margin-top: 10px;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.home-creatine-chips::-webkit-scrollbar {
+  display: none;
 }
 .home-chip {
   display: inline-flex;
   align-items: center;
-  height: 32px;
-  padding: 0 12px;
+  justify-content: center;
+  height: 29px;
+  padding: 0 9px;
   border-radius: var(--r-full);
   background: var(--surface);
   border: 1px solid var(--line);
-  font-size: 13px;
+  font-size: 11.5px;
   font-weight: 600;
   color: var(--text);
   box-shadow: var(--shadow-sm);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+@media (max-width: 360px) {
+  .home-creatine-chips {
+    gap: 4px;
+  }
+  .home-chip {
+    padding: 0 7px;
+    font-size: 10.5px;
+    height: 27px;
+  }
 }
 
 /* ---------- Inicio: Tarjeta de Entrenamiento de Hoy ---------- */
