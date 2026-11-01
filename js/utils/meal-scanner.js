@@ -75,6 +75,7 @@ export async function openMealResultSheet({
   let previewUrl = currentFile ? URL.createObjectURL(currentFile) : null;
   let isAnalyzing = Boolean(currentFile);
   let analysisError = '';
+  let analysisErrorCode = '';
   let selectedTipo = existingMeal?.tipo || defaultTipo || defaultMealTypeByHour();
   if (!MEAL_TYPES.includes(selectedTipo)) selectedTipo = 'Almuerzo';
 
@@ -171,10 +172,13 @@ export async function openMealResultSheet({
           </div>
         `;
       } else if (!items.length && analysisError) {
+        const isNotFood = analysisErrorCode === 'NOT_FOOD';
         listEl.innerHTML = `
           <div class="meal-items-placeholder">
             <p style="margin:0 0 10px;color:var(--text);font-weight:600">${esc(analysisError)}</p>
-            <button type="button" class="btn btn-sm" data-action="retry-scan">Reintentar análisis con IA</button>
+            <button type="button" class="btn btn-sm" data-action="${isNotFood ? 'retake' : 'retry-scan'}">
+              ${isNotFood ? 'Tomar otra foto' : 'Reintentar análisis con IA'}
+            </button>
           </div>
         `;
       } else if (!items.length) {
@@ -303,6 +307,7 @@ export async function openMealResultSheet({
     currentFile = targetFile;
     isAnalyzing = true;
     analysisError = '';
+    analysisErrorCode = '';
     const heroSlot = overlay.querySelector('#meal-hero-slot');
     if (heroSlot) heroSlot.innerHTML = renderHeroPlate();
     renderItemsAndTotals();
@@ -326,14 +331,22 @@ export async function openMealResultSheet({
     } catch (err) {
       console.warn('Error al analizar imagen:', err);
       isAnalyzing = false;
-      analysisError = err?.code === 'NO_API_KEY'
-        ? 'Configura tu API Key en Fit para que la IA reconozca la foto, o añade los alimentos abajo.'
-        : 'No se pudo analizar la foto en este momento. Reintenta o añade los alimentos abajo.';
+      analysisErrorCode = err?.code || '';
+      if (err?.code === 'NOT_FOOD') {
+        items = [];
+        analysisError = 'No veo comida ni bebida en esta foto. Toma otra foto del plato o añade los alimentos abajo.';
+        toast('No se detectó comida en la foto');
+      } else if (err?.code === 'NO_API_KEY') {
+        analysisError = 'Configura tu API Key en Fit para que la IA reconozca la foto, o añade los alimentos abajo.';
+        toast('Configura tu API Key en Fit');
+      } else {
+        analysisError = 'No se pudo analizar la foto en este momento. Reintenta o añade los alimentos abajo.';
+        toast('Error al analizar la foto con IA');
+      }
       const drawer = overlay.querySelector('#meal-add-drawer');
       if (drawer) drawer.hidden = false;
       if (heroSlot) heroSlot.innerHTML = renderHeroPlate();
       renderItemsAndTotals();
-      toast(err?.code === 'NO_API_KEY' ? 'Configura tu API Key en Fit' : 'Error al analizar la foto con IA');
     }
   };
 

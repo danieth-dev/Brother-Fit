@@ -227,9 +227,9 @@ export async function todayMealsSummary(fecha = todayISO()) {
   };
 }
 
-/* Comprime una imagen en el navegador a JPEG <= 1024px para que la llamada Vision
- * sea rápida (~1.5 s) y económica (~250 tokens). No se guarda en base de datos. */
-export function compressImageFile(file, maxDim = 1024, quality = 0.76) {
+/* Comprime una imagen en el navegador a JPEG <= 800px (~50 KB) para que la llamada Vision
+ * sea ultrarrápida (~1.5–2.5 s) y económica (~250 tokens). No se guarda en base de datos. */
+export function compressImageFile(file, maxDim = 800, quality = 0.72) {
   return new Promise((resolve, reject) => {
     if (!file) {
       reject(new Error('No se seleccionó ninguna imagen.'));
@@ -267,12 +267,14 @@ export function compressImageFile(file, maxDim = 1024, quality = 0.76) {
 }
 
 const NUTRITION_PROMPT = `Eres el nutricionista deportivo de Brother Fit.
-Analiza el plato de comida y devuelve ÚNICAMENTE un objeto JSON válido con esta estructura exacta:
+Analiza la imagen o texto y devuelve ÚNICAMENTE un objeto JSON válido con esta estructura exacta:
 {
+  "esComida": true,
+  "motivo": "",
   "plato": "Nombre corto del plato en español",
   "items": [
     {
-      "nombre": "Nombre del ingrediente en español (ej. Arroz blanco, Pechuga de pollo, Ensalada mixta, Aceite de oliva)",
+      "nombre": "Nombre del ingrediente en español (ej. Papas fritas, Huevo frito, Carne molida)",
       "gramos": 180,
       "kcal": 234,
       "proteina": 5,
@@ -282,9 +284,10 @@ Analiza el plato de comida y devuelve ÚNICAMENTE un objeto JSON válido con est
   ]
 }
 Reglas:
-1. Estima pesos realistas en gramos para las porciones visibles en el plato.
-2. Si es un plato cocinado, incluye una estimación prudente del aceite o grasa de cocción (ej. Aceite de oliva 10 g).
-3. Asegúrate de que las kcal y macros (proteina, carbos, grasa) sean nutricionalmente coherentes con los gramos indicados.`;
+1. Si en la foto o texto NO hay ningún alimento, comida, bebida ni suplemento (por ejemplo: una mancuerna, un zapato, una pared, una mascota o una pantalla), devuelve "esComida": false, "motivo": "No veo comida ni bebida en la foto.", "items": [] y NO inventes alimentos.
+2. Si sí hay comida o bebida, devuelve "esComida": true y estima pesos realistas en gramos para las porciones visibles en el plato.
+3. Si es un plato cocinado o frito, incluye una estimación prudente del aceite o grasa de cocción.
+4. Asegúrate de que las kcal y macros (proteina, carbos, grasa) sean nutricionalmente coherentes con los gramos indicados.`;
 
 function extractJsonObject(raw) {
   const cleaned = String(raw || '').replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
@@ -313,16 +316,21 @@ async function callGeminiNutrition({ base64, mimeType, textPrompt }, apiKey) {
 
   for (const model of models) {
     try {
+      const genConfig = {
+        temperature: 0.15,
+        responseMimeType: 'application/json',
+      };
+      if (model.startsWith('gemini-2.5')) {
+        genConfig.thinkingConfig = { thinkingBudget: 0 };
+      }
+
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ parts }],
-          generationConfig: {
-            temperature: 0.2,
-            responseMimeType: 'application/json',
-          },
+          generationConfig: genConfig,
         }),
       });
 
@@ -340,6 +348,11 @@ async function callGeminiNutrition({ base64, mimeType, textPrompt }, apiKey) {
         .join('\n') || candParts.map((p) => p.text || '').join('\n');
 
       const parsed = extractJsonObject(nonThoughtText);
+      if (parsed && (parsed.esComida === false || (Array.isArray(parsed.items) && parsed.items.length === 0))) {
+        const notFoodErr = new Error(parsed.motivo || 'No detecté comida ni bebida en la foto.');
+        notFoodErr.code = 'NOT_FOOD';
+        throw notFoodErr;
+      }
       if (parsed && Array.isArray(parsed.items) && parsed.items.length > 0) {
         return {
           plato: parsed.plato || buildMealTitle(parsed.items),
@@ -347,6 +360,7 @@ async function callGeminiNutrition({ base64, mimeType, textPrompt }, apiKey) {
         };
       }
     } catch (err) {
+      if (err?.code === 'NOT_FOOD') throw err;
       lastError = err;
     }
   }
@@ -370,7 +384,7 @@ async function callOpenAINutrition({ base64, mimeType, textPrompt }, apiKey) {
     },
     body: JSON.stringify({
       model: 'gpt-4o-mini',
-      temperature: 0.2,
+      temperature: 0.15,
       response_format: { type: 'json_object' },
       messages: [{ role: 'user', content }],
     }),
@@ -382,6 +396,11 @@ async function callOpenAINutrition({ base64, mimeType, textPrompt }, apiKey) {
 
   const data = await res.json();
   const parsed = extractJsonObject(data?.choices?.[0]?.message?.content || '{}');
+  if (parsed && (parsed.esComida === false || (Array.isArray(parsed.items) && parsed.items.length === 0))) {
+    const notFoodErr = new Error(parsed.motivo || 'No detecté comida ni bebida en la foto.');
+    notFoodErr.code = 'NOT_FOOD';
+    throw notFoodErr;
+  }
   if (parsed && Array.isArray(parsed.items) && parsed.items.length > 0) {
     return {
       plato: parsed.plato || buildMealTitle(parsed.items),
@@ -415,6 +434,7 @@ export async function analyzeMealImage({ base64, mimeType }) {
     try {
       return await callOpenAINutrition({ base64, mimeType }, openaiKey);
     } catch (err) {
+      if (err?.code === 'NOT_FOOD') throw err;
       if (geminiKey) return callGeminiNutrition({ base64, mimeType }, geminiKey);
       throw err;
     }
@@ -423,6 +443,7 @@ export async function analyzeMealImage({ base64, mimeType }) {
     try {
       return await callGeminiNutrition({ base64, mimeType }, geminiKey);
     } catch (err) {
+      if (err?.code === 'NOT_FOOD') throw err;
       if (openaiKey) return callOpenAINutrition({ base64, mimeType }, openaiKey);
       throw err;
     }
