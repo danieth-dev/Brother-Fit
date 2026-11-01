@@ -11,11 +11,16 @@
 import { db } from '../db.js';
 import { state } from '../store.js';
 import { now } from '../utils/clock.js';
-import { getActiveWorkout, lastSetFor, saveActiveRest, listExercises, matchExercise, listWorkoutSummaries, getWorkoutDetail, muscleName } from './workouts.js';
+import {
+  getActiveWorkout, startWorkout, finishWorkout, finishWorkoutSummary,
+  lastSetFor, lastSessionSetsFor, prByExercise, progressForExercise,
+  saveActiveRest, listExercises, matchExercise, listWorkoutSummaries, getWorkoutDetail, muscleName
+} from './workouts.js';
 import { registerSet, anotarRpe, captureSpokenEffort } from './effort.js';
 import { toKg, weightUnit } from '../utils/units.js';
-import { creatineForFit } from './creatine.js';
-import { toISO, addDays } from '../utils/dates.js';
+import { creatineForFit, logIntake, intakesForDate, clearIntakesOn, DOSE_G } from './creatine.js';
+import { addBodyWeight, listBodyWeights, latestWeight } from './body.js';
+import { toISO, todayISO, addDays } from '../utils/dates.js';
 
 const LIVE_MODEL = 'models/gemini-3.8-live';
 const WS_URL = (apiKey) =>
@@ -82,13 +87,80 @@ const TOOL_DECLARATIONS = [
   {
     name: 'consultar_creatina',
     description:
-      'Lee el registro real de creatina en el teléfono. Úsala antes de contestar si el atleta pregunta por la toma de hoy, la racha, la saturación o qué día falló. No anota ni borra tomas.',
+      'Lee el registro real de creatina en el teléfono. Úsala antes de contestar si el atleta pregunta por la toma de hoy, la racha, la saturación o qué día falló.',
     parameters: { type: 'OBJECT', properties: {} },
+  },
+  {
+    name: 'registrar_creatina',
+    description:
+      'Marca o desmarca la toma de creatina de hoy en la base de datos real (tabla supplements). Úsala cuando el atleta diga "ya tomé la creatina", "anótame la creatina" o pida desmarcarla.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        accion: {
+          type: 'STRING',
+          description: 'registrar (por defecto) para anotar la toma de hoy, o deshacer para borrar la toma de hoy.',
+        },
+        gramos: {
+          type: 'NUMBER',
+          description: 'Gramos de la dosis (por defecto 5).',
+        },
+      },
+    },
+  },
+  {
+    name: 'registrar_peso_corporal',
+    description:
+      'Registra el peso corporal del atleta en la gráfica de Progreso (tabla bodyMetrics) y actualiza su perfil. Úsala SIEMPRE que el atleta diga cuánto pesó hoy o pida registrar su peso corporal. NUNCA uses guardar_recuerdo para anotar pesadas.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        peso: {
+          type: 'NUMBER',
+          description: 'Peso corporal en la unidad activa del atleta (ej. 49.6).',
+        },
+        fecha: {
+          type: 'STRING',
+          description: 'Fecha opcional en formato YYYY-MM-DD (por defecto hoy).',
+        },
+      },
+      required: ['peso'],
+    },
+  },
+  {
+    name: 'gestionar_entrenamiento',
+    description:
+      'Inicia una nueva sesión de entrenamiento o finaliza la sesión activa en curso. Úsala cuando el atleta pida empezar a entrenar o diga que ya terminó su entrenamiento.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        accion: {
+          type: 'STRING',
+          description: 'iniciar para abrir el entrenamiento de hoy, o finalizar para cerrar el entrenamiento en curso y obtener el resumen.',
+        },
+      },
+      required: ['accion'],
+    },
+  },
+  {
+    name: 'consultar_progreso_ejercicio',
+    description:
+      'Consulta el récord histórico (PR de peso máximo, repeticiones y 1RM estimado), la última sesión realizada (sin importar hace cuántas semanas fue) y la tendencia de un ejercicio específico.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        ejercicio: {
+          type: 'STRING',
+          description: 'Nombre del ejercicio a consultar (ej. press inclinado, curl martillo, sentadilla).',
+        },
+      },
+      required: ['ejercicio'],
+    },
   },
   {
     name: 'guardar_recuerdo',
     description:
-      'Guarda una preferencia o un dato personal (peso, marcas, objetivos, molestias, cuándo le sienta la creatina). La toma de hoy no se guarda aquí: está en consultar_creatina.',
+      'Guarda una preferencia o un dato personal cualitativo (molestias, lesiones, técnica, objetivos, horarios). NO la uses para peso corporal (usa registrar_peso_corporal), ni para creatina de hoy (usa registrar_creatina), ni para comidas (usa registrar_comida).',
     parameters: {
       type: 'OBJECT',
       properties: {
@@ -119,10 +191,15 @@ const TOOL_DECLARATIONS = [
   {
     name: 'consultar_comidas',
     description:
-      'Consulta el diario de comidas de hoy, las calorías y proteínas consumidas, y cuánto le falta al atleta para su meta diaria. Úsala cuando pregunte cuántas calorías o proteínas lleva hoy o qué comer.',
+      'Consulta el diario de comidas (hoy, ayer, los últimos 7 días de la semana o una fecha YYYY-MM-DD), las calorías y proteínas consumidas y cuánto falta para la meta.',
     parameters: {
       type: 'OBJECT',
-      properties: {},
+      properties: {
+        periodo: {
+          type: 'STRING',
+          description: 'hoy (por defecto), ayer, semana (últimos 7 días con promedios) o una fecha YYYY-MM-DD.',
+        },
+      },
     },
   },
   {
@@ -258,8 +335,12 @@ export function isAthleteTurn(text) {
 
 export async function executeToolCall(name, args) {
   if (name === 'registrar_serie') {
-    const active = await getActiveWorkout();
-    if (!active) return { error: 'No hay entrenamiento activo en este momento. Inicia una sesión primero.' };
+    let active = await getActiveWorkout();
+    let autoStarted = false;
+    if (!active) {
+      active = await startWorkout();
+      autoStarted = true;
+    }
 
     const reps = Math.round(Number(args.reps));
     if (!Number.isFinite(reps) || reps < 1 || reps > 100) {
@@ -275,7 +356,7 @@ export async function executeToolCall(name, args) {
     } else if (state.activeExercise?.id) {
       ex = state.activeExercise;
     } else {
-      return { error: 'No hay un ejercicio seleccionado en la pantalla de entrenamiento.' };
+      return { error: 'Dime qué ejercicio estás haciendo para anotar la serie.' };
     }
 
     let peso = null;
@@ -304,7 +385,10 @@ export async function executeToolCall(name, args) {
       rir: args.rir,
       restEnd,
     }, { guard: true });
-    if (res) res.ejercicio = ex.nombre;
+    if (res) {
+      res.ejercicio = ex.nombre;
+      res.sesionIniciadaAutomaticamente = autoStarted;
+    }
     if (!res?.duplicada) {
       await saveActiveRest(restEnd, reps);
       document.dispatchEvent(new CustomEvent('bf-set', { detail: { restEnd, lastReps: reps } }));
@@ -330,27 +414,173 @@ export async function executeToolCall(name, args) {
   if (name === 'consultar_creatina') {
     return creatineForFit();
   }
+  if (name === 'registrar_creatina') {
+    const isUndo = /deshac|borr|quit|cancel/i.test(String(args.accion || ''));
+    const fecha = todayISO();
+    if (isUndo) {
+      await clearIntakesOn(fecha);
+      const status = await creatineForFit();
+      return {
+        ok: true,
+        accion: 'deshacer',
+        gramos: 0,
+        ...status,
+        mensaje: 'Toma de creatina de hoy desmarcada.',
+      };
+    }
+    const gramos = Number(args.gramos) > 0 ? Number(args.gramos) : DOSE_G;
+    const existing = await intakesForDate(fecha);
+    if (!existing.length) {
+      await logIntake({ cantidad: gramos, fecha });
+    }
+    const status = await creatineForFit();
+    return {
+      ok: true,
+      accion: 'registrar',
+      yaEstaba: existing.length > 0,
+      gramos,
+      ...status,
+      mensaje: existing.length
+        ? `La toma de creatina de hoy (${gramos} g) ya estaba registrada. Racha: ${status.rachaDias} días.`
+        : `Creatina de hoy registrada (${gramos} g). Racha: ${status.rachaDias} días (${status.porcentajeSaturacion}% saturación).`,
+    };
+  }
+  if (name === 'registrar_peso_corporal') {
+    const rawPeso = Number(args.peso);
+    const pesoKg = Math.round(toKg(rawPeso) * 10) / 10;
+    if (!Number.isFinite(pesoKg) || pesoKg < 20 || pesoKg > 300) {
+      return { ok: false, error: 'Peso corporal fuera de rango válido.' };
+    }
+    const prev = await latestWeight();
+    const fecha = /^\d{4}-\d{2}-\d{2}$/.test(String(args.fecha || '').trim())
+      ? String(args.fecha).trim()
+      : todayISO();
+    const id = await addBodyWeight({ fecha, peso: pesoKg });
+    await saveAthleteProfile({ peso: `${pesoKg} kg` });
+    const delta = prev ? Math.round((pesoKg - Number(prev.peso)) * 10) / 10 : null;
+    const deltaStr = delta != null && delta !== 0
+      ? ` (${delta > 0 ? '+' : ''}${delta} kg respecto a los ${prev.peso} kg del ${prev.fecha})`
+      : '';
+    return {
+      ok: true,
+      id,
+      fecha,
+      pesoKg,
+      pesoAnteriorKg: prev?.peso ?? null,
+      diferenciaKg: delta,
+      mensaje: `Peso corporal de ${pesoKg} kg registrado en Progreso para el ${fecha}${deltaStr}.`,
+    };
+  }
+  if (name === 'gestionar_entrenamiento') {
+    const isFinish = /finaliz|termin|cerr|acab/i.test(String(args.accion || ''));
+    if (isFinish) {
+      const active = await getActiveWorkout();
+      if (!active) {
+        return { ok: false, mensaje: 'No hay ningún entrenamiento activo en este momento para finalizar.' };
+      }
+      const summary = await finishWorkoutSummary(active.id);
+      const duracionMin = Math.max(1, Math.round((now() - active.startedAt) / 60000));
+      await finishWorkout(active.id);
+      const { todayMealsSummary } = await import('./meals.js');
+      const mealsToday = await todayMealsSummary();
+      const protFalta = Math.max(0, mealsToday.targets.proteina - mealsToday.totals.proteina);
+      return {
+        ok: true,
+        accion: 'finalizar',
+        duracionMin,
+        totalSeries: summary.totalSets,
+        volumenTotal: summary.volumenTotal,
+        detalles: summary.detalles,
+        proteinaRestanteHoy: protFalta,
+        kcalRestantesHoy: mealsToday.remainingKcal,
+        mensaje: `Entrenamiento finalizado: ${duracionMin} min, ${summary.totalSets} series y ${summary.volumenTotal} kg de volumen (${summary.detalles || 'sin series'}). Te faltan ${protFalta} g de proteína hoy.`,
+      };
+    }
+    const existing = await getActiveWorkout();
+    if (existing) {
+      return {
+        ok: true,
+        accion: 'iniciar',
+        yaActivo: true,
+        workoutId: existing.id,
+        fecha: existing.fecha,
+        mensaje: 'Ya tienes una sesión de entrenamiento activa en curso.',
+      };
+    }
+    const w = await startWorkout();
+    return {
+      ok: true,
+      accion: 'iniciar',
+      yaActivo: false,
+      workoutId: w.id,
+      fecha: w.fecha,
+      mensaje: 'Sesión de entrenamiento iniciada. Dime qué ejercicio vamos a hacer.',
+    };
+  }
+  if (name === 'consultar_progreso_ejercicio') {
+    const q = String(args.ejercicio || '').trim();
+    if (!q) return { ok: false, mensaje: 'Indica el nombre del ejercicio a consultar.' };
+    const found = matchExercise(q, await listExercises());
+    if (found.status === 'none') {
+      return { ok: false, mensaje: `No encontré el ejercicio "${q}" en el catálogo.` };
+    }
+    if (found.status === 'many') {
+      const nombres = found.exercises.map((e) => e.nombre).join(', ');
+      return { ok: false, mensaje: `Hay varios ejercicios que coinciden: ${nombres}. ¿Cuál de ellos quieres consultar?` };
+    }
+    const ex = found.exercise;
+    const [pr, lastSess, prog] = await Promise.all([
+      prByExercise(ex.id),
+      lastSessionSetsFor(ex.id),
+      progressForExercise(ex.id),
+    ]);
+    if (!prog.sessions.length) {
+      return {
+        ok: true,
+        ejercicio: ex.nombre,
+        grupo: ex.grupo,
+        sinRegistros: true,
+        mensaje: `Aún no tienes series históricas registradas en ${ex.nombre}.`,
+      };
+    }
+    const ultimaSesion = lastSess
+      ? {
+          fecha: lastSess.workout.fecha,
+          series: lastSess.sets.map((s) => `${s.peso} kg × ${s.reps} reps${s.rpe != null && s.rpe !== '' ? ` (RIR ${Math.max(0, 10 - Number(s.rpe))})` : ''}`),
+        }
+      : null;
+    const ultimasFechas = prog.sessions.slice(-5).map((d) => ({
+      fecha: d.fecha,
+      pesoMaximoKg: d.maxPeso,
+      e1rmKg: Math.round(d.e1rm * 10) / 10,
+      volumenKg: Math.round(d.volumen),
+      series: d.series,
+    }));
+    return {
+      ok: true,
+      ejercicio: ex.nombre,
+      grupo: ex.grupo,
+      recordHistorico: {
+        pesoMaximoKg: pr.maxPeso,
+        repsMaximas: pr.maxReps,
+        e1rmEstimadoKg: Math.round(pr.e1rmMax * 10) / 10,
+      },
+      ultimaSesion,
+      totalSesionesRegistradas: prog.sessions.length,
+      ultimas5Sesiones: ultimasFechas,
+      mensaje: `En ${ex.nombre}: PR histórico de ${pr.maxPeso} kg (1RM est. ${Math.round(pr.e1rmMax)} kg). ${
+        ultimaSesion ? `Última vez (${ultimaSesion.fecha}): ${ultimaSesion.series.join(', ')}.` : ''
+      }`,
+    };
+  }
   if (name === 'consultar_entrenamientos') {
     return queryWorkoutHistoryForFit(args.dia);
   }
   if (name === 'consultar_comidas') {
-    const { todayMealsSummary } = await import('./meals.js');
-    const s = await todayMealsSummary();
+    const { getMealsHistoryForFit } = await import('./meals.js');
     return {
       ok: true,
-      fecha: s.fecha,
-      consumido: s.totals,
-      meta: s.targets,
-      restanteKcal: s.remainingKcal,
-      restanteProteina: Math.max(0, s.targets.proteina - s.totals.proteina),
-      comidas: s.meals.map((m) => ({
-        id: m.id,
-        hora: m.hora,
-        tipo: m.tipo,
-        nombre: m.nombre,
-        kcal: m.kcal,
-        proteina: m.proteina,
-      })),
+      ...(await getMealsHistoryForFit(args.periodo || 'hoy')),
     };
   }
   if (name === 'registrar_comida') {
@@ -541,19 +771,41 @@ export async function queryWorkoutHistoryForFit(target) {
   }
 }
 
+async function getBodyMetricsContextForFit() {
+  try {
+    const weights = await listBodyWeights();
+    if (!weights.length) return '';
+    const recent = weights.slice(-5);
+    const latest = recent[recent.length - 1];
+    const first = recent[0];
+    const diff = recent.length > 1 ? Math.round((latest.peso - first.peso) * 10) / 10 : 0;
+    const diffStr = recent.length > 1 ? ` (variación reciente: ${diff > 0 ? '+' : ''}${diff} kg)` : '';
+    const histStr = recent.map((w) => `${w.fecha}: ${w.peso} kg`).join(', ');
+    return `\nHISTORIAL DE PESO CORPORAL (Progreso): Último peso registrado: ${latest.peso} kg (${latest.fecha})${diffStr}. Últimas pesadas: ${histStr}.\n`;
+  } catch {
+    return '';
+  }
+}
+
 async function buildSystemInstruction() {
   const { getMealsContextForFit } = await import('./meals.js');
-  const [memories, recentWorkoutsCtx, profile, routine, mealsCtx] = await Promise.all([
+  const [memories, recentWorkoutsCtx, profile, routine, mealsCtx, bodyCtx, activeWorkout] = await Promise.all([
     loadAllMemories(),
     getRecentWorkoutsForFit(),
     loadAthleteProfile(),
     loadWeeklyRoutine(),
     getMealsContextForFit(),
+    getBodyMetricsContextForFit(),
+    getActiveWorkout(),
   ]);
 
+  const latestW = await latestWeight().catch(() => null);
+  const pesoActualStr = latestW ? `${latestW.peso} kg (${latestW.fecha})` : profile.peso;
+
   const profileBlock =
-    `\n\nPERFIL DEL ATLETA: Nombre: ${profile.nombre}, Peso: ${profile.peso}, Estatura: ${profile.estatura}, Creatina: ${profile.creatina}.\n` +
-    `RUTINA SEMANAL DEL ATLETA: ${routine.map((r) => `${r.dia}: ${r.grupo}`).join(', ')}.\n`;
+    `\n\nPERFIL DEL ATLETA: Nombre: ${profile.nombre}, Peso actual: ${pesoActualStr}, Estatura: ${profile.estatura}, Creatina: ${profile.creatina}.\n` +
+    `RUTINA SEMANAL DEL ATLETA: ${routine.map((r) => `${r.dia}: ${r.grupo}`).join(', ')}.\n` +
+    `SESIÓN DE ENTRENAMIENTO ACTIVA EN ESTE MOMENTO: ${activeWorkout ? `Sí (iniciada hoy ${activeWorkout.fecha})` : 'No (se iniciará automáticamente si el atleta dicta una serie o pide iniciar)'}.\n`;
 
   const memBlock =
     memories.length > 0
@@ -586,21 +838,25 @@ async function buildSystemInstruction() {
     '- REGLA DE DESCANSOS: No hables por iniciativa propia durante el descanso. Si acabas de preguntar cuántas repeticiones más podía hacer, su respuesta sí se atiende: llama a anotar_rpe, también si dice 0, cero o ninguna, y también si está descansando.\n' +
     '- Una sola corrección o foco técnico (cue) por turno, para que pueda aplicarlo en su siguiente serie sin sobrecarga mental.\n' +
     '- Si nombra un ejercicio, llama a usar_ejercicio enseguida con sus palabras, aunque todavía no haya serie. No preguntes si confirmamos el de Entreno y no digas «en pantalla tengo». Si ya lo dijo, no vuelvas a preguntar cuál.\n' +
-    '- Si pide anotar una serie, llama a registrar_serie enseguida. Si nombra el ejercicio, envía ese texto en ejercicio. Si no lo nombra, no envíes ejercicio. tipo es trabajo si no dice que es calentamiento. El esfuerzo responde a «¿Cuántas repeticiones más podrías haber hecho?». Si habla en RPE, no lo conviertas: haz esa misma pregunta. 0 es que no salía otra.\n' +
+    '- Si pide anotar una serie, llama a registrar_serie enseguida (si no había sesión activa, registrar_serie la abre automáticamente). Si nombra el ejercicio, envía ese texto en ejercicio. Si no lo nombra, no envíes ejercicio. tipo es trabajo si no dice que es calentamiento. El esfuerzo responde a «¿Cuántas repeticiones más podrías haber hecho?». Si habla en RPE, no lo conviertas: haz esa misma pregunta. 0 es que no salía otra.\n' +
+    '- Si el atleta pide iniciar el entrenamiento o dice que ya terminó de entrenar, llama a gestionar_entrenamiento (accion: "iniciar" o "finalizar"). Al finalizar, menciona brevemente su volumen y cuánta proteína le falta hoy.\n' +
     `- No preguntes el peso antes de la serie y no digas «lastre». Peso corporal es corporal true y 0 añadidos. Si dice un disco o un peso, el número de peso va en ${weightUnit()} (unidad actual de la app).\n` +
     '- Si la herramienta dice que el ejercicio no está o que hay varios, obedécela: no anotes en otro y, si hay varios, pregunta cuál una sola vez.\n' +
     '- Si la herramienta responde preguntar true, haz la pregunta del esfuerzo con la marca que viene y espera. Si preguntar es false, no vuelvas a preguntar el esfuerzo.\n' +
     '- La respuesta del atleta se anota con anotar_rpe: la marca vigente y el rir. 0 y cero son rir 0. Si dice que no sabe, omitir true. Una marca vieja no sirve: pregunta de nuevo y no reutilices la respuesta anterior.\n' +
     '- No sugieras pesos, no cambies el descanso y no inventes el esfuerzo.\n' +
     '- El atleta manda el tema: tus objetivos de registro jamás pisan lo que él decida consultar.\n' +
-    '- Si menciona datos personales (peso, marcas, objetivos, molestias o una preferencia, como cuándo toma la creatina), llama inmediatamente a guardar_recuerdo. La toma del día no es un recuerdo.\n' +
-    '- Si pregunta por la creatina, si ya la tomó, la racha, la saturación o un día que falló, llama a consultar_creatina y contesta con una sola frase. Entre series y durante el descanso no la menciones.\n' +
-    '- COMIDAS Y NUTRICIÓN: Nunca guardes comidas como recuerdos sueltos. Usa registrar_comida para anotar lo que comió, corregir_comida si pide ajustar o borrar una comida de hoy (ej. "eso eran papas en air fryer") y consultar_comidas si pregunta cuántas calorías o proteínas lleva hoy o qué comer según su rutina. Confirma en una sola frase corta con las kcal y proteína restantes, sin culpas por comer de más y sin dar consejos médicos.\n' +
+    '- PESO CORPORAL: Si el atleta dice cuánto pesó hoy o pide registrar su peso corporal (ej. "hoy pesé 49,6 kg" o "registrar mi peso"), llama SIEMPRE a registrar_peso_corporal para guardarlo en la gráfica de Progreso. NUNCA uses guardar_recuerdo para el peso corporal.\n' +
+    '- CREATINA: Si el atleta dice que ya tomó la creatina hoy ("ya me tomé la creatina", "anótame la creatina") o pide desmarcarla, llama a registrar_creatina. Si pregunta cómo va con la creatina, la racha o la saturación, llama a consultar_creatina y contesta en una frase.\n' +
+    '- RÉCORDS Y EJERCICIOS ESPECÍFICOS: Si el atleta pregunta su récord histórico (PR), cuánto levantó la última vez en un ejercicio concreto (ej. press inclinado, curl martillo) o cómo ha progresado en ese ejercicio, llama a consultar_progreso_ejercicio.\n' +
+    '- Si menciona preferencias cualitativas (molestias, lesiones, técnica, objetivos o horarios), llama a guardar_recuerdo.\n' +
+    '- COMIDAS Y NUTRICIÓN: Nunca guardes comidas como recuerdos sueltos. Usa registrar_comida para anotar lo que comió, corregir_comida si pide ajustar o borrar una comida de hoy (ej. "eso eran papas en air fryer") y consultar_comidas (con periodo: "hoy", "ayer" o "semana") si pregunta cuántas calorías o proteínas lleva hoy, cómo cerró ayer o cómo va en la semana. Confirma en una sola frase corta con las kcal y proteína restantes, sin culpas por comer de más y sin dar consejos médicos.\n' +
     '- Si el atleta pregunta qué hizo ayer, qué entrenó hoy, cuánto duró su entreno, cuándo fue su última sesión, qué ejercicios hizo o cómo va su volumen, consulta el HISTORIAL REAL o llama a consultar_entrenamientos. Responde de inmediato con los grupos, ejercicios, duración y series reales que hizo. NUNCA digas que no entrenó si en el historial aparece una sesión registrada ese día o recientemente.\n' +
     '- Usa los recuerdos guardados de forma natural, sin recitarlos como un informe.\n' +
     '- Nunca escribas HTML, comentarios, inglés ni instrucciones internas. Si no hay nada que decir, no generes texto. Tu única salida es la frase hablada al atleta, en español, en 1 o 2 oraciones.' +
     currentCtx +
     profileBlock +
+    bodyCtx +
     memBlock +
     mealsCtx +
     recentWorkoutsCtx
@@ -708,7 +964,7 @@ export class FitAgent {
   get model() { return this.#model; }
 
   on(event, fn) { this.#handlers[event] = fn; return this; }
-  #emit(event, data) { this.#handlers[event]?.(data); }
+  #emit(event, ...args) { this.#handlers[event]?.(...args); }
 
   async connect() {
     const sysInstruction = await buildSystemInstruction();
@@ -859,7 +1115,7 @@ export class FitAgent {
       const { name, call_id } = msg.item;
       let args = {};
       try { args = JSON.parse(msg.item.arguments || '{}'); } catch {}
-      const result = await handleToolCall(name, args);
+      const result = await executeToolCall(name, args);
       if (result?.exercise) {
         this.#emit('exercise_selected', result.exercise);
       }

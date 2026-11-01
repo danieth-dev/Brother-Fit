@@ -4,7 +4,7 @@
 
 import { db } from '../db.js';
 import { state } from '../store.js';
-import { todayISO } from '../utils/dates.js';
+import { todayISO, addDays } from '../utils/dates.js';
 import { getAgentConfig } from './agent.js';
 
 export const MEAL_TYPES = ['Desayuno', 'Almuerzo', 'Merienda', 'Cena'];
@@ -617,16 +617,37 @@ export async function analyzeMealText(text) {
 
   /* Parser local inteligente sobre COMMON_FOODS si no hay red o API key */
   const lower = clean.toLowerCase();
+  const isBoiledEgg = /huevo.*(sancochad|hervid|duro|cocid)/i.test(lower);
+  const isFriedEgg = /huevo.*(frit|plancha|revuelt)/i.test(lower);
   const matched = [];
+
   for (const food of COMMON_FOODS) {
-    const keywords = food.nombre
-      .toLowerCase()
+    const foodLower = food.nombre.toLowerCase();
+    if (foodLower.includes('huevo')) {
+      if (isBoiledEgg && foodLower.includes('frito')) continue;
+      if (isFriedEgg && foodLower.includes('cocido')) continue;
+      if (!isBoiledEgg && !isFriedEgg && foodLower.includes('frito') && matched.some((m) => m.nombre.toLowerCase().includes('huevo'))) continue;
+    }
+
+    const keywords = foodLower
       .split(/[\s/]+/)
-      .filter((w) => w.length > 3 && !['cocido', 'cocida', 'natural', 'entera', 'entero', 'horno', 'plancha'].includes(w));
+      .filter((w) => w.length > 3 && !['cocido', 'cocida', 'natural', 'entera', 'entero', 'horno', 'plancha', 'frito'].includes(w));
     if (keywords.some((kw) => lower.includes(kw))) {
-      const regex = new RegExp(`(\\d+)\\s*(?:g|gr|gramos)?\\s*(?:de\\s+)?${keywords[0]}`, 'i');
-      const m = clean.match(regex);
-      const grams = m ? Number(m[1]) : food.porcion;
+      if (foodLower.includes('huevo') && matched.some((m) => m.nombre.toLowerCase().includes('huevo'))) continue;
+      const gramsRegex = new RegExp(`(\\d+)\\s*(?:g|gr|gramos)\\s*(?:de\\s+)?${keywords[0]}`, 'i');
+      const unitRegex = new RegExp(`(\\d+)\\s+${keywords[0]}`, 'i');
+      const mGrams = clean.match(gramsRegex);
+      const mUnits = clean.match(unitRegex);
+      let grams = food.porcion;
+      if (mGrams) {
+        grams = Number(mGrams[1]);
+      } else if (mUnits) {
+        const n = Number(mUnits[1]);
+        const unitWeight = foodLower.includes('huevo') ? 60 : food.porcion;
+        grams = n <= 12 ? n * unitWeight : n;
+      } else if (foodLower.includes('huevo entero')) {
+        grams = 60; // 1 huevo sancochado por defecto si no especifica cantidad
+      }
       matched.push(buildItemFromCatalog(food, grams));
     }
   }
@@ -641,10 +662,105 @@ export async function analyzeMealText(text) {
   return getDemoPhotoResult();
 }
 
-/* Devuelve un bloque de texto estructurado con el diario de comidas de hoy para Fit. */
+/* Consulta histórica de comidas para la herramienta consultar_comidas de Fit ('hoy', 'ayer', 'semana' o 'YYYY-MM-DD'). */
+export async function getMealsHistoryForFit(periodo = 'hoy') {
+  const q = String(periodo || 'hoy').trim().toLowerCase();
+  const today = todayISO();
+  const yesterday = addDays(today, -1);
+
+  if (q.includes('sem') || q.includes('7') || q.includes('hist')) {
+    const allMeals = await db.getAll('meals');
+    const start = addDays(today, -6);
+    const byDate = new Map();
+    for (let i = 0; i < 7; i++) {
+      const d = addDays(today, -i);
+      byDate.set(d, []);
+    }
+    for (const m of allMeals) {
+      if (m.fecha >= start && m.fecha <= today) {
+        if (!byDate.has(m.fecha)) byDate.set(m.fecha, []);
+        byDate.get(m.fecha).push(m);
+      }
+    }
+    const sToday = await todayMealsSummary(today);
+    const dias = [];
+    let sumKcal = 0;
+    let sumProt = 0;
+    let daysWithLogs = 0;
+    for (const [fecha, list] of byDate.entries()) {
+      const kcal = list.reduce((acc, m) => acc + (Number(m.kcal) || 0), 0);
+      const proteina = list.reduce((acc, m) => acc + (Number(m.proteina) || 0), 0);
+      const carbos = list.reduce((acc, m) => acc + (Number(m.carbos) || 0), 0);
+      const grasa = list.reduce((acc, m) => acc + (Number(m.grasa) || 0), 0);
+      if (list.length > 0) {
+        sumKcal += kcal;
+        sumProt += proteina;
+        daysWithLogs++;
+      }
+      dias.push({
+        fecha,
+        etiqueta: fecha === today ? 'Hoy' : fecha === yesterday ? 'Ayer' : fecha,
+        comidasCount: list.length,
+        kcal,
+        proteina,
+        carbos,
+        grasa,
+        platos: list.map((m) => `${m.tipo}: ${m.nombre} (${m.kcal} kcal, ${m.proteina}g P)`),
+      });
+    }
+    return {
+      periodo: 'ultimos_7_dias',
+      metasDiarias: sToday.targets,
+      diasConRegistro: daysWithLogs,
+      promedioKcal: daysWithLogs ? Math.round(sumKcal / daysWithLogs) : 0,
+      promedioProteina: daysWithLogs ? Math.round(sumProt / daysWithLogs) : 0,
+      dias,
+    };
+  }
+
+  let targetDate = today;
+  if (q.includes('ayer')) {
+    targetDate = yesterday;
+  } else if (q.includes('anteayer')) {
+    targetDate = addDays(today, -2);
+  } else if (/^\d{4}-\d{2}-\d{2}$/.test(q)) {
+    targetDate = q;
+  }
+
+  const s = await todayMealsSummary(targetDate);
+  const protFalta = Math.max(0, s.targets.proteina - s.totals.proteina);
+  return {
+    fecha: s.fecha,
+    esHoy: s.fecha === today,
+    metas: s.targets,
+    consumido: s.totals,
+    restante: {
+      kcal: s.remainingKcal,
+      proteina: protFalta,
+    },
+    comidas: s.meals.map((m) => ({
+      id: m.id,
+      hora: m.hora,
+      tipo: m.tipo,
+      nombre: m.nombre,
+      kcal: m.kcal,
+      proteina: m.proteina,
+      carbos: m.carbos,
+      grasa: m.grasa,
+      items: (m.items || []).map((i) => ({ nombre: i.nombre, gramos: i.gramos, kcal: i.kcal, proteina: i.proteina })),
+    })),
+  };
+}
+
+/* Devuelve un bloque de texto estructurado con el diario de comidas de hoy y ayer para Fit. */
 export async function getMealsContextForFit() {
   try {
-    const s = await todayMealsSummary(todayISO());
+    const today = todayISO();
+    const yesterday = addDays(today, -1);
+    const [s, sYesterday] = await Promise.all([
+      todayMealsSummary(today),
+      todayMealsSummary(yesterday),
+    ]);
     const protFalta = Math.max(0, s.targets.proteina - s.totals.proteina);
     const lines = [
       `\n\nNUTRICIÓN Y COMIDAS DE HOY (${s.fecha}):`,
@@ -660,6 +776,11 @@ export async function getMealsContextForFit() {
         const itemsDesc = (m.items || []).map((i) => `${i.nombre} ${i.gramos}g`).join(', ');
         lines.push(`  * [ID ${m.id}] ${m.hora} · ${m.tipo}: ${m.nombre} — ${m.kcal} kcal, Proteína ${m.proteina} g${itemsDesc ? ` (${itemsDesc})` : ''}.`);
       }
+    }
+    if (sYesterday.meals.length > 0) {
+      lines.push(
+        `- Cierre de ayer (${yesterday}): ${sYesterday.totals.kcal} / ${sYesterday.targets.kcal} kcal · Proteína ${sYesterday.totals.proteina} / ${sYesterday.targets.proteina} g (${sYesterday.meals.length} comidas).`
+      );
     }
     return lines.join('\n');
   } catch {

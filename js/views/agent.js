@@ -464,6 +464,43 @@ async function renderLiveChat(el, config) {
         `;
         msgsEl.appendChild(card);
         msgsEl.scrollTop = msgsEl.scrollHeight;
+      } else if (toolName === 'registrar_peso_corporal' && result?.ok) {
+        const card = document.createElement('div');
+        card.className = 'agent-card-memory';
+        card.innerHTML = `
+          <div class="agent-card-memory-icon">${icons.check({ size: 18, stroke: '#10B981' })}</div>
+          <div class="agent-card-memory-body">
+            <span class="agent-card-memory-tag">Guardado en Peso corporal</span>
+            <span class="agent-card-memory-text">${esc(result.mensaje || `${result.pesoKg} kg (${result.fecha})`)}</span>
+          </div>
+        `;
+        msgsEl.appendChild(card);
+        msgsEl.scrollTop = msgsEl.scrollHeight;
+      } else if (toolName === 'registrar_creatina' && result?.ok) {
+        const card = document.createElement('div');
+        card.className = 'agent-card-memory';
+        card.innerHTML = `
+          <div class="agent-card-memory-icon">${icons.check({ size: 18, stroke: '#10B981' })}</div>
+          <div class="agent-card-memory-body">
+            <span class="agent-card-memory-tag">Registro de creatina</span>
+            <span class="agent-card-memory-text">${esc(result.mensaje || 'Creatina actualizada')}</span>
+          </div>
+        `;
+        msgsEl.appendChild(card);
+        msgsEl.scrollTop = msgsEl.scrollHeight;
+      } else if (toolName === 'gestionar_entrenamiento' && result?.ok) {
+        const card = document.createElement('div');
+        card.className = 'agent-card-memory';
+        const tag = result.accion === 'finalizar' ? 'Entrenamiento finalizado' : 'Entrenamiento iniciado';
+        card.innerHTML = `
+          <div class="agent-card-memory-icon">${icons.check({ size: 18, stroke: '#10B981' })}</div>
+          <div class="agent-card-memory-body">
+            <span class="agent-card-memory-tag">${esc(tag)}</span>
+            <span class="agent-card-memory-text">${esc(result.mensaje || '')}</span>
+          </div>
+        `;
+        msgsEl.appendChild(card);
+        msgsEl.scrollTop = msgsEl.scrollHeight;
       }
     })
     .on('error', (err) => {
