@@ -117,13 +117,22 @@ const TOOL_DECLARATIONS = [
     },
   },
   {
+    name: 'consultar_comidas',
+    description:
+      'Consulta el diario de comidas de hoy, las calorías y proteínas consumidas, y cuánto le falta al atleta para su meta diaria. Úsala cuando pregunte cuántas calorías o proteínas lleva hoy o qué comer.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {},
+    },
+  },
+  {
     name: 'registrar_comida',
     description:
       'Registra una comida en el diario nutricional de hoy cuando el atleta diga qué comió o pida anotar una comida con sus calorías y proteínas estimadas.',
     parameters: {
       type: 'OBJECT',
       properties: {
-        plato: { type: 'STRING', description: 'Nombre del plato o alimentos (ej. Arroz, pollo y ensalada).' },
+        plato: { type: 'STRING', description: 'Nombre del plato o alimentos (ej. Papas en air fryer, huevo frito y carne molida).' },
         tipo: { type: 'STRING', description: 'Desayuno, Almuerzo, Merienda o Cena.' },
         kcal: { type: 'NUMBER', description: 'Calorías totales estimadas.' },
         proteina: { type: 'NUMBER', description: 'Gramos de proteína estimados.' },
@@ -131,6 +140,23 @@ const TOOL_DECLARATIONS = [
         grasa: { type: 'NUMBER', description: 'Gramos de grasa estimados.' },
       },
       required: ['plato', 'kcal', 'proteina'],
+    },
+  },
+  {
+    name: 'corregir_comida',
+    description:
+      'Corrige o borra una comida ya registrada hoy (por ejemplo si el atleta dice "eso eran papas en air fryer", "cambia el almuerzo a 500 kcal" o "borra la última comida").',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        id: { type: 'NUMBER', description: 'ID de la comida a modificar o borrar. Si no se indica, se usa la última comida de hoy.' },
+        borrar: { type: 'BOOLEAN', description: 'True para eliminar la comida del diario.' },
+        plato: { type: 'STRING', description: 'Nuevo nombre o descripción corregida del plato.' },
+        kcal: { type: 'NUMBER', description: 'Nuevas calorías totales estimadas.' },
+        proteina: { type: 'NUMBER', description: 'Nuevos gramos de proteína.' },
+        carbos: { type: 'NUMBER', description: 'Nuevos gramos de carbohidratos.' },
+        grasa: { type: 'NUMBER', description: 'Nuevos gramos de grasa.' },
+      },
     },
   },
 ];
@@ -307,8 +333,28 @@ export async function executeToolCall(name, args) {
   if (name === 'consultar_entrenamientos') {
     return queryWorkoutHistoryForFit(args.dia);
   }
+  if (name === 'consultar_comidas') {
+    const { todayMealsSummary } = await import('./meals.js');
+    const s = await todayMealsSummary();
+    return {
+      ok: true,
+      fecha: s.fecha,
+      consumido: s.totals,
+      meta: s.targets,
+      restanteKcal: s.remainingKcal,
+      restanteProteina: Math.max(0, s.targets.proteina - s.totals.proteina),
+      comidas: s.meals.map((m) => ({
+        id: m.id,
+        hora: m.hora,
+        tipo: m.tipo,
+        nombre: m.nombre,
+        kcal: m.kcal,
+        proteina: m.proteina,
+      })),
+    };
+  }
   if (name === 'registrar_comida') {
-    const { saveMeal } = await import('./meals.js');
+    const { saveMeal, todayMealsSummary } = await import('./meals.js');
     const id = await saveMeal({
       nombre: args.plato || 'Comida registrada por Fit',
       tipo: args.tipo,
@@ -318,10 +364,47 @@ export async function executeToolCall(name, args) {
       grasa: Number(args.grasa) || 0,
       origen: 'voz',
     });
+    const s = await todayMealsSummary();
+    const protFalta = Math.max(0, s.targets.proteina - s.totals.proteina);
     return {
       ok: true,
       id,
-      mensaje: `Comida "${args.plato}" guardada en el diario (${args.kcal} kcal, ${args.proteina} g de proteína).`,
+      mensaje: `Listo: ${args.kcal} kcal registradas (${args.plato}). Hoy llevas ${s.totals.kcal} de ${s.targets.kcal} kcal; te quedan ${s.remainingKcal} kcal y ${protFalta} g de proteína.`,
+    };
+  }
+  if (name === 'corregir_comida') {
+    const { listMealsByDate, deleteMeal, saveMeal, todayMealsSummary } = await import('./meals.js');
+    const meals = await listMealsByDate();
+    if (!meals.length) {
+      return { ok: false, mensaje: 'No hay comidas registradas hoy para modificar.' };
+    }
+    const target = args.id ? meals.find((m) => m.id === Number(args.id)) : meals[meals.length - 1];
+    if (!target) {
+      return { ok: false, mensaje: 'No encontré esa comida en el registro de hoy.' };
+    }
+    if (args.borrar) {
+      await deleteMeal(target.id);
+      const s = await todayMealsSummary();
+      return {
+        ok: true,
+        mensaje: `Comida "${target.nombre}" eliminada. Hoy quedas en ${s.totals.kcal} kcal y ${s.totals.proteina} g de proteína.`,
+      };
+    }
+    await saveMeal({
+      ...target,
+      id: target.id,
+      items: [],
+      nombre: args.plato || target.nombre,
+      kcal: args.kcal != null ? Number(args.kcal) : target.kcal,
+      proteina: args.proteina != null ? Number(args.proteina) : target.proteina,
+      carbos: args.carbos != null ? Number(args.carbos) : target.carbos,
+      grasa: args.grasa != null ? Number(args.grasa) : target.grasa,
+    });
+    const s = await todayMealsSummary();
+    return {
+      ok: true,
+      id: target.id,
+      mensaje: `Comida actualizada a "${args.plato || target.nombre}" (${args.kcal ?? target.kcal} kcal). Hoy llevas ${s.totals.kcal} kcal y ${s.totals.proteina} g de proteína.`,
     };
   }
   if (name === 'guardar_recuerdo') {
@@ -380,7 +463,9 @@ export async function getRecentWorkoutsForFit() {
       const isYesterday = s.fecha === fechaAyer;
       const label = isToday ? `HOY (${diaSemanaHoy} ${s.fecha})` : isYesterday ? `AYER (${diaSemanaAyer} ${s.fecha})` : s.fecha;
       const gruposStr = s.grupos?.length ? s.grupos.join(', ') : 'General';
-      lines.push(`- [${label}]: ${gruposStr} · ${s.totalSets} series · ${Math.round(s.volumen)} kg/lb volumen.`);
+      const durMin = s.finishedAt && s.startedAt ? Math.max(1, Math.round((s.finishedAt - s.startedAt) / 60000)) : null;
+      const durStr = durMin ? ` · ${durMin} min de duración` : '';
+      lines.push(`- [${label}]: ${gruposStr} · ${s.totalSets} series · ${Math.round(s.volumen)} kg/lb volumen${durStr}.`);
     }
 
     return lines.join('\n');
@@ -436,16 +521,20 @@ export async function queryWorkoutHistoryForFit(target) {
     const isYesterday = matchSummary.fecha === fechaAyer;
     const isToday = matchSummary.fecha === fechaHoy;
     const temporalLabel = isToday ? 'hoy' : isYesterday ? 'ayer' : `el ${matchSummary.fecha}`;
+    const w = detail.workout;
+    const duracionMin = w?.finishedAt && w?.startedAt ? Math.max(1, Math.round((w.finishedAt - w.startedAt) / 60000)) : null;
+    const durText = duracionMin ? `, duración ${duracionMin} min` : '';
 
     return {
       ok: true,
       fecha: matchSummary.fecha,
       temporal: temporalLabel,
       grupos: matchSummary.grupos,
+      duracionMin,
       volumenTotal: Math.round(detail.volumen),
       totalSeries: detail.totalSets,
       ejercicios,
-      resumen: `Entrenamiento de ${temporalLabel} (${matchSummary.grupos.join(', ')}): ${detail.totalSets} series totales, ${Math.round(detail.volumen)} kg/lb de volumen. Ejercicios: ${ejercicios.join('; ')}.`
+      resumen: `Entrenamiento de ${temporalLabel} (${matchSummary.grupos.join(', ')}${durText}): ${detail.totalSets} series totales, ${Math.round(detail.volumen)} kg/lb de volumen. Ejercicios: ${ejercicios.join('; ')}.`
     };
   } catch (e) {
     return { error: 'Error al consultar entrenamientos: ' + e.message };
@@ -453,11 +542,13 @@ export async function queryWorkoutHistoryForFit(target) {
 }
 
 async function buildSystemInstruction() {
-  const [memories, recentWorkoutsCtx, profile, routine] = await Promise.all([
+  const { getMealsContextForFit } = await import('./meals.js');
+  const [memories, recentWorkoutsCtx, profile, routine, mealsCtx] = await Promise.all([
     loadAllMemories(),
     getRecentWorkoutsForFit(),
     loadAthleteProfile(),
     loadWeeklyRoutine(),
+    getMealsContextForFit(),
   ]);
 
   const profileBlock =
@@ -504,12 +595,14 @@ async function buildSystemInstruction() {
     '- El atleta manda el tema: tus objetivos de registro jamás pisan lo que él decida consultar.\n' +
     '- Si menciona datos personales (peso, marcas, objetivos, molestias o una preferencia, como cuándo toma la creatina), llama inmediatamente a guardar_recuerdo. La toma del día no es un recuerdo.\n' +
     '- Si pregunta por la creatina, si ya la tomó, la racha, la saturación o un día que falló, llama a consultar_creatina y contesta con una sola frase. Entre series y durante el descanso no la menciones.\n' +
-    '- Si el atleta pregunta qué hizo ayer, qué entrenó hoy, cuándo fue su última sesión, qué ejercicios hizo o cómo va su volumen, consulta el HISTORIAL REAL o llama a consultar_entrenamientos. Responde de inmediato con los grupos, ejercicios y series reales que hizo. NUNCA digas que no entrenó si en el historial aparece una sesión registrada ese día o recientemente.\n' +
+    '- COMIDAS Y NUTRICIÓN: Nunca guardes comidas como recuerdos sueltos. Usa registrar_comida para anotar lo que comió, corregir_comida si pide ajustar o borrar una comida de hoy (ej. "eso eran papas en air fryer") y consultar_comidas si pregunta cuántas calorías o proteínas lleva hoy o qué comer según su rutina. Confirma en una sola frase corta con las kcal y proteína restantes, sin culpas por comer de más y sin dar consejos médicos.\n' +
+    '- Si el atleta pregunta qué hizo ayer, qué entrenó hoy, cuánto duró su entreno, cuándo fue su última sesión, qué ejercicios hizo o cómo va su volumen, consulta el HISTORIAL REAL o llama a consultar_entrenamientos. Responde de inmediato con los grupos, ejercicios, duración y series reales que hizo. NUNCA digas que no entrenó si en el historial aparece una sesión registrada ese día o recientemente.\n' +
     '- Usa los recuerdos guardados de forma natural, sin recitarlos como un informe.\n' +
     '- Nunca escribas HTML, comentarios, inglés ni instrucciones internas. Si no hay nada que decir, no generes texto. Tu única salida es la frase hablada al atleta, en español, en 1 o 2 oraciones.' +
     currentCtx +
     profileBlock +
     memBlock +
+    mealsCtx +
     recentWorkoutsCtx
   );
 }

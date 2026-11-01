@@ -11,11 +11,15 @@ export const MEAL_TYPES = ['Desayuno', 'Almuerzo', 'Merienda', 'Cena'];
 
 /* Catálogo local de alimentos frecuentes (valores por cada 100 g + porción típica en g). */
 export const COMMON_FOODS = [
+  { nombre: 'Papas en air fryer / horno', porcion: 180, kcal100: 115, p100: 2.5, c100: 24.0, g100: 1.2 },
+  { nombre: 'Huevo frito / a la plancha', porcion: 60, kcal100: 196, p100: 13.6, c100: 0.8, g100: 14.8 },
+  { nombre: 'Carne molida de res', porcion: 140, kcal100: 215, p100: 24.0, c100: 0.0, g100: 13.0 },
   { nombre: 'Arroz blanco cocido', porcion: 180, kcal100: 130, p100: 2.7, c100: 28.2, g100: 0.3 },
   { nombre: 'Pechuga de pollo', porcion: 140, kcal100: 165, p100: 31.0, c100: 0.0, g100: 3.6 },
   { nombre: 'Ensalada mixta', porcion: 90, kcal100: 28, p100: 1.4, c100: 4.5, g100: 0.4 },
-  { nombre: 'Aceite de oliva', porcion: 10, kcal100: 884, p100: 0.0, c100: 0.0, g100: 100.0 },
+  { nombre: 'Aceite de cocción / oliva', porcion: 5, kcal100: 884, p100: 0.0, c100: 0.0, g100: 100.0 },
   { nombre: 'Huevo entero cocido', porcion: 120, kcal100: 155, p100: 13.0, c100: 1.1, g100: 11.0 },
+  { nombre: 'Arepa de maíz asada', porcion: 130, kcal100: 195, p100: 4.5, c100: 41.0, g100: 1.2 },
   { nombre: 'Avena en hojuelas', porcion: 60, kcal100: 389, p100: 16.9, c100: 66.3, g100: 6.9 },
   { nombre: 'Plátano / Banano', porcion: 120, kcal100: 89, p100: 1.1, c100: 22.8, g100: 0.3 },
   { nombre: 'Plátano macho maduro', porcion: 150, kcal100: 122, p100: 1.3, c100: 31.9, g100: 0.4 },
@@ -28,7 +32,6 @@ export const COMMON_FOODS = [
   { nombre: 'Papa / Patata cocida', porcion: 200, kcal100: 87, p100: 1.9, c100: 20.1, g100: 0.1 },
   { nombre: 'Batata / Camote asado', porcion: 180, kcal100: 90, p100: 2.0, c100: 20.7, g100: 0.2 },
   { nombre: 'Pan integral', porcion: 60, kcal100: 247, p100: 13.0, c100: 41.0, g100: 3.4 },
-  { nombre: 'Arepa de maíz asada', porcion: 130, kcal100: 195, p100: 4.5, c100: 41.0, g100: 1.2 },
   { nombre: 'Aguacate / Palta', porcion: 80, kcal100: 160, p100: 2.0, c100: 8.5, g100: 14.7 },
   { nombre: 'Lentejas cocidas', porcion: 180, kcal100: 116, p100: 9.0, c100: 20.1, g100: 0.4 },
   { nombre: 'Frijoles / Caraotas cocidas', porcion: 160, kcal100: 127, p100: 8.7, c100: 22.8, g100: 0.5 },
@@ -38,6 +41,30 @@ export const COMMON_FOODS = [
   { nombre: 'Proteína Whey (1 scoop)', porcion: 30, kcal100: 390, p100: 78.0, c100: 8.0, g100: 5.0 },
   { nombre: 'Queso blanco / Mozzarella', porcion: 50, kcal100: 280, p100: 22.0, c100: 2.2, g100: 21.0 },
 ];
+
+/* Calcula metas recomendadas según el peso del atleta (por defecto 49 kg) y su objetivo. */
+export function calculateTargetsForGoal(objetivo = 'ganar', pesoKg = 49) {
+  const w = Math.max(35, Math.min(180, Number(pesoKg) || 49));
+  if (objetivo === 'definir') {
+    const kcal = Math.round((w * 30) / 10) * 10;
+    const proteina = Math.round(w * 2.2);
+    const grasa = Math.round(w * 1.0);
+    const carbos = Math.max(60, Math.round((kcal - proteina * 4 - grasa * 9) / 4));
+    return { kcal, proteina, carbos, grasa, objetivo: 'definir' };
+  }
+  if (objetivo === 'mantener') {
+    const kcal = Math.round((w * 36) / 10) * 10;
+    const proteina = Math.round(w * 1.9);
+    const grasa = Math.round(w * 1.2);
+    const carbos = Math.max(80, Math.round((kcal - proteina * 4 - grasa * 9) / 4));
+    return { kcal, proteina, carbos, grasa, objetivo: 'mantener' };
+  }
+  const kcal = Math.round((w * 43) / 10) * 10;
+  const proteina = Math.round(w * 2.05);
+  const grasa = Math.round(w * 1.35);
+  const carbos = Math.max(100, Math.round((kcal - proteina * 4 - grasa * 9) / 4));
+  return { kcal, proteina, carbos, grasa, objetivo: 'ganar' };
+}
 
 export function defaultMealTypeByHour(d = new Date()) {
   const h = d.getHours() + d.getMinutes() / 60;
@@ -267,30 +294,30 @@ export function compressImageFile(file, maxDim = 800, quality = 0.72) {
 }
 
 const NUTRITION_PROMPT = `Eres el nutricionista deportivo de Brother Fit.
-Analiza la imagen o texto y devuelve ÚNICAMENTE un objeto JSON válido con esta estructura exacta:
+Analiza la imagen o texto y devuelve ÚNICAMENTE un objeto JSON válido (sin markdown adicional) con esta estructura exacta:
 {
   "esComida": true,
   "motivo": "",
   "plato": "Nombre corto del plato en español",
   "items": [
     {
-      "nombre": "Nombre del ingrediente en español (ej. Papas fritas, Huevo frito, Carne molida)",
+      "nombre": "Nombre del ingrediente en español (ej. Papas en air fryer, Huevo frito, Carne molida)",
       "gramos": 180,
-      "kcal": 234,
-      "proteina": 5,
-      "carbos": 50,
-      "grasa": 1
+      "kcal": 207,
+      "proteina": 4.5,
+      "carbos": 43.2,
+      "grasa": 2.2
     }
   ]
 }
-Reglas:
+Reglas estrictas:
 1. Si en la foto o texto NO hay ningún alimento, comida, bebida ni suplemento (por ejemplo: una mancuerna, un zapato, una pared, una mascota o una pantalla), devuelve "esComida": false, "motivo": "No veo comida ni bebida en la foto.", "items": [] y NO inventes alimentos.
 2. Si sí hay comida o bebida, devuelve "esComida": true y estima pesos realistas en gramos para las porciones visibles en el plato.
-3. Si es un plato cocinado o frito, incluye una estimación prudente del aceite o grasa de cocción.
+3. REGLA AIR FRYER Y ACEITE SEPARADO: No infles las calorías de papas, carnes o vegetales asumiendo que fueron sumergidos en aceite profundo. Si las papas están cortadas en dados/trozos dorados sin brillo excesivo de grasa (o si el usuario aclara "air fryer" / "horno"), estímales ~115 kcal por cada 100 g ("Papas en air fryer / horno"). Si crees que algún alimento lleva aceite de sartén (por ejemplo un huevo frito), agrega una fila separada llamada "Aceite de cocción" (ej. 5 g = 44 kcal) para que el atleta pueda subirla, bajarla o quitarla a su gusto.
 4. Asegúrate de que las kcal y macros (proteina, carbos, grasa) sean nutricionalmente coherentes con los gramos indicados.`;
 
 function extractJsonObject(raw) {
-  const cleaned = String(raw || '').replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
+  const cleaned = String(raw || '').replace(/```json/gi, '').replace(/```/g, '').trim();
   try {
     return JSON.parse(cleaned);
   } catch {
@@ -300,43 +327,135 @@ function extractJsonObject(raw) {
   }
 }
 
-async function callGeminiNutrition({ base64, mimeType, textPrompt }, apiKey) {
-  const models = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-flash-latest'];
+function extractParsedItems(parsed) {
+  if (!parsed || typeof parsed !== 'object') return null;
+  if (Array.isArray(parsed)) return parsed;
+  const arr = parsed.items || parsed.ingredientes || parsed.alimentos;
+  return Array.isArray(arr) ? arr : null;
+}
+
+/* Autodescubrimiento de modelos Gemini con soporte generateContent en la cuenta del usuario. */
+const cachedModelsByKey = new Map();
+
+async function discoverGeminiVisionModels(apiKey) {
+  const fallback = [
+    'gemini-2.5-flash',
+    'gemini-2.5-flash-lite',
+    'gemini-2.0-flash',
+    'gemini-2.0-flash-lite',
+    'gemini-1.5-flash',
+    'gemini-flash-latest',
+  ];
+  if (cachedModelsByKey.has(apiKey)) {
+    return cachedModelsByKey.get(apiKey);
+  }
+
+  try {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`);
+    if (!res.ok) return fallback;
+    const data = await res.json();
+    const available = (data?.models || [])
+      .filter((m) => Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes('generateContent'))
+      .map((m) => String(m.name || '').replace(/^models\//, ''))
+      .filter((id) => (
+        id.startsWith('gemini-') &&
+        !id.includes('tts') &&
+        !id.includes('embedding') &&
+        !id.includes('imagen') &&
+        !id.includes('veo') &&
+        !id.includes('aqa') &&
+        !id.includes('audio') &&
+        !id.includes('robotics') &&
+        !id.includes('computer-use')
+      ));
+
+    if (!available.length) return fallback;
+
+    const scoreModel = (id) => {
+      if (id === 'gemini-2.5-flash') return 100;
+      if (id === 'gemini-2.5-flash-lite') return 95;
+      if (id.startsWith('gemini-2.5-flash') && !id.includes('preview')) return 90;
+      if (id === 'gemini-3-flash-preview' || id === 'gemini-3.1-flash-lite-preview') return 88;
+      if (id === 'gemini-flash-latest') return 85;
+      if (id === 'gemini-2.0-flash') return 80;
+      if (id === 'gemini-2.0-flash-lite') return 78;
+      if (id === 'gemini-1.5-flash') return 75;
+      if (id.includes('flash')) return 70;
+      if (id.includes('pro')) return 50;
+      return 30;
+    };
+
+    available.sort((a, b) => scoreModel(b) - scoreModel(a));
+    const topModels = available.slice(0, 5);
+    cachedModelsByKey.set(apiKey, topModels);
+    return topModels;
+  } catch {
+    return fallback;
+  }
+}
+
+function formatApiError(provider, status, rawText) {
+  let msg = '';
+  try {
+    const parsed = JSON.parse(rawText);
+    msg = parsed?.error?.message || '';
+  } catch {
+    msg = String(rawText || '').slice(0, 140);
+  }
+  if (status === 400 && /api_key_invalid|key not valid/i.test(msg)) {
+    return `Tu API Key de ${provider} no es válida. Revísala en el panel de Fit.`;
+  }
+  if (status === 401 || status === 403) {
+    return `Tu API Key de ${provider} fue rechazada (${status}). Verifica que esté activa en Fit.`;
+  }
+  if (status === 429) {
+    return `Se alcanzó el límite de cuota gratuita de ${provider} (429). Espera unos segundos y pulsa Reintentar.`;
+  }
+  return msg ? `${provider} (${status}): ${msg.slice(0, 110)}` : `Error ${status} al conectar con ${provider}.`;
+}
+
+async function callGeminiNutrition({ base64, mimeType, textPrompt, userHint }, apiKey) {
+  const models = await discoverGeminiVisionModels(apiKey);
   let lastError = null;
+
+  let promptText = NUTRITION_PROMPT;
+  if (userHint) {
+    promptText += `\n\nACLARACIÓN IMPORTANTE DEL ATLETA SOBRE ESTE PLATO: "${userHint}". Respeta esta aclaración al identificar los ingredientes, el método de cocción (ej. air fryer = sin aceite extra) y las calorías.`;
+  }
+  if (textPrompt) {
+    promptText += `\n\nDescripción del plato a analizar: "${textPrompt}"`;
+  }
 
   const parts = [];
   if (base64) {
-    parts.push({ inlineData: { mimeType: mimeType || 'image/jpeg', data: base64 } });
+    parts.push({ inline_data: { mime_type: mimeType || 'image/jpeg', data: base64 } });
   }
-  parts.push({
-    text: textPrompt
-      ? `${NUTRITION_PROMPT}\n\nDescripción del usuario: "${textPrompt}"`
-      : NUTRITION_PROMPT,
-  });
+  parts.push({ text: promptText });
 
   for (const model of models) {
     try {
-      const genConfig = {
-        temperature: 0.15,
-        responseMimeType: 'application/json',
-      };
-      if (model.startsWith('gemini-2.5')) {
-        genConfig.thinkingConfig = { thinkingBudget: 0 };
-      }
-
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{ parts }],
-          generationConfig: genConfig,
+          contents: [{ role: 'user', parts }],
+          generationConfig: {
+            temperature: 0.15,
+          },
         }),
       });
 
       if (!res.ok) {
         const errText = await res.text();
-        lastError = new Error(`Gemini (${res.status}): ${errText.slice(0, 120)}`);
+        const friendly = formatApiError('Gemini', res.status, errText);
+        const err = new Error(friendly);
+        err.userMessage = friendly;
+        err.status = res.status;
+        lastError = err;
+        if (res.status === 400 && /api_key_invalid|key not valid/i.test(errText)) {
+          throw err;
+        }
         continue;
       }
 
@@ -348,15 +467,17 @@ async function callGeminiNutrition({ base64, mimeType, textPrompt }, apiKey) {
         .join('\n') || candParts.map((p) => p.text || '').join('\n');
 
       const parsed = extractJsonObject(nonThoughtText);
-      if (parsed && (parsed.esComida === false || (Array.isArray(parsed.items) && parsed.items.length === 0))) {
+      const rawItems = extractParsedItems(parsed);
+
+      if (parsed && (parsed.esComida === false || (Array.isArray(rawItems) && rawItems.length === 0))) {
         const notFoodErr = new Error(parsed.motivo || 'No detecté comida ni bebida en la foto.');
         notFoodErr.code = 'NOT_FOOD';
         throw notFoodErr;
       }
-      if (parsed && Array.isArray(parsed.items) && parsed.items.length > 0) {
+      if (rawItems && rawItems.length > 0) {
         return {
-          plato: parsed.plato || buildMealTitle(parsed.items),
-          items: parsed.items.map(normalizeMealItem),
+          plato: parsed.plato || buildMealTitle(rawItems),
+          items: rawItems.map(normalizeMealItem),
         };
       }
     } catch (err) {
@@ -367,8 +488,16 @@ async function callGeminiNutrition({ base64, mimeType, textPrompt }, apiKey) {
   throw lastError || new Error('No se pudo analizar la comida con Gemini.');
 }
 
-async function callOpenAINutrition({ base64, mimeType, textPrompt }, apiKey) {
-  const content = [{ type: 'text', text: textPrompt ? `${NUTRITION_PROMPT}\n\nDescripción: "${textPrompt}"` : NUTRITION_PROMPT }];
+async function callOpenAINutrition({ base64, mimeType, textPrompt, userHint }, apiKey) {
+  let promptText = NUTRITION_PROMPT;
+  if (userHint) {
+    promptText += `\n\nACLARACIÓN IMPORTANTE DEL ATLETA: "${userHint}"`;
+  }
+  if (textPrompt) {
+    promptText += `\n\nDescripción: "${textPrompt}"`;
+  }
+
+  const content = [{ type: 'text', text: promptText }];
   if (base64) {
     content.push({
       type: 'image_url',
@@ -391,65 +520,70 @@ async function callOpenAINutrition({ base64, mimeType, textPrompt }, apiKey) {
   });
 
   if (!res.ok) {
-    throw new Error(`OpenAI (${res.status})`);
+    const errText = await res.text();
+    const friendly = formatApiError('OpenAI', res.status, errText);
+    const err = new Error(friendly);
+    err.userMessage = friendly;
+    throw err;
   }
 
   const data = await res.json();
   const parsed = extractJsonObject(data?.choices?.[0]?.message?.content || '{}');
-  if (parsed && (parsed.esComida === false || (Array.isArray(parsed.items) && parsed.items.length === 0))) {
+  const rawItems = extractParsedItems(parsed);
+
+  if (parsed && (parsed.esComida === false || (Array.isArray(rawItems) && rawItems.length === 0))) {
     const notFoodErr = new Error(parsed.motivo || 'No detecté comida ni bebida en la foto.');
     notFoodErr.code = 'NOT_FOOD';
     throw notFoodErr;
   }
-  if (parsed && Array.isArray(parsed.items) && parsed.items.length > 0) {
+  if (rawItems && rawItems.length > 0) {
     return {
-      plato: parsed.plato || buildMealTitle(parsed.items),
-      items: parsed.items.map(normalizeMealItem),
+      plato: parsed.plato || buildMealTitle(rawItems),
+      items: rawItems.map(normalizeMealItem),
     };
   }
   throw new Error('OpenAI no devolvió ingredientes válidos.');
 }
 
-/* Ejemplo por defecto (Arroz, pechuga, ensalada y aceite) cuando se abre en modo demostración. */
+/* Ejemplo por defecto cuando se abre en modo demostración sin foto. */
 export function getDemoPhotoResult() {
   const items = [
-    normalizeMealItem({ nombre: 'Arroz blanco', gramos: 180, kcal: 234, proteina: 4.9, carbos: 50.8, grasa: 0.5 }),
-    normalizeMealItem({ nombre: 'Pechuga de pollo', gramos: 140, kcal: 231, proteina: 43.4, carbos: 0, grasa: 5.0 }),
-    normalizeMealItem({ nombre: 'Ensalada mixta', gramos: 90, kcal: 25, proteina: 1.3, carbos: 4.1, grasa: 0.4 }),
-    normalizeMealItem({ nombre: 'Aceite de oliva', gramos: 10, kcal: 88, proteina: 0, carbos: 0, grasa: 10.0 }),
+    normalizeMealItem({ nombre: 'Papas en air fryer', gramos: 180, kcal: 207, proteina: 4.5, carbos: 43.2, grasa: 2.2 }),
+    normalizeMealItem({ nombre: 'Huevo frito', gramos: 60, kcal: 118, proteina: 8.2, carbos: 0.5, grasa: 8.9 }),
+    normalizeMealItem({ nombre: 'Carne molida de res', gramos: 130, kcal: 280, proteina: 31.2, carbos: 0, grasa: 16.9 }),
   ];
   return {
-    plato: 'Arroz, pollo y ensalada',
+    plato: 'Papas en air fryer, huevo frito y carne molida',
     items,
     isDemo: true,
   };
 }
 
-export async function analyzeMealImage({ base64, mimeType }) {
+export async function analyzeMealImage({ base64, mimeType, userHint = '' }) {
   const cfg = await getAgentConfig();
   const geminiKey = (cfg.geminiKey || '').trim();
   const openaiKey = (cfg.openaiKey || '').trim();
 
   if (cfg.provider === 'openai' && openaiKey) {
     try {
-      return await callOpenAINutrition({ base64, mimeType }, openaiKey);
+      return await callOpenAINutrition({ base64, mimeType, userHint }, openaiKey);
     } catch (err) {
       if (err?.code === 'NOT_FOOD') throw err;
-      if (geminiKey) return callGeminiNutrition({ base64, mimeType }, geminiKey);
+      if (geminiKey) return callGeminiNutrition({ base64, mimeType, userHint }, geminiKey);
       throw err;
     }
   }
   if (geminiKey) {
     try {
-      return await callGeminiNutrition({ base64, mimeType }, geminiKey);
+      return await callGeminiNutrition({ base64, mimeType, userHint }, geminiKey);
     } catch (err) {
       if (err?.code === 'NOT_FOOD') throw err;
-      if (openaiKey) return callOpenAINutrition({ base64, mimeType }, openaiKey);
+      if (openaiKey) return callOpenAINutrition({ base64, mimeType, userHint }, openaiKey);
       throw err;
     }
   }
   if (openaiKey) {
-    return callOpenAINutrition({ base64, mimeType }, openaiKey);
+    return callOpenAINutrition({ base64, mimeType, userHint }, openaiKey);
   }
 
   const err = new Error('Configura tu API Key en Fit para analizar fotos con IA.');
@@ -457,7 +591,7 @@ export async function analyzeMealImage({ base64, mimeType }) {
   throw err;
 }
 
-/* Analiza una descripción escrita o hablada ("200g de arroz con 150g de pollo y 2 huevos") */
+/* Analiza una descripción escrita o hablada ("me comí dos huevos y una arepa") */
 export async function analyzeMealText(text) {
   const clean = String(text || '').trim();
   if (!clean) return getDemoPhotoResult();
@@ -477,6 +611,7 @@ export async function analyzeMealText(text) {
       return await callOpenAINutrition({ textPrompt: clean }, openaiKey);
     }
   } catch (e) {
+    if (e?.code === 'NOT_FOOD') throw e;
     console.warn('Fallback a parser local de alimentos:', e);
   }
 
@@ -484,7 +619,10 @@ export async function analyzeMealText(text) {
   const lower = clean.toLowerCase();
   const matched = [];
   for (const food of COMMON_FOODS) {
-    const keywords = food.nombre.toLowerCase().split(/[\s/]+/).filter((w) => w.length > 3 && !['cocido', 'cocida', 'natural', 'entera', 'entero'].includes(w));
+    const keywords = food.nombre
+      .toLowerCase()
+      .split(/[\s/]+/)
+      .filter((w) => w.length > 3 && !['cocido', 'cocida', 'natural', 'entera', 'entero', 'horno', 'plancha'].includes(w));
     if (keywords.some((kw) => lower.includes(kw))) {
       const regex = new RegExp(`(\\d+)\\s*(?:g|gr|gramos)?\\s*(?:de\\s+)?${keywords[0]}`, 'i');
       const m = clean.match(regex);
@@ -501,5 +639,31 @@ export async function analyzeMealText(text) {
   }
 
   return getDemoPhotoResult();
+}
+
+/* Devuelve un bloque de texto estructurado con el diario de comidas de hoy para Fit. */
+export async function getMealsContextForFit() {
+  try {
+    const s = await todayMealsSummary(todayISO());
+    const protFalta = Math.max(0, s.targets.proteina - s.totals.proteina);
+    const lines = [
+      `\n\nNUTRICIÓN Y COMIDAS DE HOY (${s.fecha}):`,
+      `- Meta diaria (${s.targets.objetivo}): ${s.targets.kcal} kcal · Proteína ${s.targets.proteina} g · Carbohidratos ${s.targets.carbos} g · Grasa ${s.targets.grasa} g.`,
+      `- Consumido hoy: ${s.totals.kcal} kcal · Proteína ${s.totals.proteina} g · Carbohidratos ${s.totals.carbos} g · Grasa ${s.totals.grasa} g.`,
+      `- Restante hoy: ${s.remainingKcal} kcal y ${protFalta} g de proteína para llegar a la meta.`,
+    ];
+    if (s.meals.length === 0) {
+      lines.push('- Comidas registradas hoy: Ninguna todavía.');
+    } else {
+      lines.push('- Comidas registradas hoy:');
+      for (const m of s.meals) {
+        const itemsDesc = (m.items || []).map((i) => `${i.nombre} ${i.gramos}g`).join(', ');
+        lines.push(`  * [ID ${m.id}] ${m.hora} · ${m.tipo}: ${m.nombre} — ${m.kcal} kcal, Proteína ${m.proteina} g${itemsDesc ? ` (${itemsDesc})` : ''}.`);
+      }
+    }
+    return lines.join('\n');
+  } catch {
+    return '';
+  }
 }
 

@@ -17,7 +17,8 @@ import { icons } from '../utils/icons.js';
 import { toast, esc, go } from '../utils/dom.js';
 import { askConfirm } from '../utils/confirm-sheet.js';
 import { bindSheetDrag } from '../utils/sheet-drag.js';
-import { triggerPhotoPicker } from '../utils/meal-scanner.js';
+import { triggerPhotoPicker, openMealResultSheet } from '../utils/meal-scanner.js';
+import { analyzeMealText } from '../services/meals.js';
 
 export async function render(el) {
   const config = await getAgentConfig();
@@ -189,6 +190,7 @@ async function renderLiveChat(el, config) {
         <div class="agent-chips-wrap">
           <div class="agent-chips-scroll">
             <button type="button" class="agent-chip" data-action="scan-food-chip">Escanear comida</button>
+            <button type="button" class="agent-chip" data-prompt="¿Cuánta proteína me falta hoy?">¿Cuánta proteína me falta?</button>
             <button type="button" class="agent-chip" data-prompt="Registrar mi peso">Registrar mi peso</button>
             <button type="button" class="agent-chip" data-prompt="¿Qué hice ayer?">¿Qué hice ayer?</button>
             <button type="button" class="agent-chip" data-prompt="Ver mi progreso">Ver mi progreso</button>
@@ -300,9 +302,45 @@ async function renderLiveChat(el, config) {
     msgsEl.scrollTop = msgsEl.scrollHeight;
   }
 
-  function sendText() {
+  async function handleMealSavedInChat(savedMeal, summary) {
+    if (!savedMeal || !summary) return;
+    const userLine = `Comida (${savedMeal.tipo}): ${savedMeal.nombre}`;
+    appendMsg('user', userLine);
+    await persist('user', userLine);
+
+    const protFalta = Math.max(0, summary.targets.proteina - summary.totals.proteina);
+    const botLine = `Listo: ${savedMeal.kcal} kcal (${savedMeal.proteina} g de proteína) en ${savedMeal.tipo}. Te quedan ${summary.remainingKcal.toLocaleString('es-ES')} kcal y ${protFalta} g de proteína hoy.`;
+    appendMsg('bot', botLine);
+    await persist('bot', botLine);
+
+    if (agent.connected) {
+      try {
+        agent.sendContext(
+          `[SISTEMA: El atleta acaba de guardar en su diario (${savedMeal.tipo}): ${savedMeal.nombre} (${savedMeal.kcal} kcal, ${savedMeal.proteina}g P, ${savedMeal.carbos}g C, ${savedMeal.grasa}g G). Total hoy: ${summary.totals.kcal}/${summary.targets.kcal} kcal, proteína ${summary.totals.proteina}/${summary.targets.proteina}g.]`
+        );
+      } catch {}
+    }
+  }
+
+  async function sendText() {
     const text = inputEl.value.trim();
-    if (!text || !agent.connected) return;
+    if (!text) return;
+
+    // Si viene del atajo "Anótame esta comida: ..." abrimos la tarjeta de confirmación editable primero
+    const mealPrefixMatch = text.match(/^an[oó]tame esta comida:\s*(.+)$/i);
+    if (mealPrefixMatch) {
+      const foodDesc = mealPrefixMatch[1].trim();
+      inputEl.value = '';
+      updateActionButton();
+      const parsed = await analyzeMealText(foodDesc);
+      await openMealResultSheet({
+        initialResult: parsed,
+        onSaved: handleMealSavedInChat,
+      });
+      return;
+    }
+
+    if (!agent.connected) return;
     inputEl.value = '';
     updateActionButton();
     currentBotText = '';
@@ -410,6 +448,22 @@ async function renderLiveChat(el, config) {
         `;
         msgsEl.appendChild(card);
         msgsEl.scrollTop = msgsEl.scrollHeight;
+      } else if ((toolName === 'registrar_comida' || toolName === 'corregir_comida') && result?.ok) {
+        const card = document.createElement('div');
+        card.className = 'agent-card-memory';
+        const tag = toolName === 'registrar_comida' ? 'Guardado en diario de comidas' : 'Diario de comidas actualizado';
+        const detail = result.comida
+          ? `${result.comida.tipo.toUpperCase()} · ${result.comida.nombre} (${result.comida.kcal} kcal · ${result.comida.proteina}g P)`
+          : (result.mensaje || 'Registro actualizado');
+        card.innerHTML = `
+          <div class="agent-card-memory-icon">${icons.check({ size: 18, stroke: '#10B981' })}</div>
+          <div class="agent-card-memory-body">
+            <span class="agent-card-memory-tag">${esc(tag)}</span>
+            <span class="agent-card-memory-text">${esc(detail)}</span>
+          </div>
+        `;
+        msgsEl.appendChild(card);
+        msgsEl.scrollTop = msgsEl.scrollHeight;
       }
     })
     .on('error', (err) => {
@@ -455,9 +509,7 @@ async function renderLiveChat(el, config) {
   if (cameraBtn) {
     cameraBtn.addEventListener('click', () => {
       triggerPhotoPicker({
-        onSaved: () => {
-          appendMsg('bot', 'Comida guardada en tu registro de hoy.');
-        },
+        onSaved: handleMealSavedInChat,
       });
     });
   }
@@ -467,9 +519,7 @@ async function renderLiveChat(el, config) {
     btn.addEventListener('click', () => {
       if (btn.dataset.action === 'scan-food-chip') {
         triggerPhotoPicker({
-          onSaved: () => {
-            appendMsg('bot', 'Comida guardada en tu registro de hoy.');
-          },
+          onSaved: handleMealSavedInChat,
         });
         return;
       }
@@ -484,8 +534,11 @@ async function renderLiveChat(el, config) {
   const prefill = sessionStorage.getItem('brother_fit_prefill_prompt');
   if (prefill) {
     sessionStorage.removeItem('brother_fit_prefill_prompt');
+    inputEl.disabled = false;
+    actionBtn.disabled = false;
     inputEl.value = prefill;
     updateActionButton();
+    setTimeout(() => inputEl.focus(), 80);
   }
 
   /* Interacción con tarjetas dentro del chat */

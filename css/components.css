@@ -8057,6 +8057,38 @@ html[data-modo="claro"] .meal-type-pill[aria-pressed="true"] {
   color: var(--text);
   background: #FFFFFF;
 }
+.meal-hint-row {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.meal-goal-pills {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.meal-goal-pill {
+  flex: 1;
+  height: 38px;
+  border-radius: 12px;
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+.meal-goal-pill[aria-pressed="true"] {
+  border: 1.5px solid var(--primary);
+  background: var(--surface-2);
+  color: var(--primary);
+  font-weight: 700;
+}
+html[data-modo="claro"] .meal-goal-pill[aria-pressed="true"] {
+  color: var(--text);
+  background: #FFFFFF;
+}
 .meal-items-card {
   background: var(--surface);
   border: 1px solid var(--line);

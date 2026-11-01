@@ -20,6 +20,8 @@ import {
   analyzeMealText,
   saveMeal,
   deleteMeal,
+  getMealById,
+  todayMealsSummary,
   getDemoPhotoResult,
 } from '../services/meals.js';
 import { esc, fmtNum, toast } from './dom.js';
@@ -72,6 +74,7 @@ export async function openMealResultSheet({
   }
 
   let currentFile = file || null;
+  let compressedData = null;
   let previewUrl = currentFile ? URL.createObjectURL(currentFile) : null;
   let isAnalyzing = Boolean(currentFile);
   let analysisError = '';
@@ -261,6 +264,20 @@ export async function openMealResultSheet({
               `).join('')}
             </div>
 
+            <!-- Barra rápida para aclarar método de cocción (ej. Air Fryer) o ingredientes a Fit -->
+            <div class="meal-hint-row">
+              <input
+                type="text"
+                id="meal-hint-input"
+                class="meal-custom-input"
+                placeholder="Aclarar a Fit: ej. papas en air fryer, huevo y carne…"
+                autocomplete="off"
+              />
+              <button type="button" class="meal-custom-add-btn" id="btn-recalc-hint" data-action="recalc-hint">
+                Recalcular
+              </button>
+            </div>
+
             <div class="meal-items-card" id="meal-items-list"></div>
 
             <button type="button" class="meal-add-missing-btn" data-action="toggle-add-food">
@@ -270,7 +287,7 @@ export async function openMealResultSheet({
 
             <div class="meal-add-drawer" id="meal-add-drawer" ${showAddForm ? '' : 'hidden'}>
               <div class="meal-add-quick-chips">
-                ${COMMON_FOODS.slice(0, 10).map((f, i) => `
+                ${COMMON_FOODS.slice(0, 12).map((f, i) => `
                   <button type="button" class="meal-quick-food-chip" data-action="quick-food" data-food-idx="${i}">
                     + ${esc(f.nombre)} (${f.porcion}g)
                   </button>
@@ -302,9 +319,12 @@ export async function openMealResultSheet({
     renderItemsAndTotals();
   };
 
-  const runPhotoAnalysis = async (targetFile) => {
-    if (!targetFile) return;
-    currentFile = targetFile;
+  const runPhotoAnalysis = async (targetFile, userHint = '') => {
+    if (!targetFile && !compressedData) return;
+    if (targetFile && targetFile !== currentFile) {
+      currentFile = targetFile;
+      compressedData = null;
+    }
     isAnalyzing = true;
     analysisError = '';
     analysisErrorCode = '';
@@ -313,15 +333,20 @@ export async function openMealResultSheet({
     renderItemsAndTotals();
 
     try {
-      const compressed = await compressImageFile(targetFile);
-      revokeIfNeeded(previewUrl);
-      previewUrl = compressed.previewUrl;
-      if (heroSlot) heroSlot.innerHTML = renderHeroPlate();
-      renderItemsAndTotals();
+      if (!compressedData && currentFile) {
+        const compressed = await compressImageFile(currentFile);
+        compressedData = { base64: compressed.base64, mimeType: compressed.mimeType };
+        revokeIfNeeded(previewUrl);
+        previewUrl = compressed.previewUrl;
+        if (heroSlot) heroSlot.innerHTML = renderHeroPlate();
+        renderItemsAndTotals();
+      }
 
+      const hintVal = userHint || overlay.querySelector('#meal-hint-input')?.value?.trim() || '';
       const result = await analyzeMealImage({
-        base64: compressed.base64,
-        mimeType: compressed.mimeType,
+        base64: compressedData.base64,
+        mimeType: compressedData.mimeType,
+        userHint: hintVal,
       });
       isAnalyzing = false;
       items = (result.items || []).map((i) => recalcItemGrams(i, i.gramos));
@@ -340,7 +365,10 @@ export async function openMealResultSheet({
         analysisError = 'Configura tu API Key en Fit para que la IA reconozca la foto, o añade los alimentos abajo.';
         toast('Configura tu API Key en Fit');
       } else {
-        analysisError = 'No se pudo analizar la foto en este momento. Reintenta o añade los alimentos abajo.';
+        const detail = err?.userMessage || err?.message || '';
+        analysisError = detail
+          ? `${detail} Puedes reintentar o añadir los alimentos abajo.`
+          : 'No se pudo analizar la foto en este momento. Reintenta o añade los alimentos abajo.';
         toast('Error al analizar la foto con IA');
       }
       const drawer = overlay.querySelector('#meal-add-drawer');
@@ -352,6 +380,16 @@ export async function openMealResultSheet({
 
   renderFull();
   document.body.appendChild(overlay);
+
+  const hintInputEl = overlay.querySelector('#meal-hint-input');
+  if (hintInputEl) {
+    hintInputEl.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Enter') {
+        ev.preventDefault();
+        overlay.querySelector('#btn-recalc-hint')?.click();
+      }
+    });
+  }
 
   if (currentFile) {
     runPhotoAnalysis(currentFile);
@@ -371,8 +409,37 @@ export async function openMealResultSheet({
       return;
     }
 
-    if (action === 'retry-scan' && currentFile) {
+    if (action === 'retry-scan' && (currentFile || compressedData)) {
       await runPhotoAnalysis(currentFile);
+      return;
+    }
+
+    if (action === 'recalc-hint') {
+      const hintVal = overlay.querySelector('#meal-hint-input')?.value?.trim() || '';
+      if (!hintVal && !currentFile && !compressedData) {
+        toast('Escribe una aclaración (ej. papas en air fryer)');
+        return;
+      }
+      btn.disabled = true;
+      btn.textContent = '…';
+      try {
+        if (currentFile || compressedData) {
+          await runPhotoAnalysis(currentFile, hintVal);
+        } else if (hintVal) {
+          isAnalyzing = true;
+          renderItemsAndTotals();
+          const parsed = await analyzeMealText(hintVal);
+          isAnalyzing = false;
+          if (parsed?.items?.length) {
+            items = parsed.items.map((it) => recalcItemGrams(it, it.gramos));
+            customPlatoName = parsed.plato || '';
+          }
+          renderItemsAndTotals();
+        }
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Recalcular';
+      }
       return;
     }
 
@@ -472,7 +539,7 @@ export async function openMealResultSheet({
       await deleteMeal(existingMeal.id);
       closeSheet();
       toast('Comida eliminada');
-      if (typeof onSaved === 'function') await onSaved();
+      if (typeof onSaved === 'function') await onSaved(null, await todayMealsSummary());
       return;
     }
 
@@ -480,7 +547,7 @@ export async function openMealResultSheet({
       if (!items.length) return;
       btn.disabled = true;
       const title = customPlatoName || buildMealTitle(items, selectedTipo);
-      await saveMeal({
+      const savedId = await saveMeal({
         id: existingMeal?.id,
         fecha: existingMeal?.fecha,
         ts: existingMeal?.ts,
@@ -490,9 +557,13 @@ export async function openMealResultSheet({
         items,
         origen: previewUrl ? 'foto' : (existingMeal?.origen || 'manual'),
       });
+      const [savedRecord, summary] = await Promise.all([
+        getMealById(savedId),
+        todayMealsSummary(),
+      ]);
       closeSheet();
       toast(`Guardado en ${selectedTipo}`);
-      if (typeof onSaved === 'function') await onSaved();
+      if (typeof onSaved === 'function') await onSaved(savedRecord, summary);
     }
   });
 }

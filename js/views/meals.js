@@ -2,7 +2,8 @@
  * Diario completo de calorías y macronutrientes con anillo circular de progreso,
  * escáner IA por foto, integración con Fit y edición por comida. */
 
-import { todayMealsSummary, getMealById } from '../services/meals.js';
+import { todayMealsSummary, getMealById, calculateTargetsForGoal } from '../services/meals.js';
+import { latestWeight } from '../services/body.js';
 import { triggerPhotoPicker, openMealResultSheet } from '../utils/meal-scanner.js';
 import { saveSettings } from '../store.js';
 import { delegate, esc, fmtNum, toast, go, num } from '../utils/dom.js';
@@ -33,9 +34,14 @@ function largeCalorieRingSvg(kcal, targetKcal) {
 }
 
 export async function render(el) {
-  const summary = await todayMealsSummary(todayISO());
+  const [summary, lastW] = await Promise.all([
+    todayMealsSummary(todayISO()),
+    latestWeight().catch(() => null),
+  ]);
+  const pesoActualKg = lastW?.peso || 49;
   const { meals, totals, targets, pct, remainingKcal, surplusKcal } = summary;
   const objText = OBJETIVO_LABELS[targets.objetivo] || 'ganar masa';
+  let currentObj = targets.objetivo || 'ganar';
 
   el.innerHTML = `
     <div class="meals-head">
@@ -66,6 +72,11 @@ export async function render(el) {
 
         <!-- Editor rápido de metas nutricionales -->
         <form class="meals-goal-editor" id="meals-goal-form" hidden>
+          <div class="meal-goal-pills" role="group" aria-label="Objetivo nutricional">
+            <button type="button" class="meal-goal-pill" data-action="pick-goal" data-obj="ganar" aria-pressed="${currentObj === 'ganar'}">Ganar masa</button>
+            <button type="button" class="meal-goal-pill" data-action="pick-goal" data-obj="mantener" aria-pressed="${currentObj === 'mantener'}">Mantener</button>
+            <button type="button" class="meal-goal-pill" data-action="pick-goal" data-obj="definir" aria-pressed="${currentObj === 'definir'}">Definir</button>
+          </div>
           <div class="meals-goal-grid">
             <label>
               <span>Calorías (kcal)</span>
@@ -173,11 +184,11 @@ export async function render(el) {
     goalForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const fd = new FormData(goalForm);
-      const metaKcal = Math.max(800, Math.round(num(fd.get('metaKcal')) || 2400));
-      const metaProteina = Math.max(30, Math.round(num(fd.get('metaProteina')) || 120));
-      const metaCarbos = Math.max(30, Math.round(num(fd.get('metaCarbos')) || 300));
-      const metaGrasa = Math.max(20, Math.round(num(fd.get('metaGrasa')) || 80));
-      await saveSettings({ metaKcal, metaProteina, metaCarbos, metaGrasa });
+      const metaKcal = Math.max(800, Math.round(num(fd.get('metaKcal')) || 2100));
+      const metaProteina = Math.max(30, Math.round(num(fd.get('metaProteina')) || 100));
+      const metaCarbos = Math.max(30, Math.round(num(fd.get('metaCarbos')) || 270));
+      const metaGrasa = Math.max(20, Math.round(num(fd.get('metaGrasa')) || 66));
+      await saveSettings({ metaKcal, metaProteina, metaCarbos, metaGrasa, metaObjetivo: currentObj });
       toast('Meta nutricional actualizada');
       await render(el);
     });
@@ -187,6 +198,19 @@ export async function render(el) {
     'toggle-goal': () => {
       if (goalForm) goalForm.hidden = !goalForm.hidden;
     },
+    'pick-goal': (btn) => {
+      currentObj = btn.dataset.obj || 'ganar';
+      el.querySelectorAll('.meal-goal-pill').forEach((p) => {
+        p.setAttribute('aria-pressed', String(p.dataset.obj === currentObj));
+      });
+      const rec = calculateTargetsForGoal(currentObj, pesoActualKg);
+      if (goalForm) {
+        goalForm.elements.metaKcal.value = rec.kcal;
+        goalForm.elements.metaProteina.value = rec.proteina;
+        goalForm.elements.metaCarbos.value = rec.carbos;
+        goalForm.elements.metaGrasa.value = rec.grasa;
+      }
+    },
     'scan-photo': () => {
       triggerPhotoPicker({
         onSaved: () => render(el),
@@ -194,7 +218,7 @@ export async function render(el) {
     },
     'add-manual': () => {
       openMealResultSheet({
-        manualMode: false,
+        manualMode: true,
         onSaved: () => render(el),
       });
     },
@@ -212,3 +236,4 @@ export async function render(el) {
     },
   });
 }
+
