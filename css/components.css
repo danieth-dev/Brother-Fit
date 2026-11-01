@@ -3573,11 +3573,12 @@ body.in-agent-view #app .view {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  border-radius: var(--r-md);
+  border-radius: 50%;
   transition: background-color 0.14s ease;
 }
-.agent-back-btn:hover {
-  background: var(--surface-2);
+.agent-back-btn:hover,
+.agent-back-btn:active {
+  background: var(--surface);
 }
 
 .agent-chat-head-title h1 {
@@ -5287,22 +5288,29 @@ body.in-agent-view #app .view {
   }
 }
 
-/* ---------- Navegación Retroceso ---------- */
+/* ---------- Navegación Retroceso (Estilo Historial: circular, transparente, sin borde) ---------- */
 .head-back {
-  display: inline-grid;
-  place-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: var(--r-md);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin-left: -10px;
+  margin-right: 4px;
+  border: none;
+  background: transparent;
   color: var(--text);
-  background: var(--surface);
-  border: 1px solid var(--line);
-  margin-right: 12px;
-  transition: background 0.15s ease, border-color 0.15s ease;
+  border-radius: 50%;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
 }
+.head-back:hover,
 .head-back:active {
-  background: var(--surface-2);
-  border-color: var(--line-strong);
+  background: var(--surface);
+  border: none;
 }
 
 /* ---------- Segmentos de 3 opciones ---------- */
@@ -5337,8 +5345,8 @@ body.in-agent-view #app .view {
 .workout-detail-head-left .head-back {
   width: 44px;
   height: 44px;
-  margin-left: -8px;
-  border-radius: var(--r-md);
+  margin-left: -10px;
+  border-radius: 50%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -6203,12 +6211,13 @@ html[data-modo="claro"] .history-workout-card:hover {
   justify-content: center;
   cursor: pointer;
   text-decoration: none;
-  border-radius: var(--r-md);
+  border-radius: 50%;
   transition: background-color 0.15s ease;
   flex-shrink: 0;
 }
-.settings-back-btn:hover {
-  background: var(--surface-2);
+.settings-back-btn:hover,
+.settings-back-btn:active {
+  background: var(--surface);
 }
 
 .settings-title {
@@ -6496,12 +6505,13 @@ html[data-modo="claro"] .history-workout-card:hover {
   justify-content: center;
   cursor: pointer;
   text-decoration: none;
-  border-radius: var(--r-md);
+  border-radius: 50%;
   transition: background-color 0.15s ease;
   flex-shrink: 0;
 }
-.aspecto-back-btn:hover {
-  background: var(--surface-2);
+.aspecto-back-btn:hover,
+.aspecto-back-btn:active {
+  background: var(--surface);
 }
 
 .aspecto-title {

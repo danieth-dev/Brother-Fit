@@ -104,7 +104,7 @@ export async function render(el) {
     <header class="page-head">
       <div class="page-head-row">
         <div style="display:flex;align-items:center">
-          <a class="head-back" href="#/" aria-label="Volver a Inicio">${icons.chevronLeft({ size: 22 })}</a>
+          <a class="head-back" href="#/" aria-label="Volver a Inicio">${icons.chevronLeft({ size: 24 })}</a>
           <h1>Creatina</h1>
         </div>
       </div>

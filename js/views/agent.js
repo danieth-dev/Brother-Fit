@@ -160,7 +160,7 @@ async function renderLiveChat(el, config) {
       <header class="page-head agent-chat-head">
         <div class="agent-chat-head-left">
           <button class="agent-back-btn" id="btn-agent-back" aria-label="Volver a Entreno" type="button">
-            ${icons.arrowLeft({ size: 26 })}
+            ${icons.chevronLeft({ size: 24 })}
           </button>
           <div class="agent-chat-head-title">
             <h1>Fit</h1>

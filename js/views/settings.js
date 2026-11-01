@@ -81,7 +81,7 @@ export async function render(el) {
   el.innerHTML = `
     <header class="settings-head">
       <a class="settings-back-btn" href="#/" aria-label="Volver a Inicio">
-        ${icons.arrowLeft({ size: 26 })}
+        ${icons.chevronLeft({ size: 24 })}
       </a>
       <h1 class="settings-title">Ajustes</h1>
     </header>

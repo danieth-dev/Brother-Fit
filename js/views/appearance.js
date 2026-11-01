@@ -19,7 +19,7 @@ export async function render(el) {
   el.innerHTML = `
     <header class="aspecto-head">
       <a class="aspecto-back-btn" href="#/settings" aria-label="Volver a Ajustes">
-        ${icons.arrowLeft({ size: 26 })}
+        ${icons.chevronLeft({ size: 24 })}
       </a>
       <h1 class="aspecto-title">Aspecto</h1>
     </header>
