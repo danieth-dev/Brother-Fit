@@ -9,6 +9,11 @@ export const DEFAULTS = {
   tema: 'amarillo',
   modo: 'oscuro',
   creatinaCompacta: false,
+  metaKcal: 2400,
+  metaProteina: 120,
+  metaCarbos: 300,
+  metaGrasa: 80,
+  metaObjetivo: 'ganar',
 };
 
 const TEMAS = new Set(['amarillo', 'azul', 'rosado']);

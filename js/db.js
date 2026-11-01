@@ -1,9 +1,9 @@
 /* Capa de acceso a IndexedDB. Es el ÚNICO archivo que conoce el almacenamiento.
  * Para añadir tablas o índices: sube DB_VERSION y agrega un bloque `if (old < N)` en migrate(). */
 let dbName = 'brother-fit';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
-export const STORES = ['exercises', 'workouts', 'sets', 'supplements', 'bodyMetrics', 'meta', 'agentMemory'];
+export const STORES = ['exercises', 'workouts', 'sets', 'supplements', 'bodyMetrics', 'meta', 'agentMemory', 'meals'];
 
 let dbPromise = null;
 
@@ -60,6 +60,10 @@ function migrate(db, old) {
   if (old < 2) {
     const am = db.createObjectStore('agentMemory', { keyPath: 'id', autoIncrement: true });
     am.createIndex('ts', 'ts');
+  }
+  if (old < 3) {
+    const ml = db.createObjectStore('meals', { keyPath: 'id', autoIncrement: true });
+    ml.createIndex('fecha', 'fecha');
   }
 }
 

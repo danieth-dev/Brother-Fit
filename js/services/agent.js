@@ -116,6 +116,23 @@ const TOOL_DECLARATIONS = [
       required: ['id'],
     },
   },
+  {
+    name: 'registrar_comida',
+    description:
+      'Registra una comida en el diario nutricional de hoy cuando el atleta diga qué comió o pida anotar una comida con sus calorías y proteínas estimadas.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        plato: { type: 'STRING', description: 'Nombre del plato o alimentos (ej. Arroz, pollo y ensalada).' },
+        tipo: { type: 'STRING', description: 'Desayuno, Almuerzo, Merienda o Cena.' },
+        kcal: { type: 'NUMBER', description: 'Calorías totales estimadas.' },
+        proteina: { type: 'NUMBER', description: 'Gramos de proteína estimados.' },
+        carbos: { type: 'NUMBER', description: 'Gramos de carbohidratos estimados.' },
+        grasa: { type: 'NUMBER', description: 'Gramos de grasa estimados.' },
+      },
+      required: ['plato', 'kcal', 'proteina'],
+    },
+  },
 ];
 
 /* --- IndexedDB Memory & Profile Helpers --- */
@@ -289,6 +306,23 @@ export async function executeToolCall(name, args) {
   }
   if (name === 'consultar_entrenamientos') {
     return queryWorkoutHistoryForFit(args.dia);
+  }
+  if (name === 'registrar_comida') {
+    const { saveMeal } = await import('./meals.js');
+    const id = await saveMeal({
+      nombre: args.plato || 'Comida registrada por Fit',
+      tipo: args.tipo,
+      kcal: Number(args.kcal) || 0,
+      proteina: Number(args.proteina) || 0,
+      carbos: Number(args.carbos) || 0,
+      grasa: Number(args.grasa) || 0,
+      origen: 'voz',
+    });
+    return {
+      ok: true,
+      id,
+      mensaje: `Comida "${args.plato}" guardada en el diario (${args.kcal} kcal, ${args.proteina} g de proteína).`,
+    };
   }
   if (name === 'guardar_recuerdo') {
     const raw = (args.contenido || '').trim();

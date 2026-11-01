@@ -17,6 +17,7 @@ import { icons } from '../utils/icons.js';
 import { toast, esc, go } from '../utils/dom.js';
 import { askConfirm } from '../utils/confirm-sheet.js';
 import { bindSheetDrag } from '../utils/sheet-drag.js';
+import { triggerPhotoPicker } from '../utils/meal-scanner.js';
 
 export async function render(el) {
   const config = await getAgentConfig();
@@ -187,6 +188,7 @@ async function renderLiveChat(el, config) {
       <div class="agent-dock" id="agent-dock">
         <div class="agent-chips-wrap">
           <div class="agent-chips-scroll">
+            <button type="button" class="agent-chip" data-action="scan-food-chip">Escanear comida</button>
             <button type="button" class="agent-chip" data-prompt="Registrar mi peso">Registrar mi peso</button>
             <button type="button" class="agent-chip" data-prompt="¿Qué hice ayer?">¿Qué hice ayer?</button>
             <button type="button" class="agent-chip" data-prompt="Ver mi progreso">Ver mi progreso</button>
@@ -196,6 +198,9 @@ async function renderLiveChat(el, config) {
         </div>
 
         <div class="agent-input-row">
+          <button class="agent-camera-btn" id="btn-agent-camera" type="button" aria-label="Escanear comida con foto" title="Escanear comida">
+            ${icons.camera({ size: 22 })}
+          </button>
           <input id="agent-input" class="agent-input-pill" type="text" placeholder="Escribe a Fit…" autocomplete="off" aria-label="Escribe a Fit" disabled>
           <button class="agent-action-btn" id="btn-action-trigger" type="button" aria-label="Hablar con Fit" disabled>
             ${icons.waveform({ size: 24 })}
@@ -445,9 +450,29 @@ async function renderLiveChat(el, config) {
     }
   });
 
+  /* Botón Cámara (Escanear comida desde Fit) */
+  const cameraBtn = el.querySelector('#btn-agent-camera');
+  if (cameraBtn) {
+    cameraBtn.addEventListener('click', () => {
+      triggerPhotoPicker({
+        onSaved: () => {
+          appendMsg('bot', 'Comida guardada en tu registro de hoy.');
+        },
+      });
+    });
+  }
+
   /* Sugerencias Rápidas (Chips) */
   el.querySelectorAll('.agent-chip').forEach((btn) => {
     btn.addEventListener('click', () => {
+      if (btn.dataset.action === 'scan-food-chip') {
+        triggerPhotoPicker({
+          onSaved: () => {
+            appendMsg('bot', 'Comida guardada en tu registro de hoy.');
+          },
+        });
+        return;
+      }
       const prompt = btn.dataset.prompt;
       if (prompt && agent.connected) {
         inputEl.value = prompt;
@@ -455,6 +480,13 @@ async function renderLiveChat(el, config) {
       }
     });
   });
+
+  const prefill = sessionStorage.getItem('brother_fit_prefill_prompt');
+  if (prefill) {
+    sessionStorage.removeItem('brother_fit_prefill_prompt');
+    inputEl.value = prefill;
+    updateActionButton();
+  }
 
   /* Interacción con tarjetas dentro del chat */
   msgsEl.addEventListener('click', async (e) => {

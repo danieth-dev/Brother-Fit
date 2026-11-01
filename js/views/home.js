@@ -1,5 +1,7 @@
 import { creatineSummary, toggleTodayIntake, DOSE_G } from '../services/creatine.js';
 import { getActiveWorkout, startWorkout, listWorkoutSummaries, weekStats, muscleName, getWorkoutDetail } from '../services/workouts.js';
+import { todayMealsSummary } from '../services/meals.js';
+import { triggerPhotoPicker } from '../utils/meal-scanner.js';
 import { scheduleAfterCreatine, cancelWaterReminders } from '../services/water-reminders.js';
 import { delegate, toast, esc, fmtNum, go } from '../utils/dom.js';
 import { formatLong, formatMedium, todayISO, startOfWeekISO, addDays, formatDuration } from '../utils/dates.js';
@@ -68,8 +70,8 @@ function startHomeTicker(el, active) {
 }
 
 export async function render(el) {
-  const [cr, active, recent, week] = await Promise.all([
-    creatineSummary(), getActiveWorkout(), listWorkoutSummaries(3), weekStats()
+  const [cr, active, recent, week, food] = await Promise.all([
+    creatineSummary(), getActiveWorkout(), listWorkoutSummaries(3), weekStats(), todayMealsSummary(todayISO())
   ]);
   const activeDetail = active ? await getWorkoutDetail(active.id) : null;
   const activeSetsCount = activeDetail?.totalSets || 0;
@@ -139,6 +141,38 @@ export async function render(el) {
       ${active
         ? `<a class="btn btn-primary btn-block btn-lg" href="#/workout" id="btn-continue-workout">${icons.dumbbell({ size: 20 })} Continuar entrenamiento</a>`
         : `<button class="btn btn-primary btn-block btn-lg" data-action="start" type="button" id="btn-start-workout">${icons.plus({ size: 20 })} Iniciar entrenamiento</button>`}
+    </div>
+
+    <!-- ═══ TARJETA COMIDA DE HOY (Tablero 19) ═══ -->
+    <div class="home-food-card">
+      <div class="home-food-head">
+        <span class="home-food-kicker">Comida de hoy</span>
+        <a href="#/meals" class="home-food-more">Ver comidas ›</a>
+      </div>
+      <div class="home-food-body">
+        <svg width="84" height="84" viewBox="0 0 84 84" role="img" aria-label="${food.pct.kcal}% de la meta de calorías" class="home-food-ring">
+          <circle cx="42" cy="42" r="36" fill="none" stroke="var(--line)" stroke-width="9"></circle>
+          <circle cx="42" cy="42" r="36" fill="none" stroke="#10B981" stroke-width="9" stroke-linecap="round" stroke-dasharray="${((food.pct.kcal / 100) * 226.2).toFixed(1)} 226.2" transform="rotate(-90 42 42)"></circle>
+          <text x="42" y="47" text-anchor="middle" fill="var(--text)" font-size="16" font-weight="800" font-family="Inter, system-ui, sans-serif">${food.pct.kcal}%</text>
+        </svg>
+        <div class="home-food-kcal">
+          <p class="home-food-kcal-val">${fmtNum(food.totals.kcal)} <span class="home-food-kcal-unit">kcal</span></p>
+          <p class="home-food-kcal-sub">de ${fmtNum(food.targets.kcal)} · ${food.surplusKcal > 0 ? `+${fmtNum(food.surplusKcal)}` : `quedan ${fmtNum(food.remainingKcal)}`}</p>
+        </div>
+        <div class="home-food-protein">
+          <div class="home-food-protein-head">
+            <span class="home-food-protein-lbl">Proteína</span>
+            <span class="home-food-protein-val">${fmtNum(food.totals.proteina)} <span class="home-food-protein-target">/ ${fmtNum(food.targets.proteina)} g</span></span>
+          </div>
+          <div class="home-food-protein-track">
+            <div class="home-food-protein-fill" style="width: ${food.pct.proteina}%"></div>
+          </div>
+        </div>
+      </div>
+      <button type="button" class="home-food-scan-btn" data-action="scan-meal">
+        ${icons.camera({ size: 20 })}
+        Escanear comida
+      </button>
     </div>
 
     <!-- ═══ TELEMETRÍA SEMANAL DE ENTRENAMIENTO (2x2) ═══ -->
@@ -216,6 +250,11 @@ export async function render(el) {
       btn.disabled = true;
       await startWorkout();
       go('/workout');
-    }
+    },
+    'scan-meal': () => {
+      triggerPhotoPicker({
+        onSaved: () => render(el),
+      });
+    },
   });
 }

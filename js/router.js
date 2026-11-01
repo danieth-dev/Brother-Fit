@@ -8,10 +8,11 @@ import * as creatine from './views/creatine.js';
 import * as settings from './views/settings.js';
 import * as appearance from './views/appearance.js';
 import * as agent from './views/agent.js';
+import * as meals from './views/meals.js';
 import { esc } from './utils/dom.js';
 
-const routes = { '': home, workout, history, progress, creatine, settings, appearance, agent };
-const tabOf = { history: '', creatine: '', settings: '', appearance: '', agent: 'workout' };
+const routes = { '': home, workout, history, progress, creatine, settings, appearance, agent, meals };
+const tabOf = { history: '', creatine: '', settings: '', appearance: '', meals: '', agent: 'workout' };
 let token = 0;
 
 export async function renderRoute() {

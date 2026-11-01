@@ -66,4 +66,6 @@ export const icons = {
   crown: (opts) => svg('<path d="M4 18h16M5 18L4 8l5 4 3-6 3 6 5-4-1 10"/>', opts),
   pulse: (opts) => svg('<path d="M3 12h4l3-8 4 16 3-8h4"/>', opts),
   chevronsUpDown: (opts) => svg('<path d="M8 9l4-4 4 4M8 15l4 4 4-4"/>', opts),
+  camera: (opts) => svg('<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13.5" r="3.5"/>', opts),
+  message: (opts) => svg('<path d="M4 5h16v11H9l-5 4z"/>', opts),
 };
