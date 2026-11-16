@@ -2,7 +2,7 @@
 
 Documento vivo del producto. Describe cómo está armado, dónde vive cada dato y qué no se puede romper. Cuando cambie el comportamiento, el esquema, una pantalla o la forma de publicar, este archivo se actualiza en el mismo cambio.
 
-Última revisión: 15 de noviembre de 2026. Base de datos versión 3. Caché de la app `v196`.
+Última revisión: 15 de noviembre de 2026. Base de datos versión 3. Caché de la app `v197`.
 
 ## Qué es
 
@@ -315,7 +315,7 @@ Medida el 15 de noviembre de 2026 contra las reglas de `AGENTS.md`. No se añade
 
 Sin deuda abierta: las vistas no abren IndexedDB y ningún servicio toca el DOM.
 
-Resuelto en la `v188`: `js/services/agent.js` (1 660 líneas) se partió en `js/services/bia/` (configuración, memoria, texto, declaraciones de herramientas, herramientas, contexto e instrucciones) y la sesión de voz `FitAgent` pasó a `js/voice/fit-agent.js`, fuera de los servicios. En la `v195` `fit-agent.js` (777 líneas) se partió en un archivo por proveedor (`gemini-live.js`, `openai-realtime.js`) y la cola de audio (`pcm-player.js`); de paso, las respuestas de Bía con OpenAI ya se escriben en el chat (antes solo se oían). Las importaciones dinámicas de `meals.js` desaparecieron: ya no hay ciclo entre comidas y la asistente.
+Resuelto en la `v188`: `js/services/agent.js` (1 660 líneas) se partió en `js/services/bia/` (configuración, memoria, texto, declaraciones de herramientas, herramientas, contexto e instrucciones) y la sesión de voz `FitAgent` pasó a `js/voice/fit-agent.js`, fuera de los servicios. En la `v197` `picker.js` (849 líneas) se partió en hoja, buscador (`picker-find.js`) y alta de ejercicio (`picker-creator.js`); la regla del grupo muscular pasó a `services/muscle-groups.js` y la búsqueda sin tildes a `utils/text-match.js`, las dos con pruebas; su arrastre propio se borró y usa `sheet-drag.js` (mismos umbrales que las demás hojas). En la `v195` `fit-agent.js` (777 líneas) se partió en un archivo por proveedor (`gemini-live.js`, `openai-realtime.js`) y la cola de audio (`pcm-player.js`); de paso, las respuestas de Bía con OpenAI ya se escriben en el chat (antes solo se oían). Las importaciones dinámicas de `meals.js` desaparecieron: ya no hay ciclo entre comidas y la asistente.
 
 Resuelto en la `v187`: «Borrar todo» pasa por `clearAllData()` del servicio de respaldo; compartir o descargar el respaldo vive en `js/utils/backup-export.js`; los paneles Recuerdos y Conexión salieron de la vista de Bía a `js/utils/agent-panels.js` (Ajustes ya no importa otra vista); el servicio de Bía avisa a Entreno con `js/utils/events.js` en vez de `document`; la compresión de fotos vive en `js/utils/image.js`. De paso se corrigió que guardar la conexión desde Ajustes dibujaba el chat de Bía dentro de Ajustes.
 
@@ -326,7 +326,6 @@ Resuelto en la `v187`: «Borrar todo» pasa por `clearAllData()` del servicio de
 | `js/views/agent.js` | 659 | Pantalla de clave y charla en directo. |
 | `js/utils/agent-panels.js` | 667 | Paneles Recuerdos y Conexión. |
 | `js/views/workout.js` | 851 | Pantalla de entreno completa. |
-| `js/utils/picker.js` | 847 | Hoja de listas, búsqueda, grupos y alta de ejercicio. |
 | `js/services/meals.js` | 751 | Metas, catálogo, guardado y dos proveedores de IA. |
 
 **Antes de Play Store**
@@ -383,7 +382,11 @@ Pendiente:
 | `js/services/water-reminders.js` | Recordatorios locales de agua tras la creatina. |
 | `js/views/*.js` | Una pantalla por archivo: home, workout, history, progress, creatine, meals, agent, settings, appearance. |
 | `js/utils/meal-scanner.js` | Hoja de foto → resultado, edición de gramos y guardado de una comida. |
-| `js/utils/picker.js` | Hoja de las listas. |
+| `js/utils/picker.js` | Hoja de las listas: la arma, la abre, la cierra y la llena. Cierra arrastrando con `sheet-drag.js`, como las demás hojas. |
+| `js/utils/picker-find.js` | Buscador de la hoja de ejercicios: grupos, búsqueda sin tildes, orden por coincidencia y fila «Crear …». |
+| `js/utils/picker-creator.js` | Alta de ejercicio dentro de la hoja. |
+| `js/utils/text-match.js` | Búsqueda sin tildes y resaltado (pura). |
+| `js/services/muscle-groups.js` | `inferMuscleGroup`: adivina el grupo de un ejercicio nuevo por su nombre. |
 | `js/utils/sheet-drag.js` | Arrastrar hacia abajo para cerrar las hojas. |
 | `js/utils/seg-swipe.js` | Controles `.seg` que se pulsan o arrastran. |
 | `js/utils/units.js` | Conversión kg / lb. |

@@ -127,7 +127,7 @@ Este documento es la fuente de verdad del diseño de Bía. Lo leen las personas 
 
 Fuente de los valores: `css/tokens.css` (tokens), `css/base.css` (página, tipografía base e iconos) y `css/components/01-…css` a `14-…css` (componentes, cargados en ese orden desde `index.html`). El frontmatter de arriba usa el formato de `DESIGN.md` que entiende la skill; los valores son los del **modo oscuro con acento amarillo**, que es el de fábrica.
 
-Última revisión: 16 de noviembre de 2026 (caché `v196`).
+Última revisión: 16 de noviembre de 2026 (caché `v197`).
 
 ## 1. Idea
 
@@ -274,7 +274,7 @@ Profundidad con sombras neutras de contacto, nunca de color: `--shadow-sm` (fila
 
 - Entrada de pantalla: fundido de 180 ms, `cubic-bezier(0.16, 1, 0.3, 1)`.
 - Respuesta al tocar: `transform: scale(0.98)` en botones, `0.92` en la isla; transiciones de color de 140–160 ms.
-- Hojas: suben en 250 ms con la misma curva; el fondo se oscurece a negro al 72 %. Se cierran arrastrando la barrita o el título (`js/utils/sheet-drag.js`). Mientras dura el gesto, la barrita se enciende con `--primary` y se ensancha unos 8 px; al soltar vuelve a `--line-strong` en 150 ms. El panel lleva `.is-sheet-dragging` durante el arrastre, así que el efecto sale también si se agarra desde el título. Vale para todas las hojas que se arrastran: listas, fecha, hora, confirmación, reporte, editor de ejercicio, Recuerdos y Conexión.
+- Hojas: suben en 250 ms con la misma curva; el fondo se oscurece a negro al 72 %. Se cierran arrastrando la barrita o el título (`js/utils/sheet-drag.js`). Mientras dura el gesto, la barrita se enciende con `--primary` y se ensancha unos 8 px; al soltar vuelve a `--line-strong` en 150 ms. El panel lleva `.is-sheet-dragging` durante el arrastre, así que el efecto sale también si se agarra desde el título. Todas las hojas usan el mismo código y los mismos umbrales (cierra pasados 130 px o el 28 % del alto, o con un tirón rápido). Vale para todas las hojas que se arrastran: listas, fecha, hora, confirmación, reporte, editor de ejercicio, Recuerdos y Conexión.
 - Pastilla del segmento: 200 ms; sigue al dedo mientras se arrastra (`js/utils/seg-swipe.js`).
 - `prefers-reduced-motion: reduce` deja todas las animaciones y transiciones en 0,01 ms.
 
