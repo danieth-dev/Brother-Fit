@@ -152,7 +152,7 @@ export async function render(el) {
       <div class="home-food-body">
         <svg width="84" height="84" viewBox="0 0 84 84" role="img" aria-label="${food.pct.kcal}% de la meta de calorías" class="home-food-ring">
           <circle cx="42" cy="42" r="36" fill="none" stroke="var(--line)" stroke-width="9"></circle>
-          <circle cx="42" cy="42" r="36" fill="none" stroke="#10B981" stroke-width="9" stroke-linecap="round" stroke-dasharray="${((food.pct.kcal / 100) * 226.2).toFixed(1)} 226.2" transform="rotate(-90 42 42)"></circle>
+          <circle cx="42" cy="42" r="36" fill="none" class="ring-progress" stroke-width="9" stroke-linecap="round" stroke-dasharray="${((food.pct.kcal / 100) * 226.2).toFixed(1)} 226.2" transform="rotate(-90 42 42)"></circle>
           <text x="42" y="47" text-anchor="middle" fill="var(--text)" font-size="16" font-weight="800" font-family="Inter, system-ui, sans-serif">${food.pct.kcal}%</text>
         </svg>
         <div class="home-food-kcal">
@@ -165,7 +165,7 @@ export async function render(el) {
             <span class="home-food-protein-val">${fmtNum(food.totals.proteina)} <span class="home-food-protein-target">/ ${fmtNum(food.targets.proteina)} g</span></span>
           </div>
           <div class="home-food-protein-track">
-            <div class="home-food-protein-fill" style="width: ${food.pct.proteina}%"></div>
+            <div class="home-food-protein-fill" style="--pct: ${food.pct.proteina}%"></div>
           </div>
         </div>
       </div>

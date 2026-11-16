@@ -53,7 +53,7 @@ function saturationCard(pct, fase) {
         <span class="creatine-sat-pct">${pct}%</span>
       </div>
       <div class="creatine-sat-bar">
-        <div class="creatine-sat-fill" style="width:${pct}%" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"></div>
+        <div class="creatine-sat-fill" style="--pct: ${pct}%" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"></div>
       </div>
       <p class="creatine-sat-desc">${desc}</p>
     </div>
@@ -103,7 +103,7 @@ export async function render(el) {
   el.innerHTML = `
     <header class="page-head">
       <div class="page-head-row">
-        <div style="display:flex;align-items:center">
+        <div class="page-head-title">
           <a class="head-back" href="#/" aria-label="Volver a Inicio">${icons.chevronLeft({ size: 24 })}</a>
           <h1>Creatina</h1>
         </div>
@@ -125,7 +125,7 @@ export async function render(el) {
     ${statsRow(cr)}
 
     <!-- ═══ CALENDARIO MENSUAL ═══ -->
-    <div class="cal-block" style="margin-top:16px">
+    <div class="cal-block cal-block--spaced">
       <div class="cal-head">
         <button class="btn-x" data-action="prev" type="button" aria-label="Mes anterior">${icons.chevronLeft({ size: 20 })}</button>
         <h2>${esc(formatMonth(view.y, view.m))}</h2>
@@ -162,7 +162,7 @@ export async function render(el) {
         ${cr.intakes.slice(0, INTAKE_PREVIEW).map(intakeCard).join('')}
       </div>
       ${cr.intakes.length > INTAKE_PREVIEW ? `
-        <div class="intake-cards-list intake-extra-list" id="intake-extra-list" style="display: ${showAllIntakes ? 'flex' : 'none'}; margin-top: 8px;">
+        <div class="intake-cards-list intake-extra-list" id="intake-extra-list" ${showAllIntakes ? '' : 'hidden'}>
           ${cr.intakes.slice(INTAKE_PREVIEW).map(intakeCard).join('')}
         </div>
         <button class="intake-more-btn" data-action="toggle-intakes" type="button" aria-expanded="${showAllIntakes}">
@@ -217,12 +217,12 @@ export async function render(el) {
 
     if (extraList && labelSpan && iconSpan) {
       if (showAllIntakes) {
-        extraList.style.display = 'flex';
+        extraList.hidden = false;
         labelSpan.textContent = 'Ocultar tomas';
         iconSpan.innerHTML = icons.chevronUp({ size: 18 });
         btn.setAttribute('aria-expanded', 'true');
       } else {
-        extraList.style.display = 'none';
+        extraList.hidden = true;
         const total = el.querySelectorAll('.intake-card').length;
         labelSpan.textContent = `Ver todas (${total})`;
         iconSpan.innerHTML = icons.chevronDown({ size: 18 });

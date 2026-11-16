@@ -111,9 +111,9 @@ export async function showMemoriesPanel(agent, { onChange } = {}) {
             .map(
               (r, i) => `
             <div class="agent-rec-row" data-index="${i}">
-              <div style="display:flex;align-items:center;gap:12px">
+              <div class="agent-rec-day-main">
                 <span class="agent-rec-day">${esc(r.dia)}</span>
-                <span class="agent-rec-day-dot"${r.dot && r.grupo ? ` style="background:${esc(r.dot)}"` : ''}></span>
+                <span class="agent-rec-day-dot"${r.dot && r.grupo ? ` style="--dot: ${esc(r.dot)}"` : ''}></span>
                 <span class="agent-rec-day-text${r.grupo ? '' : ' is-empty'}" id="val-routine-${i}">${esc(r.grupo || 'Descanso')}</span>
               </div>
               <button class="agent-rec-icon-btn" data-action="edit-routine" data-index="${i}" type="button" aria-label="Editar ${r.dia}">
@@ -140,8 +140,8 @@ export async function showMemoriesPanel(agent, { onChange } = {}) {
                     (m) => `
               <div class="agent-rec-row" data-id="${m.id}" id="rec-item-${m.id}">
                 <div>
-                  <span style="display:block;font-size:16px;font-weight:600;color:var(--text)">${esc(m.contenido)}</span>
-                  <span style="display:block;font-size:13px;color:var(--muted);margin-top:2px">Nota de memoria</span>
+                  <span class="agent-rec-note-text">${esc(m.contenido)}</span>
+                  <span class="agent-rec-note-sub">Nota de memoria</span>
                 </div>
                 <button class="agent-rec-icon-btn is-trash" data-action="del-memory" data-id="${m.id}" type="button" aria-label="Borrar">
                   ${icons.trash({ size: 18 })}
@@ -150,7 +150,7 @@ export async function showMemoriesPanel(agent, { onChange } = {}) {
             `
                   )
                   .join('')
-              : '<p style="padding:18px;text-align:center;color:var(--muted);margin:0;font-size:14px">No hay notas ni descansos adicionales.</p>'
+              : '<p class="empty-note">No hay notas ni descansos adicionales.</p>'
           }
         </div>
       </section>
@@ -166,7 +166,7 @@ export async function showMemoriesPanel(agent, { onChange } = {}) {
             <span class="agent-rec-workout-title">${sessionCount} sesiones guardadas</span>
             <span class="agent-rec-workout-sub">Ya están en tu Historial. Bía puede consultarlas.</span>
           </div>
-          ${icons.chevronRight({ size: 20, stroke: '#8A8A8A' })}
+          ${icons.chevronRight({ size: 20, cls: 'icon-muted' })}
         </button>
       </section>
 
@@ -181,7 +181,7 @@ export async function showMemoriesPanel(agent, { onChange } = {}) {
       </div>
 
       <!-- Barra flotante de deshacer -->
-      <div id="agent-undo-container" style="display:none"></div>
+      <div id="agent-undo-container" hidden></div>
     </div>
   `;
 
@@ -227,10 +227,10 @@ export async function showMemoriesPanel(agent, { onChange } = {}) {
 
     pendingDeleteId = id;
     pendingDeleteRow = row;
-    row.style.display = 'none';
+    row.hidden = true;
 
     const undoBox = sheet.querySelector('#agent-undo-container');
-    undoBox.style.display = 'block';
+    undoBox.hidden = false;
     undoBox.innerHTML = `
       <div class="agent-undo-bar">
         <span>Recuerdo borrado</span>
@@ -240,8 +240,8 @@ export async function showMemoriesPanel(agent, { onChange } = {}) {
 
     undoBox.querySelector('#btn-undo-action').onclick = () => {
       clearTimeout(pendingDeleteTimer);
-      row.style.display = '';
-      undoBox.style.display = 'none';
+      row.hidden = false;
+      undoBox.hidden = true;
       pendingDeleteId = null;
       pendingDeleteRow = null;
       toast('Recuerdo restaurado');
@@ -250,14 +250,14 @@ export async function showMemoriesPanel(agent, { onChange } = {}) {
     pendingDeleteTimer = setTimeout(async () => {
       await deleteMemory(id);
       row.remove();
-      undoBox.style.display = 'none';
+      undoBox.hidden = true;
       pendingDeleteId = null;
       pendingDeleteRow = null;
       const count = sheet.querySelectorAll('#agent-card-rests .agent-rec-row').length;
       const badge = sheet.querySelector('#badge-rests-count');
       if (badge) badge.textContent = count;
       if (count === 0) {
-        sheet.querySelector('#agent-card-rests').innerHTML = '<p style="padding:18px;text-align:center;color:var(--muted);margin:0;font-size:14px">No hay notas ni descansos adicionales.</p>';
+        sheet.querySelector('#agent-card-rests').innerHTML = '<p class="empty-note">No hay notas ni descansos adicionales.</p>';
       }
     }, 4500);
   }
@@ -274,7 +274,7 @@ export async function showMemoriesPanel(agent, { onChange } = {}) {
       const valSpan = row.querySelector('.agent-rec-value');
       const currVal = profile[field] || '';
 
-      wrap.style.display = 'none';
+      wrap.hidden = true;
       const form = document.createElement('div');
       form.className = 'agent-rec-edit-form';
       form.innerHTML = `
@@ -299,7 +299,7 @@ export async function showMemoriesPanel(agent, { onChange } = {}) {
           }
         }
         form.remove();
-        wrap.style.display = 'flex';
+        wrap.hidden = false;
       };
 
       form.querySelector('.agent-rec-edit-save').onclick = () => finishEdit(true);
@@ -319,13 +319,13 @@ export async function showMemoriesPanel(agent, { onChange } = {}) {
       const textSpan = row.querySelector('.agent-rec-day-text');
       const currVal = routine[idx].grupo;
 
-      editRoutBtn.style.display = 'none';
-      textSpan.style.display = 'none';
+      editRoutBtn.hidden = true;
+      textSpan.hidden = true;
 
       const form = document.createElement('div');
       form.className = 'agent-rec-edit-form';
       form.innerHTML = `
-        <input type="text" class="agent-rec-edit-input" value="${esc(currVal)}" autocomplete="off" spellcheck="false" style="max-width:170px">
+        <input type="text" class="agent-rec-edit-input" value="${esc(currVal)}" autocomplete="off" spellcheck="false" class="agent-rec-edit-input--short">
         <button type="button" class="agent-rec-edit-btn agent-rec-edit-save" title="Guardar">${icons.check({ size: 16 })}</button>
         <button type="button" class="agent-rec-edit-btn agent-rec-edit-cancel" title="Cancelar">${icons.close({ size: 16 })}</button>
       `;
@@ -344,8 +344,8 @@ export async function showMemoriesPanel(agent, { onChange } = {}) {
           toast(newVal ? 'Rutina actualizada' : 'Día marcado como descanso');
         }
         form.remove();
-        textSpan.style.display = '';
-        editRoutBtn.style.display = '';
+        textSpan.hidden = false;
+        editRoutBtn.hidden = false;
       };
 
       form.querySelector('.agent-rec-edit-save').onclick = () => finishRout(true);
@@ -385,7 +385,7 @@ export async function showMemoriesPanel(agent, { onChange } = {}) {
       await clearAllMemories();
       const restsCard = sheet.querySelector('#agent-card-rests');
       if (restsCard) {
-        restsCard.innerHTML = '<p style="padding:18px;text-align:center;color:var(--muted);margin:0;font-size:14px">No hay notas ni descansos adicionales.</p>';
+        restsCard.innerHTML = '<p class="empty-note">No hay notas ni descansos adicionales.</p>';
       }
       const badge = sheet.querySelector('#badge-rests-count');
       if (badge) badge.textContent = '0';
@@ -433,19 +433,19 @@ export async function showConnectionPanel(agent, { onChange } = {}) {
         <div class="agent-rec-section-head">
           <h3 class="agent-rec-section-title">Estado del servicio</h3>
         </div>
-        <div class="agent-rec-card" style="padding: 14px 16px; display: flex; align-items: center; justify-content: space-between;">
-          <div style="display: flex; align-items: center; gap: 12px;">
-            <span style="width: 10px; height: 10px; border-radius: 50%; background: ${isOnline ? '#00FF66' : '#FF4D4D'}; box-shadow: 0 0 10px ${isOnline ? 'rgba(0,255,102,0.45)' : 'rgba(255,77,77,0.45)'}"></span>
+        <div class="agent-rec-card conn-status${isOnline ? ' is-online' : ''}">
+          <div class="conn-status-main">
+            <span class="conn-status-dot" aria-hidden="true"></span>
             <div>
-              <span style="display: block; font-size: 15px; font-weight: 700; color: var(--text);">
+              <span class="conn-status-title">
                 ${isOnline ? `Bía en línea (${activeProviderName})` : 'Desconectado'}
               </span>
-              <span style="display: block; font-size: 12px; color: var(--muted);">
+              <span class="conn-status-sub">
                 Voz activa: <b>${activeVoiceName}</b> · Bidireccional
               </span>
             </div>
           </div>
-          <span style="font-size: 11px; color: ${isOnline ? '#00FF66' : '#FF4D4D'}; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;">
+          <span class="conn-status-badge">
             ${isOnline ? 'EN LÍNEA' : 'OFFLINE'}
           </span>
         </div>
@@ -457,7 +457,7 @@ export async function showConnectionPanel(agent, { onChange } = {}) {
           <h3 class="agent-rec-section-title">Proveedor de Inteligencia Artificial</h3>
         </div>
 
-        <div class="agent-provider-tabs" style="margin-bottom:12px">
+        <div class="agent-provider-tabs agent-provider-tabs--spaced">
           <button type="button" class="agent-provider-tab ${selectedProvider === 'gemini' ? 'is-active' : ''}" data-provider="gemini">
             Google Gemini
           </button>
@@ -467,17 +467,17 @@ export async function showConnectionPanel(agent, { onChange } = {}) {
         </div>
 
         <!-- Panel Google Gemini -->
-        <div class="agent-rec-card" id="conn-panel-gemini" style="padding: 16px; display: ${selectedProvider === 'gemini' ? 'flex' : 'none'}; flex-direction: column; gap: 12px;">
+        <div class="agent-rec-card conn-panel" id="conn-panel-gemini" ${selectedProvider === 'gemini' ? '' : 'hidden'}>
           <div>
-            <span style="display:block;font-size:14px;font-weight:700;color:var(--text)">Gemini 2.0 Flash Live</span>
-            <span style="display:block;font-size:12px;color:var(--muted);margin-top:2px">
-              Voz: <b style="color:var(--primary)">Aoede</b> (cálida, motivadora y clara) · Cuota gratuita
+            <span class="conn-panel-title">Gemini Live</span>
+            <span class="conn-panel-sub">
+              Voz: <b class="conn-voice">Aoede</b> (cálida, motivadora y clara) · Cuota gratuita
             </span>
           </div>
 
-          <label style="display: flex; flex-direction: column; gap: 6px;">
-            <span style="font-size: 13px; color: var(--muted); font-weight: 600;">API Key de Google AI Studio</span>
-            <div style="display: flex; gap: 8px;">
+          <label class="conn-key-field">
+            <span class="conn-key-label">API Key de Google AI Studio</span>
+            <div class="conn-key-row">
               <input 
                 id="conn-gemini-input" 
                 type="password" 
@@ -485,10 +485,9 @@ export async function showConnectionPanel(agent, { onChange } = {}) {
                 placeholder="AIza..." 
                 autocomplete="off" 
                 spellcheck="false"
-                class="agent-rec-edit-input"
-                style="flex: 1; height: 42px; font-family: monospace; font-size: 13px; letter-spacing: 0.04em;"
+                class="agent-rec-edit-input conn-key-input"
               >
-              <button type="button" class="btn btn-toggle-mask" data-target="conn-gemini-input" style="padding: 0 14px; height: 42px; font-size: 13px;" title="Ver/Ocultar clave">
+              <button type="button" class="btn btn-toggle-mask conn-key-toggle" data-target="conn-gemini-input" title="Ver/Ocultar clave">
                 Ver
               </button>
             </div>
@@ -498,22 +497,22 @@ export async function showConnectionPanel(agent, { onChange } = {}) {
             href="https://aistudio.google.com/app/apikey" 
             target="_blank" 
             rel="noopener" 
-            style="font-size: 13px; color: var(--primary); text-decoration: none; display: inline-flex; align-items: center; gap: 6px; margin-top: 4px;"
+            class="conn-key-link"
           >
             ${icons.bolt({ size: 14 })} Obtener o cambiar clave en Google AI Studio ›
           </a>
         </div>
 
         <!-- Panel OpenAI Realtime -->
-        <div class="agent-rec-card" id="conn-panel-openai" style="padding: 16px; display: ${selectedProvider === 'openai' ? 'flex' : 'none'}; flex-direction: column; gap: 12px;">
+        <div class="agent-rec-card conn-panel" id="conn-panel-openai" ${selectedProvider === 'openai' ? '' : 'hidden'}>
           <div>
-            <span style="display:block;font-size:14px;font-weight:700;color:var(--text)">OpenAI Realtime WebRTC</span>
-            <span style="display:block;font-size:12px;color:var(--muted);margin-top:2px">
-              Voz: <b style="color:#10A37F">Coral</b> (equivalente gemela de Aoede: cálida y segura)
+            <span class="conn-panel-title">OpenAI Realtime</span>
+            <span class="conn-panel-sub">
+              Voz: <b class="conn-voice">Coral</b> (equivalente gemela de Aoede: cálida y segura)
             </span>
           </div>
 
-          <label style="display:block;font-size:13px;color:var(--muted);font-weight:600">Modelo:</label>
+          <p class="conn-key-label">Modelo:</p>
           <div class="agent-model-select">
             <button type="button" class="agent-model-btn ${selectedModel === 'gpt-4o-mini-realtime-preview' ? 'is-active' : ''}" data-model="gpt-4o-mini-realtime-preview">
               gpt-4o-mini (Económico)
@@ -523,9 +522,9 @@ export async function showConnectionPanel(agent, { onChange } = {}) {
             </button>
           </div>
 
-          <label style="display: flex; flex-direction: column; gap: 6px;">
-            <span style="font-size: 13px; color: var(--muted); font-weight: 600;">API Key de OpenAI</span>
-            <div style="display: flex; gap: 8px;">
+          <label class="conn-key-field">
+            <span class="conn-key-label">API Key de OpenAI</span>
+            <div class="conn-key-row">
               <input 
                 id="conn-openai-input" 
                 type="password" 
@@ -533,10 +532,9 @@ export async function showConnectionPanel(agent, { onChange } = {}) {
                 placeholder="sk-..." 
                 autocomplete="off" 
                 spellcheck="false"
-                class="agent-rec-edit-input"
-                style="flex: 1; height: 42px; font-family: monospace; font-size: 13px; letter-spacing: 0.04em;"
+                class="agent-rec-edit-input conn-key-input"
               >
-              <button type="button" class="btn btn-toggle-mask" data-target="conn-openai-input" style="padding: 0 14px; height: 42px; font-size: 13px;" title="Ver/Ocultar clave">
+              <button type="button" class="btn btn-toggle-mask conn-key-toggle" data-target="conn-openai-input" title="Ver/Ocultar clave">
                 Ver
               </button>
             </div>
@@ -546,7 +544,7 @@ export async function showConnectionPanel(agent, { onChange } = {}) {
             href="https://platform.openai.com/api-keys" 
             target="_blank" 
             rel="noopener" 
-            style="font-size: 13px; color: #10A37F; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; margin-top: 4px;"
+            class="conn-key-link"
           >
             ${icons.bolt({ size: 14 })} Obtener o cambiar clave en OpenAI Platform ›
           </a>
@@ -554,12 +552,12 @@ export async function showConnectionPanel(agent, { onChange } = {}) {
       </section>
 
       <!-- Botón guardar -->
-      <button type="button" class="btn btn-primary btn-block" id="btn-save-conn-config" style="height: 44px; margin-top: 4px;">
+      <button type="button" class="btn btn-primary btn-block conn-save" id="btn-save-conn-config">
         Guardar y activar proveedor
       </button>
 
       <!-- Desconectar -->
-      <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; padding-top: 6px; padding-bottom: 24px;">
+      <div class="conn-footer">
         <button class="agent-rec-danger-btn" id="btn-disconnect-key" type="button">
           Desconectar Bía
         </button>
@@ -604,8 +602,8 @@ export async function showConnectionPanel(agent, { onChange } = {}) {
       tab.classList.add('is-active');
 
       const isGemini = selectedProvider === 'gemini';
-      sheet.querySelector('#conn-panel-gemini').style.display = isGemini ? 'flex' : 'none';
-      sheet.querySelector('#conn-panel-openai').style.display = isGemini ? 'none' : 'flex';
+      sheet.querySelector('#conn-panel-gemini').hidden = !isGemini;
+      sheet.querySelector('#conn-panel-openai').hidden = isGemini;
     });
   });
 

@@ -1,0 +1,483 @@
+/* 04-series-descanso.css — Puntos de grupo muscular, series del entreno y descanso.
+ * Parte de los componentes de Bía. El orden de carga está en index.html (01 → 14) y define la cascada. */
+
+/* ---------- Puntos de grupo muscular ---------- */
+.dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: var(--white);
+  box-shadow: 0 0 6px currentColor;
+}
+.dot[data-g="Pecho"],
+.muscle-dot[data-g="Pecho"] { background: #FF6B7A; color: #FF6B7A; }
+.dot[data-g="Espalda"],
+.muscle-dot[data-g="Espalda"] { background: #2EC4B6; color: #2EC4B6; }
+.dot[data-g="Piernas"],
+.muscle-dot[data-g="Piernas"] { background: #FFD166; color: #FFD166; }
+.dot[data-g="Hombros"],
+.muscle-dot[data-g="Hombros"] { background: #7ED957; color: #7ED957; }
+.dot[data-g="Brazos"],
+.muscle-dot[data-g="Brazos"] { background: #4D8DFF; color: #4D8DFF; }
+.dot[data-g="Bíceps"],
+.muscle-dot[data-g="Bíceps"] { background: #4D8DFF; color: #4D8DFF; }
+.dot[data-g="Tríceps"],
+.muscle-dot[data-g="Tríceps"] { background: #FF9F43; color: #FF9F43; }
+.dot[data-g="Core"],
+.muscle-dot[data-g="Core"] { background: #B38CFF; color: #B38CFF; }
+.dot[data-g="Cardio"],
+.muscle-dot[data-g="Cardio"] { background: #00C49F; color: #00C49F; }
+.dot[data-g="Otro"],
+.muscle-dot[data-g="Otro"] { background: #A8A8A8; color: #A8A8A8; }
+.muscle {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  color: var(--muted);
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.2;
+}
+.muscle strong {
+  color: var(--text);
+  font-weight: 600;
+  text-transform: capitalize;
+}
+.muscle-focus {
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 500;
+}
+.muscle-focus::before {
+  content: "·";
+  margin-right: 6px;
+}
+.muscle-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--line-strong);
+  flex-shrink: 0;
+  display: inline-block;
+}
+.muscle-hint {
+  margin: 8px 0 0;
+}
+
+/* ---------- Grupos de Series del Entrenamiento ---------- */
+.set-ref-card-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 10px 12px 12px;
+  margin: 0;
+  box-sizing: border-box;
+}
+/* Aire entre «Serie N / Trabajo·Calentamiento» y la caja de «Última vez» */
+.stack > .set-ref-card-wrap {
+  margin-top: 14px;
+}
+
+.set-ref-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.set-ref-card-head strong {
+  color: var(--text);
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.set-ref-badge-done {
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+  color: var(--primary);
+  background: var(--yellow-dim);
+  padding: 2px 8px;
+  border-radius: var(--r-full);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.set-ref-cards {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x pan-y;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding: 2px 1px 4px;
+}
+
+.set-ref-cards::-webkit-scrollbar {
+  display: none;
+}
+
+.set-ref-card {
+  flex: 1 0 auto;
+  min-width: 66px;
+  box-sizing: border-box;
+  background: var(--surface);
+  border: 1.5px solid transparent;
+  border-radius: var(--r-sm);
+  padding: 6px 4px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  transition: border-color 0.14s ease, background-color 0.14s ease;
+}
+
+.set-ref-card.is-target {
+  border-color: var(--primary);
+  background: var(--accent-faint);
+}
+
+.ref-card-num {
+  font-size: var(--fs-2xs);
+  color: var(--muted);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.ref-card-reps {
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1.15;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.ref-card-reps.text-primary {
+  color: var(--primary);
+}
+
+.ref-card-detail {
+  font-size: var(--fs-2xs);
+  color: var(--muted);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.ref-card-detail.muted {
+  color: var(--text-dim);
+}
+
+.set-ref-note {
+  margin: 2px 0 0;
+  font-size: var(--fs-xs);
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.set-ref--empty {
+  color: var(--muted);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  margin: 0;
+}
+
+.set-ref {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  margin: 0;
+  width: 100%;
+  min-height: 1.4em;
+  font-size: var(--fs-base);
+  line-height: 1.35;
+  color: var(--text);
+}
+.set-ref:not(.set-ref--empty) {
+  display: grid;
+  grid-template-columns: 4.75rem minmax(0, 1fr) auto;
+  column-gap: 8px;
+  row-gap: 4px;
+  align-items: baseline;
+}
+.set-ref-head {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  grid-column: 1 / -1;
+  margin: 0;
+}
+.set-ref-head strong {
+  font-weight: 700;
+  text-transform: capitalize;
+}
+.set-ref-row {
+  display: grid;
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
+  align-items: baseline;
+  margin: 0;
+}
+.set-ref .rpe-tag {
+  justify-self: stretch;
+  margin-left: 0;
+  text-align: center;
+}
+.set-ref-k {
+  color: var(--muted);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+.set-ref .num {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.today-log {
+  margin-top: 22px;
+}
+.today-log > summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 48px;
+  font-weight: 700;
+  color: var(--text);
+}
+.today-log > summary::-webkit-details-marker { display: none; }
+.today-log-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.today-log .group:first-child {
+  margin-top: 8px;
+}
+
+.group {
+  margin-top: 20px;
+  background: var(--surface);
+  border: none;
+  border-radius: var(--r-xl);
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-sm);
+}
+.group h3 {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  min-width: 0;
+  color: var(--text);
+  font-size: var(--fs-base);
+  margin-bottom: 12px;
+}
+.sets {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sets li {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 10px 4px;
+  border-top: 1px solid var(--line);
+}
+.sets li:first-child {
+  border-top: 0;
+}
+.sets .n {
+  width: 5rem;
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.sets .v {
+  flex: 1;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  font-size: var(--fs-base);
+  color: var(--text);
+}
+/* Chip de esfuerzo: compartido (series, sesión anterior, historial). No vivir solo bajo .sets. */
+.rpe-tag {
+  display: inline-block;
+  padding: 2px 6px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-xs);
+  font-size: var(--fs-2xs);
+  color: var(--muted);
+  font-weight: 700;
+  margin-left: 6px;
+  vertical-align: 0.05em;
+}
+
+.set-extra {
+  flex: 1 0 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 2px 0 8px;
+}
+.effort-label,
+.effort-note {
+  color: var(--muted);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+.effort-label {
+  display: block;
+  line-height: 1.35;
+}
+.effort-hint {
+  display: block;
+  margin: 2px 0 8px;
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+}
+.rir-pick button:disabled {
+  opacity: 0.38;
+}
+.stats--2 {
+  grid-template-columns: 1fr 1fr;
+}
+.stats--3 {
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px 10px;
+}
+.stats--3 .stat b {
+  font-size: clamp(1.4rem, 5.5vw, 1.85rem);
+}
+.stats--3 .stat span {
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-top: 5px;
+  line-height: 1.3;
+}
+.stats + .stats {
+  margin-top: 10px;
+}
+/* Pie de la telemetría semanal: mismo inset que el padding interno de .stats */
+.week-effort {
+  margin: 8px 0 0;
+  padding: 0 16px;
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.4;
+}
+.effort-miss {
+  width: 100%;
+  border-color: var(--line-accent-strong);
+  color: var(--primary);
+}
+.effort-change {
+  width: 100%;
+}
+.rir-pick {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+}
+.rir-pick button {
+  width: 100%;
+  min-width: 0;
+  min-height: 46px;
+  height: 46px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  color: var(--text);
+  font-weight: 800;
+  font-size: var(--fs-md);
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.12s ease, border-color 0.12s ease, transform 0.08s ease;
+}
+.rir-pick button[aria-pressed="true"] {
+  background: var(--primary);
+  border-color: var(--line-accent);
+  color: var(--primary-ink);
+}
+
+/* ---------- HUD de Temporizador de Descanso ---------- */
+.rest {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  padding: 12px 14px 12px 18px;
+  border-radius: var(--r-md);
+  background: var(--yellow-dim);
+  border: 1px solid var(--line-accent);
+  color: var(--text);
+  box-shadow: var(--shadow-md);
+}
+.rest span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--primary);
+}
+.rest strong.num {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xl);
+  font-weight: 800;
+  color: var(--text);
+}
+.rest .btn {
+  background: var(--surface);
+  border: 1px solid var(--line-accent-strong);
+  color: var(--primary);
+  font-weight: 700;
+}
+.rest .btn:hover {
+  background: var(--primary);
+  color: var(--primary-ink);
+}
+
+.elapsed {
+  font-family: var(--font-mono);
+  font-size: var(--fs-hero);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+  color: var(--primary);
+  line-height: 1;
+}
+

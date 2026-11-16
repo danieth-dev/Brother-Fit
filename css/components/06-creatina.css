@@ -1,0 +1,635 @@
+/* 06-creatina.css — Pantalla de creatina, calendario y estado vacío.
+ * Parte de los componentes de Bía. El orden de carga está en index.html (01 → 14) y define la cascada. */
+
+/* ---------- Ver Creatina: Tarjeta de Saturación Muscular Visible ---------- */
+.creatine-sat-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-xl);
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 14px;
+  box-shadow: var(--shadow-sm);
+}
+.creatine-sat-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+.creatine-sat-label {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.creatine-sat-pct {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--green);
+}
+.creatine-sat-bar {
+  height: 10px;
+  border-radius: 5px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.creatine-sat-fill {
+  width: var(--pct, 0%);
+  height: 10px;
+  border-radius: 5px;
+  background: var(--green);
+  transition: width 0.3s ease;
+}
+.creatine-sat-desc {
+  margin: 0;
+  font-size: var(--fs-sm);
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+/* ---------- Ver Creatina: Fila de 3 Métricas ---------- */
+.creatine-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 12px;
+}
+.creatine-stat-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: 14px 10px;
+  text-align: center;
+}
+.creatine-stat-val {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  line-height: 1.1;
+  font-weight: 800;
+  color: var(--text);
+}
+.creatine-stat-lbl {
+  margin: 4px 0 0;
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* ---------- Ver Creatina: Añadir Toma Pasada (Estilo Amigable) ---------- */
+.creatine-retro-card {
+  margin-top: 16px;
+  border: none;
+  background: transparent;
+  padding: 0;
+}
+.creatine-retro-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 56px;
+  padding: 0 18px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--r-lg);
+  background: transparent;
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.creatine-retro-btn::-webkit-details-marker {
+  display: none;
+}
+.creatine-retro-btn:hover {
+  border-color: var(--primary);
+  background: var(--accent-faint);
+}
+.creatine-retro-plus {
+  color: var(--muted);
+  display: grid;
+  place-items: center;
+  transition: transform 0.2s ease;
+}
+.creatine-retro-card[open] .creatine-retro-plus {
+  transform: rotate(45deg);
+}
+.creatine-retro-card[open] .creatine-retro-btn {
+  border-style: solid;
+  border-color: var(--line-strong);
+  background: var(--surface);
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+}
+.creatine-retro-form {
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-top: none;
+  border-radius: 0 0 var(--r-lg) var(--r-lg);
+  padding: 16px;
+  margin-top: 0 !important;
+}
+
+/* ---------- Ver Creatina: Últimas Tomas (Tarjetas Táctiles) ---------- */
+.intake-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 26px 0 10px;
+}
+.intake-section-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  font-weight: 800;
+  font-style: italic;
+  color: var(--text);
+}
+.intake-section-total {
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 500;
+}
+.intake-cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.intake-extra-list {
+  margin-top: 8px;
+}
+.intake-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 60px;
+  box-sizing: border-box;
+  padding: 0 8px 0 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+.intake-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.intake-card-date {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+}
+.intake-card-dose {
+  font-size: 13px;
+  color: var(--muted);
+}
+.intake-card-del {
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: var(--r-full);
+  background: transparent;
+  color: var(--muted);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+.intake-card-del:hover {
+  color: var(--red);
+  background: var(--red-dim);
+}
+.intake-more-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  height: 48px;
+  margin-top: 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 14px;
+  background: transparent;
+  color: var(--text);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+  touch-action: manipulation;
+}
+.intake-more-btn:hover {
+  background: var(--surface);
+  border-color: var(--muted);
+}
+.intake-more-btn:active {
+  transform: scale(0.99);
+}
+.intake-more-btn .intake-more-icon {
+  display: inline-flex;
+  align-items: center;
+  color: var(--muted);
+  transition: transform 0.2s ease, color 0.15s ease;
+}
+.intake-more-btn:hover .intake-more-icon {
+  color: var(--text);
+}
+
+/* ---------- Ver Creatina: Acordeón Científico al Final ---------- */
+.sci-facts-card {
+  margin-top: 20px;
+  border: none;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-xl);
+  overflow: hidden;
+}
+.sci-facts-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  padding: 0 18px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+  transition: background 0.15s ease;
+}
+.sci-facts-trigger::-webkit-details-marker {
+  display: none;
+}
+.sci-facts-trigger:hover {
+  background: var(--surface-2);
+}
+.sci-facts-chev {
+  color: var(--muted);
+  display: grid;
+  place-items: center;
+  transition: transform 0.2s ease;
+}
+.sci-facts-card[open] .sci-facts-chev {
+  transform: rotate(180deg);
+}
+
+/* ---------- Panel Científico de Creatina ---------- */
+.sat-panel {
+  margin-top: 24px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: 18px;
+  box-shadow: var(--shadow-sm);
+}
+.sat-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.sat-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  display: grid;
+  place-content: center;
+  color: var(--primary);
+}
+.sat-info {
+  flex: 1;
+  min-width: 0;
+}
+.sat-label {
+  display: block;
+  font-family: var(--font);
+  font-size: var(--fs-base);
+  font-weight: 700;
+  color: var(--text);
+}
+.sat-pct-label {
+  display: block;
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  margin-top: 2px;
+}
+.sat-pct {
+  font-family: var(--font);
+  font-size: var(--fs-xl);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--primary);
+}
+.sat-track {
+  height: 8px;
+  background: var(--surface-2);
+  border-radius: var(--r-full);
+  overflow: hidden;
+  margin-bottom: 12px;
+  border: 1px solid var(--line);
+}
+.sat-fill {
+  height: 100%;
+  background: var(--primary);
+  border-radius: var(--r-full);
+  transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.sat-fill.sat-bar--full {
+  background: var(--green);
+}
+.sat-desc {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.sci-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+.sci-card {
+  background: var(--surface);
+  border: none;
+  border-radius: var(--r-lg);
+  padding: 14px 10px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  box-shadow: var(--shadow-sm);
+}
+.sci-val {
+  font-family: var(--font);
+  font-size: var(--fs-xl);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  color: var(--text);
+}
+.sci-val--primary { color: var(--primary); }
+.sci-val--ok { color: var(--green); }
+.sci-val--bad { color: var(--red); }
+.sci-val--sm {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  line-height: 1.25;
+}
+.sci-key small {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--fs-2xs);
+  font-weight: 600;
+  color: var(--muted);
+}
+.sci-fold {
+  margin-top: 22px;
+}
+.sci-fold > summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 48px;
+  font-weight: 700;
+  color: var(--text);
+}
+.sci-fold > summary::-webkit-details-marker { display: none; }
+.sci-fold-body {
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+.sci-fold-body .sat-panel {
+  margin-top: 14px;
+}
+.creatine-streak {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+.creatine-retro {
+  margin-top: 22px;
+}
+.cal-block {
+  margin-top: 28px;
+}
+.cal-block--spaced {
+  margin-top: 16px;
+}
+.intake-date {
+  text-transform: capitalize;
+}
+.intake-more {
+  margin-top: 12px;
+}
+.intake-more > summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 48px;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--muted);
+}
+.intake-more > summary::-webkit-details-marker { display: none; }
+.intake-more[open] > summary {
+  color: var(--text);
+  margin-bottom: 8px;
+}
+.intake-more-list {
+  margin-top: 0;
+}
+.btn-x:disabled {
+  opacity: 0.35;
+  pointer-events: none;
+}
+.sci-key {
+  margin-top: 4px;
+  font-size: var(--fs-2xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+  overflow-wrap: break-word;
+}
+.sci-key small {
+  display: block;
+  margin-top: 2px;
+  text-transform: none;
+  font-size: var(--fs-2xs);
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.sci-facts {
+  margin-top: 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+.sci-facts summary {
+  padding: 14px 16px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: var(--fs-sm);
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  user-select: none;
+}
+.sci-facts summary::-webkit-details-marker {
+  display: none;
+}
+.sci-facts-body {
+  padding: 0 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  border-top: 1px solid var(--line);
+  margin-top: 4px;
+  padding-top: 14px;
+}
+.sci-fact-item {
+  display: flex;
+  gap: 12px;
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  line-height: 1.5;
+}
+.sci-fact-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  display: grid;
+  place-content: center;
+  color: var(--primary);
+  flex-shrink: 0;
+}
+.sci-fact-item strong {
+  color: var(--text);
+  font-size: var(--fs-sm);
+}
+
+/* ---------- Calendario de Creatina ---------- */
+.cal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.cal-head h2 {
+  font-size: var(--fs-md);
+  text-transform: capitalize;
+}
+.cal {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: 14px;
+}
+.dow {
+  text-align: center;
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+  color: var(--muted);
+  padding-bottom: 6px;
+}
+.day {
+  aspect-ratio: 1;
+  display: grid;
+  place-content: center;
+  border-radius: var(--r-sm);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid transparent;
+  transition: all 0.12s ease;
+}
+.day.out {
+  opacity: 0.15;
+  background: transparent;
+}
+.day.future {
+  opacity: 0.35;
+  background: transparent;
+}
+.day.today {
+  border-color: var(--primary);
+}
+.day.taken {
+  background: var(--primary);
+  color: var(--primary-ink);
+  font-weight: 800;
+  border-color: var(--primary);
+}
+.day.today.taken {
+  box-shadow: inset 0 0 0 2px var(--primary-ink);
+}
+
+/* ---------- Estado Vacío (Empty State) ---------- */
+.empty {
+  text-align: center;
+  padding: 42px 20px;
+  background: var(--surface);
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--r-lg);
+  color: var(--muted);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+/* Texto atenuado y centrado cuando una lista o gráfica no tiene datos. */
+.empty-note {
+  margin: 0;
+  padding: 24px 16px;
+  text-align: center;
+  color: var(--muted);
+  font-size: var(--fs-sm);
+}
+.empty p {
+  max-width: 340px;
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+}
+/* El control y su resultado son grupos distintos: no deben compartir el borde. */
+.field + .empty,
+.field + .pr-badges {
+  margin-top: 24px;
+}
+.muted + .form-card,
+.chart + .form-card {
+  margin-top: 24px;
+}
+

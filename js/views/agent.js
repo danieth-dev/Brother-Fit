@@ -53,7 +53,7 @@ function renderKeyPrompt(el, config = {}) {
       </div>
 
       <!-- Sección Gemini -->
-      <div id="section-prompt-gemini" style="${selectedProvider === 'gemini' ? '' : 'display:none'}">
+      <div id="section-prompt-gemini" ${selectedProvider === 'gemini' ? '' : 'hidden'}>
         <p class="agent-key-desc">
           Conexión multimodal nativa de Google con voz <b>Aoede</b> (cálida y motivadora). 
           Acceso ultrarrápido y cuota gratuita para tu uso diario.
@@ -61,7 +61,7 @@ function renderKeyPrompt(el, config = {}) {
         <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener" class="btn btn-block" id="btn-get-gemini-key">
           ${icons.bolt({ size: 18 })} Obtener clave gratis en Google AI Studio
         </a>
-        <div class="field" style="margin-top:16px">
+        <div class="field agent-key-field">
           <label class="field">
             <span>API Key de Gemini (AIza...)</span>
             <input id="agent-gemini-input" type="password" value="${esc(config.geminiKey || '')}" placeholder="AIza..." autocomplete="off" spellcheck="false">
@@ -70,12 +70,12 @@ function renderKeyPrompt(el, config = {}) {
       </div>
 
       <!-- Sección OpenAI -->
-      <div id="section-prompt-openai" style="${selectedProvider === 'openai' ? '' : 'display:none'}">
+      <div id="section-prompt-openai" ${selectedProvider === 'openai' ? '' : 'hidden'}>
         <p class="agent-key-desc">
           Voz ultraexpresiva <b>Coral</b> (equivalente gemela de Aoede: cálida, segura y natural). 
           Requiere cuenta con créditos activos en OpenAI.
         </p>
-        <label style="display:block;margin-bottom:6px;font-size:13px;color:var(--muted);font-weight:600">Modelo de voz:</label>
+        <p class="agent-key-label">Modelo de voz:</p>
         <div class="agent-model-select">
           <button type="button" class="agent-model-btn ${selectedModel === 'gpt-4o-mini-realtime-preview' ? 'is-active' : ''}" data-model="gpt-4o-mini-realtime-preview">
             gpt-4o-mini (Económico)
@@ -87,7 +87,7 @@ function renderKeyPrompt(el, config = {}) {
         <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener" class="btn btn-block" id="btn-get-openai-key">
           ${icons.bolt({ size: 18 })} Obtener clave en OpenAI Platform
         </a>
-        <div class="field" style="margin-top:16px">
+        <div class="field agent-key-field">
           <label class="field">
             <span>API Key de OpenAI (sk-...)</span>
             <input id="agent-openai-input" type="password" value="${esc(config.openaiKey || '')}" placeholder="sk-..." autocomplete="off" spellcheck="false">
@@ -95,7 +95,7 @@ function renderKeyPrompt(el, config = {}) {
         </div>
       </div>
 
-      <button class="btn btn-primary btn-block" id="btn-save-key" type="button" style="margin-top:16px">
+      <button class="btn btn-primary btn-block agent-key-save" id="btn-save-key" type="button">
         Guardar y conectar en vivo
       </button>
     </div>
@@ -109,8 +109,8 @@ function renderKeyPrompt(el, config = {}) {
       tab.classList.add('is-active');
 
       const isGemini = selectedProvider === 'gemini';
-      el.querySelector('#section-prompt-gemini').style.display = isGemini ? '' : 'none';
-      el.querySelector('#section-prompt-openai').style.display = isGemini ? 'none' : '';
+      el.querySelector('#section-prompt-gemini').hidden = !isGemini;
+      el.querySelector('#section-prompt-openai').hidden = isGemini;
     });
   });
 
@@ -444,7 +444,7 @@ async function renderLiveChat(el, config) {
         card.className = 'agent-card-memory';
         if (result?.id) card.id = `mem-card-${result.id}`;
         card.innerHTML = `
-          <div class="agent-card-memory-icon">${icons.check({ size: 18, stroke: '#10B981' })}</div>
+          <div class="agent-card-memory-icon">${icons.check({ size: 18, cls: 'icon-ok' })}</div>
           <div class="agent-card-memory-body">
             <span class="agent-card-memory-tag">Guardado en recuerdos</span>
             <span class="agent-card-memory-text">${esc(args?.contenido || 'Preferencia guardada')}</span>
@@ -461,7 +461,7 @@ async function renderLiveChat(el, config) {
           ? `${result.comida.tipo.toUpperCase()} · ${result.comida.nombre} (${result.comida.kcal} kcal · ${result.comida.proteina}g P)`
           : (result.mensaje || 'Registro actualizado');
         card.innerHTML = `
-          <div class="agent-card-memory-icon">${icons.check({ size: 18, stroke: '#10B981' })}</div>
+          <div class="agent-card-memory-icon">${icons.check({ size: 18, cls: 'icon-ok' })}</div>
           <div class="agent-card-memory-body">
             <span class="agent-card-memory-tag">${esc(tag)}</span>
             <span class="agent-card-memory-text">${esc(detail)}</span>
@@ -473,7 +473,7 @@ async function renderLiveChat(el, config) {
         const card = document.createElement('div');
         card.className = 'agent-card-memory';
         card.innerHTML = `
-          <div class="agent-card-memory-icon">${icons.check({ size: 18, stroke: '#10B981' })}</div>
+          <div class="agent-card-memory-icon">${icons.check({ size: 18, cls: 'icon-ok' })}</div>
           <div class="agent-card-memory-body">
             <span class="agent-card-memory-tag">Guardado en Peso corporal</span>
             <span class="agent-card-memory-text">${esc(result.mensaje || `${result.pesoKg} kg (${result.fecha})`)}</span>
@@ -485,7 +485,7 @@ async function renderLiveChat(el, config) {
         const card = document.createElement('div');
         card.className = 'agent-card-memory';
         card.innerHTML = `
-          <div class="agent-card-memory-icon">${icons.check({ size: 18, stroke: '#10B981' })}</div>
+          <div class="agent-card-memory-icon">${icons.check({ size: 18, cls: 'icon-ok' })}</div>
           <div class="agent-card-memory-body">
             <span class="agent-card-memory-tag">Registro de creatina</span>
             <span class="agent-card-memory-text">${esc(result.mensaje || 'Creatina actualizada')}</span>
@@ -498,7 +498,7 @@ async function renderLiveChat(el, config) {
         card.className = 'agent-card-memory';
         const tag = result.accion === 'finalizar' ? 'Entrenamiento finalizado' : 'Entrenamiento iniciado';
         card.innerHTML = `
-          <div class="agent-card-memory-icon">${icons.check({ size: 18, stroke: '#10B981' })}</div>
+          <div class="agent-card-memory-icon">${icons.check({ size: 18, cls: 'icon-ok' })}</div>
           <div class="agent-card-memory-body">
             <span class="agent-card-memory-tag">${esc(tag)}</span>
             <span class="agent-card-memory-text">${esc(result.mensaje || '')}</span>

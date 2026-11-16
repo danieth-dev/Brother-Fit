@@ -59,14 +59,6 @@ export async function render(el) {
 
   const backupInfo = formatRelativeBackup(backupTs);
 
-  // Mapeo de aspecto
-  const themeColorMap = {
-    amarillo: '#FFE600',
-    azul: '#3B82F6',
-    rosado: '#EC4899',
-  };
-  const activeColor = themeColorMap[s.tema] || '#FFE600';
-
   const modeTextMap = {
     oscuro: 'Oscuro',
     claro: 'Claro',
@@ -97,9 +89,9 @@ export async function render(el) {
               <span class="settings-row-label">Aspecto</span>
             </div>
             <div class="settings-row-val">
-              <span class="settings-dot" style="background:${activeColor}"></span>
+              <span class="settings-dot settings-dot--accent"></span>
               <span>${activeModeText}</span>
-              ${icons.chevronRight({ size: 18, stroke: '#8A8A8A' })}
+              ${icons.chevronRight({ size: 18, cls: 'icon-muted' })}
             </div>
           </a>
 
@@ -111,7 +103,7 @@ export async function render(el) {
             </div>
             <div class="settings-row-val">
               <span>${s.descansoMode === 'auto' ? 'Automático' : `${s.descanso || 90}s fijo`}</span>
-              ${icons.chevronRight({ size: 18, stroke: '#8A8A8A' })}
+              ${icons.chevronRight({ size: 18, cls: 'icon-muted' })}
             </div>
           </button>
 
@@ -139,8 +131,8 @@ export async function render(el) {
             </div>
           `
               : `
-            <div style="padding:0 16px 14px; display:flex; align-items:center; gap:10px;">
-              <span style="font-size:13px; color:var(--muted);">Segundos de descanso:</span>
+            <div class="settings-inline-form">
+              <span class="settings-inline-label">Segundos de descanso:</span>
               <input 
                 id="input-descanso-manual" 
                 type="number" 
@@ -148,10 +140,9 @@ export async function render(el) {
                 min="10" 
                 max="900" 
                 step="5"
-                class="agent-rec-edit-input" 
-                style="width:80px; height:36px; text-align:center; font-weight:700;"
+                class="agent-rec-edit-input settings-number-input"
               >
-              <button type="button" class="btn btn-primary" id="btn-save-manual-rest" style="height:36px; padding:0 12px; font-size:13px;">
+              <button type="button" class="btn btn-primary settings-inline-btn" id="btn-save-manual-rest">
                 Guardar
               </button>
             </div>
@@ -159,7 +150,7 @@ export async function render(el) {
           }
 
           <!-- Recordatorio de agua -->
-          <div class="settings-row" style="cursor:default">
+          <div class="settings-row settings-row--static">
             <div class="settings-row-main">
               <span class="settings-row-label">Recordatorio de agua</span>
               <span class="settings-row-sub">2 avisos suaves el mismo día de tu creatina</span>
@@ -180,12 +171,12 @@ export async function render(el) {
           ${
             waterActive
               ? `
-            <div class="settings-row" style="cursor:default">
+            <div class="settings-row settings-row--static">
               <div class="settings-row-main">
                 <span class="settings-row-label">Cuándo avisar</span>
               </div>
               <div class="settings-row-val">
-                <span style="color:var(--muted)">Tras registrar la creatina</span>
+                <span class="muted">Tras registrar la creatina</span>
               </div>
             </div>
           `
@@ -194,7 +185,7 @@ export async function render(el) {
 
           <!-- Estado de notificaciones -->
           <div class="settings-status-line">
-            <span class="settings-dot" style="background:${notifState === 'granted' ? '#10B981' : notifState === 'denied' ? '#FF6B7A' : '#FFE600'}"></span>
+            <span class="settings-dot ${notifState === 'granted' ? 'settings-dot--ok' : notifState === 'denied' ? 'settings-dot--danger' : 'settings-dot--warn'}"></span>
             <span>
               ${
                 notifState === 'granted'
@@ -241,9 +232,9 @@ export async function render(el) {
           Todo se guarda solo en este teléfono. Haz respaldos periódicos para no perder tus entrenamientos, récords y recuerdos.
         </p>
 
-        <div class="settings-card" style="padding:14px 16px; display:flex; flex-direction:column; gap:12px;">
-          <div style="display:flex; align-items:flex-start; gap:10px;">
-            <span class="settings-dot" style="background:${backupInfo.hasBackup && !backupInfo.isOld ? '#10B981' : '#FFE600'}; margin-top:6px;"></span>
+        <div class="settings-card settings-card--stack">
+          <div class="settings-backup-status">
+            <span class="settings-dot settings-dot--top ${backupInfo.hasBackup && !backupInfo.isOld ? 'settings-dot--ok' : 'settings-dot--warn'}"></span>
             <div class="settings-row-main">
               <span class="settings-row-label">${esc(backupInfo.text)}</span>
               <span class="settings-row-sub">${esc(backupInfo.sub)}</span>
@@ -258,7 +249,7 @@ export async function render(el) {
             ${icons.share({ size: 18 })} Crear respaldo
           </button>
 
-          <label class="settings-btn-secondary" style="margin:0">
+          <label class="settings-btn-secondary">
             ${icons.upload({ size: 18 })} Restaurar un respaldo
             <input type="file" accept="application/json,.json" id="file-import-backup" hidden>
           </label>
@@ -271,7 +262,7 @@ export async function render(el) {
           ? `
         <section class="settings-section">
           <h2 class="settings-section-title">Aplicación</h2>
-          <div class="settings-card" style="padding:14px 16px;">
+          <div class="settings-card settings-card--padded">
             <button class="settings-btn-primary" type="button" id="btn-install-app">
               Instalar en la pantalla de inicio
             </button>
@@ -285,7 +276,7 @@ export async function render(el) {
       <section class="settings-section">
         <h2 class="settings-section-title is-danger">Zona de riesgo</h2>
         <div class="settings-card is-danger">
-          <p style="margin:0; font-size:14px; line-height:1.45; color:var(--muted);">
+          <p class="settings-danger-text">
             Borra entrenamientos, creatina y recuerdos de este teléfono. No se puede deshacer, así que crea un respaldo antes.
           </p>
           <button class="settings-btn-danger" type="button" id="btn-danger-reset">

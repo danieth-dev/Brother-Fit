@@ -2,7 +2,7 @@
 import { esc, fmtNum } from './dom.js';
 
 export function lineChart(points, { height = 190, desc = 'Gráfico de evolución', unit = '', showValues = true } = {}) {
-  if (!points.length) return '<p class="muted" style="text-align:center;padding:24px 0">Aún no hay datos para graficar.</p>';
+  if (!points.length) return '<p class="empty-note">Aún no hay datos para graficar.</p>';
 
   const W = 460, H = height, L = 46, R = 22, T = 26, B = 28;
   const vals = points.map((p) => p.value);

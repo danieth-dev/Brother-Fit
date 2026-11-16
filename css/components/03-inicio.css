@@ -1,0 +1,387 @@
+/* 03-inicio.css — Inicio: disco de creatina, pastillas, tarjeta de entreno y últimos entrenos.
+ * Parte de los componentes de Bía. El orden de carga está en index.html (01 → 14) y define la cascada. */
+
+/* ---------- DISCO OLÍMPICO HERO (.plate) ---------- */
+.plate-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+.plate {
+  --c: var(--primary);
+  --plate-bg: radial-gradient(circle at center, #171b22 0%, #101217 65%, #0a0c10 100%);
+  --plate-groove: #07080a;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: min(68vw, 248px);
+  aspect-ratio: 1;
+  margin: 14px auto 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--plate-bg);
+  color: var(--text);
+  text-align: center;
+  cursor: pointer;
+  position: relative;
+  box-shadow:
+    inset 0 0 0 8px var(--c),
+    inset 0 0 0 12px var(--plate-groove),
+    inset 0 0 0 15px var(--c),
+    inset 0 0 0 19px var(--plate-groove),
+    0 12px 32px -4px rgba(0, 0, 0, 0.5);
+  transition: transform 0.16s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.16s ease;
+  user-select: none;
+  touch-action: manipulation;
+}
+html[data-modo="claro"] .plate {
+  --plate-bg: radial-gradient(circle at center, #ffffff 0%, #f1f5f9 65%, #e2e8f0 100%);
+  --plate-groove: #cbd5e1;
+  box-shadow:
+    inset 0 0 0 8px var(--c),
+    inset 0 0 0 12px var(--plate-groove),
+    inset 0 0 0 15px var(--c),
+    inset 0 0 0 19px var(--plate-groove),
+    0 12px 28px -4px rgba(15, 23, 42, 0.18);
+}
+.plate:hover {
+  transform: scale(1.02);
+  box-shadow:
+    inset 0 0 0 8px var(--c),
+    inset 0 0 0 12px var(--plate-groove),
+    inset 0 0 0 15px var(--c),
+    inset 0 0 0 19px var(--plate-groove),
+    0 16px 36px -4px rgba(0, 0, 0, 0.6);
+}
+.plate:active {
+  transform: scale(0.96);
+}
+.plate.done {
+  --c: var(--green);
+}
+.plate-brand {
+  font-family: var(--font);
+  font-size: var(--fs-2xs);
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  opacity: 0.8;
+}
+.plate b {
+  font-family: var(--font-display);
+  font-size: var(--fs-xl);
+  font-weight: 400;
+  font-synthesis: none;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.plate.plate--clean b {
+  font-size: clamp(1.4rem, 5.5vw, 1.75rem);
+}
+.plate small {
+  color: var(--primary);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.plate.done small {
+  color: var(--green);
+}
+/* Señal secundaria: saturación. El CTA sigue siendo Registrar / Tomada. */
+.plate-sat {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.plate.done .plate-sat {
+  color: var(--muted);
+}
+
+.plate-caption {
+  margin-top: 16px;
+  text-align: center;
+}
+.plate-caption p {
+  font-size: var(--fs-sm);
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* ---------- Inicio: Pastillas de métricas de Creatina ---------- */
+.home-creatine-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text);
+  margin-top: 10px;
+}
+.home-creatine-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--r-full);
+  background: #4DA3FF;
+  flex-shrink: 0;
+}
+.home-creatine-dot.is-taken {
+  background: var(--green);
+}
+.home-creatine-state {
+  font-weight: 700;
+  color: var(--text);
+}
+.home-creatine-hint {
+  color: var(--muted);
+  font-weight: 500;
+  font-size: var(--fs-xs);
+}
+.home-creatine-chips {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.home-creatine-chips::-webkit-scrollbar {
+  display: none;
+}
+.home-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 29px;
+  padding: 0 9px;
+  border-radius: var(--r-full);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text);
+  box-shadow: var(--shadow-sm);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+@media (max-width: 360px) {
+  .home-creatine-chips {
+    gap: 4px;
+  }
+  .home-chip {
+    padding: 0 7px;
+    font-size: 10.5px;
+    height: 27px;
+  }
+}
+
+/* ---------- Inicio: Tarjeta de Entrenamiento de Hoy ---------- */
+.home-workout-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-xl);
+  padding: 18px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 26px 0 20px;
+  box-shadow: var(--shadow-sm);
+}
+.home-workout-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.home-workout-card-date {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.home-workout-badge {
+  padding: 4px 10px;
+  border: 1px solid var(--primary);
+  border-radius: var(--r-md);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--primary);
+  background: var(--accent-faint);
+}
+.home-workout-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.home-workout-card-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--fs-xl);
+  font-weight: 800;
+  line-height: 1.2;
+  color: var(--text);
+}
+.home-workout-card-sub {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--muted);
+  line-height: 1.35;
+}
+.home-timer {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  color: var(--text);
+}
+
+/* ---------- Inicio: Tarjetas de Últimos Entrenamientos ---------- */
+.home-recent-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 28px 0 12px;
+}
+.home-recent-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  font-weight: 800;
+  font-style: italic;
+  color: var(--text);
+}
+.home-recent-link {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--primary);
+  text-decoration: none;
+  padding: 4px;
+}
+.home-recent-link:hover {
+  text-decoration: underline;
+}
+.home-recent-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.recent-workout-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 72px;
+  padding: 14px 18px;
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--text);
+  text-decoration: none;
+  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+  touch-action: manipulation;
+}
+.recent-workout-card:hover {
+  background: var(--surface-2);
+  border-color: var(--line-strong);
+}
+.recent-workout-card:active {
+  transform: scale(0.99);
+  background: var(--surface-2);
+}
+.recent-workout-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.recent-workout-title {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.recent-workout-sub {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.3;
+}
+.recent-workout-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.recent-workout-arrow {
+  color: var(--muted);
+  display: grid;
+  place-items: center;
+  transition: transform 0.15s ease;
+}
+.recent-workout-card:hover .recent-workout-arrow {
+  color: var(--text);
+  transform: translateX(2px);
+}
+
+/* Meta información de creatina */
+.home-creatine-meta {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  font-weight: 600;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+.home-creatine-sat {
+  color: var(--primary);
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Divisor Semántico High-Tech */
+.home-divider {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 32px 0 20px;
+  color: var(--text-dim);
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.home-divider::before,
+.home-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+.home-divider span {
+  white-space: nowrap;
+}
+

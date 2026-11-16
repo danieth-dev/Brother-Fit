@@ -56,6 +56,11 @@
   --line-accent-strong: color-mix(in srgb, var(--primary) 45%, transparent);
   --focus-ring: 0 0 0 3px color-mix(in srgb, var(--primary) 22%, transparent);
 
+  /* Macros en Comidas: proteína, carbohidratos y grasa. Fijos en los dos modos. */
+  --macro-proteina: #4db8ff;
+  --macro-carbos: #ff9f43;
+  --macro-grasa: #b38cff;
+
   /* Muestras fijas de cada acento en Aspecto: enseñan la opción, no el acento activo. */
   --swatch-amarillo: #ffe600;
   --swatch-azul: #5ec4ff;

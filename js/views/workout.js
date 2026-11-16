@@ -418,7 +418,7 @@ export async function render(el) {
 
     <div id="rest">${restMarkup()}</div>
 
-    <form class="form-card stack" data-form="set" style="margin-top:14px">
+    <form class="form-card stack set-form" data-form="set">
       <label class="field">
         <span>Ejercicio</span>
         <select name="exerciseId" data-change="exercise">

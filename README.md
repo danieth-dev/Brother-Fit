@@ -21,7 +21,7 @@ La descripción completa y al día del sistema (pantallas, datos, reglas, Bía) 
 index.html            punto de entrada y barra de navegación
 manifest.webmanifest  nombre, colores e iconos de la app instalada
 sw.js                 service worker (offline)
-css/                  tokens.css (colores) · base.css · components.css
+css/                  tokens.css (colores) · base.css · components/01-…14-….css (en orden)
 icons/                iconos PNG y SVG
 js/
   main.js             arranque: BD, datos iniciales, ajustes, router, service worker

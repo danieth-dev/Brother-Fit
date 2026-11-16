@@ -125,9 +125,9 @@ components:
 
 Este documento es la fuente de verdad del diseño de Bía. Lo leen las personas y los agentes (la skill `impeccable` lo carga junto con `PRODUCT.md`) antes de tocar cualquier pantalla. Si el CSS y este archivo no coinciden, uno de los dos está mal: se corrige en el mismo cambio.
 
-Fuente de los valores: `css/tokens.css` (tokens), `css/base.css` (página y tipografía base) y `css/components.css` (componentes). El frontmatter de arriba usa el formato de `DESIGN.md` que entiende la skill; los valores son los del **modo oscuro con acento amarillo**, que es el de fábrica.
+Fuente de los valores: `css/tokens.css` (tokens), `css/base.css` (página, tipografía base e iconos) y `css/components/01-…css` a `14-…css` (componentes, cargados en ese orden desde `index.html`). El frontmatter de arriba usa el formato de `DESIGN.md` que entiende la skill; los valores son los del **modo oscuro con acento amarillo**, que es el de fábrica.
 
-Última revisión: 15 de noviembre de 2026 (caché `v190`).
+Última revisión: 15 de noviembre de 2026 (caché `v191`).
 
 ## 1. Idea
 
@@ -179,6 +179,7 @@ Los tres últimos se calculan desde `--primary` en `:root`, así que siguen solo
 | `--red` / `--red-dim` / `--red-ink` | `#f43f5e` | Borrar, zona de riesgo, aviso de error. |
 | `--blue`, `--orange`, `--purple` (+ `-dim`) | `#38bdf8`, `#fb923c`, `#c084fc` | Acentos secundarios de datos. |
 | `--white` | `#f8fafc` | Punto de grupo muscular sin grupo. |
+| `--macro-proteina`, `--macro-carbos`, `--macro-grasa` | `#4db8ff`, `#ff9f43`, `#b38cff` | Barras y puntos de macros en Comidas. Iguales en los dos modos. |
 
 ### Modo claro (`html[data-modo="claro"]`)
 
@@ -212,7 +213,7 @@ Cada grupo tiene un color fijo, igual en los dos modos, para el punto (`.dot`, `
 | Cardio | `#00c49f` |
 | Otro | `#a8a8a8` (y no se muestra el nombre del grupo) |
 
-Hoy estos colores viven escritos en `components.css`. Las rutinas semanales guardadas antes de la `v189` traen además un `dot` con su hex; las nuevas no, y su punto usa `--line-strong`. Ver «Deuda conocida».
+Hoy estos colores viven escritos en `css/components/04-series-descanso.css`. Las rutinas semanales guardadas antes de la `v189` traen además un `dot` con su hex; las nuevas no, y su punto usa `--line-strong`. Ver «Deuda conocida».
 
 ## 3. Tipografía
 
@@ -281,7 +282,26 @@ Un único juego propio en `js/utils/icons.js`: SVG de 24×24, trazo de 2 px, pun
 
 ## 8. Componentes
 
-Cada componente existe una vez en `components.css` y las pantallas lo reutilizan. Antes de crear una clase nueva, se busca la existente.
+Cada componente existe una vez en `css/components/` y las pantallas lo reutilizan. Antes de crear una clase nueva, se busca la existente.
+
+Los archivos se cargan en orden numérico y **ese orden es la cascada**: una regla de `13-progreso.css` gana a una igual de `01-controles.css`. Un componente compartido va en el archivo de su familia (01–05); uno de una sola pantalla, en el de esa pantalla.
+
+| Archivo | Qué contiene |
+| --- | --- |
+| `01-controles.css` | Encabezados, botones, formularios, hojas de listas (picker), calendario, hora y confirmación. |
+| `02-listas-chips.css` | Listas, filas, estadísticas y chips. |
+| `03-inicio.css` | Disco de creatina, pastillas, tarjeta de entreno y últimos entrenos. |
+| `04-series-descanso.css` | Puntos de grupo muscular, series del entreno y descanso. |
+| `05-segmento-isla-aviso.css` | Segmento, gráfica, isla de navegación y aviso. |
+| `06-creatina.css` | Pantalla de creatina, calendario y estado vacío. |
+| `07-bia.css` | Chat de Bía, paneles Recuerdos y Conexión, reporte de respuestas. |
+| `08-entreno.css` | Estado e inicio del entreno, rutina guiada, confirmación enriquecida, volver, segmento de 3. |
+| `09-detalle-entreno.css` | Detalle de un entrenamiento y editor de serie. |
+| `10-historial.css` | Historial. |
+| `11-ajustes.css` | Ajustes. |
+| `12-aspecto.css` | Aspecto. |
+| `13-progreso.css` | Progreso. |
+| `14-comidas.css` | Comidas, su tarjeta en Inicio y el escáner. |
 
 | Componente | Clase | Especificación |
 | --- | --- | --- |
@@ -305,6 +325,7 @@ Cada componente existe una vez en `components.css` y las pantallas lo reutilizan
 | Anillo de calorías | `.meal-ring-svg`, `.home-food-ring` | SVG con trazo verde sobre `--line`; cifra central en `--text`. |
 | Estado vacío | `.empty` y variantes | Texto `--muted` centrado y una sola acción primaria. |
 | Reportar respuesta | `.agent-bubble-actions`, `.agent-bubble-report`, `.agent-bubble-bot.is-reported` | Al tocar una burbuja de Bía aparece una píldora de 44 px con bandera; una burbuja reportada queda con borde discontinuo y texto `--muted`. La hoja usa las clases `.picker-*`. |
+| Barra de progreso | `.creatine-sat-fill`, `.home-food-protein-fill`, `.meals-macro-fill--*` | Ancho con `style="--pct: N%"`; color por token (`--green`, `--macro-proteina`, `--macro-carbos`, `--macro-grasa`). |
 | Dato sin definir | `.agent-rec-value.is-empty`, `.agent-rec-day-text.is-empty` | «Sin definir» o «Descanso» en `--text-dim`, peso 500: el atleta ve que falta y nada se inventa. |
 
 ## 9. Accesibilidad
@@ -327,7 +348,7 @@ Cada componente existe una vez en `components.css` y las pantallas lo reutilizan
 
 **No**
 - Hex o `rgba()` del acento dentro de un componente: rompe azul, rosado y modo claro.
-- `style="..."` en el HTML que generan las vistas: el estilo va en una clase.
+- `style="..."` en el HTML que generan las vistas: el estilo va en una clase. Única excepción: un **dato** que el CSS no puede conocer, pasado como variable (`style="--pct: 40%"` para el ancho de una barra, `--dot` para el color guardado de un día de la rutina). Mostrar u ocultar se hace con el atributo `hidden`, nunca con `style.display`.
 - `!important` para ganar a otra regla: se corrige la especificidad.
 - Degradados de color, sombras de color, emojis o iconos de otra librería.
 - Texto blanco sobre el acento en modo oscuro.
@@ -336,17 +357,17 @@ Cada componente existe una vez en `components.css` y las pantallas lo reutilizan
 
 Medida el 15 de noviembre de 2026. Cada cambio que toque una de estas zonas la deja mejor, y esta lista se actualiza.
 
+Resuelto en la `v191`: los 89 `style="…"` del JS pasaron a clases, `hidden` o variables de dato (quedan 6, todos `--pct`/`--dot`); los colores fijos del JS (macros, anillos, estados, chevrons) pasaron a tokens (`--macro-*`, `.ring-progress`, `.settings-dot--*`, `.icon-muted`, `.icon-ok`); 118 `font-size` que coincidían exactamente con la escala pasaron a token; y `components.css` se partió en 14 archivos por sección, en el mismo orden. Se comprobó comparando los estilos calculados de cada elemento antes y después en todas las pantallas, en oscuro y claro.
+
 Resuelto: el amarillo escrito a mano en `components.css` (22 usos que dejaban bordes y halos amarillos con acento azul o rosado) pasó a tokens del acento en la `v186`, y se borró el bloque `.tema-pick`, que no se usaba.
 
 | Problema | Hoy | Meta |
 | --- | --- | --- |
-| Otros hex y `rgba()` sueltos en `components.css` | ~95 hex y ~40 `rgba()` | Tokens o, si es propio de un componente, una variable local documentada |
-| `font-size` escrito en px/rem en vez de token | 230 frente a 109 con token | Todo con `--fs-*` |
-| `!important` en `components.css` | 156 | Solo en `[hidden]` y en movimiento reducido |
-| `style="…"` en HTML generado por JS | 89 (14 en `progress.js`) | 0 |
+| Hex y `rgba()` sueltos en `css/components/` | 93 hex y 39 `rgba()` | Tokens o, si es propio de un componente, una variable local documentada |
+| `font-size` escrito en px/rem en vez de token | 121 frente a 236 con token. Son tamaños fuera de la escala: 13 px (45), 15 px (24), 17 px, 13,5 px… | **Decisión de diseño pendiente:** añadir 13 y 15 px a la escala o redondearlos a 12/14/16. Cualquiera de las dos cambia algo a la vista. |
+| `!important` en `css/components/` | 156 | Solo en `[hidden]` y en movimiento reducido |
 | Colores de grupo muscular escritos en CSS, y `dot` con hex en rutinas guardadas antes de la `v189` | Literales | Tokens `--g-pecho`, etc., y la rutina coloreada por grupo, sin hex guardado |
-| Verde de Comidas (`#10B981`) escrito en el SVG de `views/meals.js` | Literal | `var(--green)` |
-| `components.css` | 8 352 líneas en un archivo, con selectores repetidos (`.field`, `.compare-card`…) | Partido por componente o pantalla y sin duplicados |
+| Selectores repetidos (`.field`, `.compare-card`, `.compare-row`…) en distintos puntos de la cascada | Varios | Una sola definición por selector |
 
 ## 12. Cómo se mantiene
 

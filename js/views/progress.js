@@ -76,7 +76,7 @@ function compareCardHtml(sessions, unidad) {
 
   return `
     <section>
-      <h2 style="margin: 0 4px 10px; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted)">
+      <h2 class="progress-section-label">
         Última sesión vs anterior
       </h2>
       <div class="compare-card">
@@ -91,7 +91,7 @@ function compareCardHtml(sessions, unidad) {
               <span class="compare-row-name">${r.label}</span>
               <span class="compare-row-vals">
                 <span>${fmtNum(Math.round(r.prev * 10) / 10)}</span>
-                <span style="color:var(--muted)"> → </span>
+                <span class="compare-arrow"> → </span>
                 <strong>${fmtNum(Math.round(r.curr * 10) / 10)} ${esc(r.unit)}</strong>
               </span>
               <span class="compare-row-chip">
@@ -109,7 +109,7 @@ function prBadgesHtml(pr, unidad) {
   return `
     <div class="pr-grid">
       <div class="pr-card pr-card--gold">
-        <span class="pr-card-icon" style="color: var(--primary)">
+        <span class="pr-card-icon pr-card-icon--primary">
           ${icons.crown({ size: 20 })}
         </span>
         <p class="pr-card-val">${fmtWeight(pr.maxPeso, unidad)} <span class="pr-card-unit">${esc(unidad)}</span></p>
@@ -117,7 +117,7 @@ function prBadgesHtml(pr, unidad) {
       </div>
 
       <div class="pr-card">
-        <span class="pr-card-icon" style="color: var(--green)">
+        <span class="pr-card-icon pr-card-icon--green">
           ${icons.trendUp({ size: 20 })}
         </span>
         <p class="pr-card-val">${fmtWeight(pr.e1rmMax, unidad)} <span class="pr-card-unit">${esc(unidad)}</span></p>
@@ -125,7 +125,7 @@ function prBadgesHtml(pr, unidad) {
       </div>
 
       <div class="pr-card">
-        <span class="pr-card-icon" style="color: var(--blue)">
+        <span class="pr-card-icon pr-card-icon--blue">
           ${icons.pulse({ size: 20 })}
         </span>
         <p class="pr-card-val">${pr.maxReps} <span class="pr-card-unit">reps</span></p>
@@ -156,7 +156,7 @@ function sessionTableHtml(sessions, unidad) {
 
   return `
     <section>
-      <h2 style="margin: 0 4px 10px; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted)">
+      <h2 class="progress-section-label">
         Historial de sesiones
       </h2>
       <div class="sess-card">${rows.join('')}</div>
@@ -194,7 +194,7 @@ function chartCardHtml(sessions, unidad) {
 
   return `
     <section>
-      <h2 style="margin: 0 4px 10px; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted)">
+      <h2 class="progress-section-label">
         Evolución
       </h2>
 
@@ -238,7 +238,7 @@ function bodySectionHtml(body, unidad) {
       ` : ''}
 
       <!-- Gráfico de peso corporal -->
-      <div class="chart-card" style="margin-top:0">
+      <div class="chart-card chart-card--flush">
         <div class="chart-card-head">
           <span class="chart-card-title">Tendencia de peso</span>
           ${latest ? `<span class="chart-card-val">${esc(latestWeight)} ${esc(unidad)}</span>` : ''}
@@ -255,7 +255,7 @@ function bodySectionHtml(body, unidad) {
 
       <!-- Formulario Registrar Peso -->
       <section>
-        <h2 style="margin: 0 4px 10px; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted)">
+        <h2 class="progress-section-label">
           Registrar peso
         </h2>
         <form class="body-form-card" data-form="body">
@@ -297,7 +297,7 @@ function bodySectionHtml(body, unidad) {
 
       <!-- Historial de pesajes -->
       <section>
-        <h2 style="margin: 0 4px 10px; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted)">
+        <h2 class="progress-section-label">
           Historial
         </h2>
         <div class="body-history-card" id="body-list-slot">
@@ -312,7 +312,7 @@ function bodySectionHtml(body, unidad) {
               </button>
             </div>
           `).join('') : `
-            <div style="padding:24px 16px;text-align:center;color:var(--muted);font-size:14px">
+            <div class="empty-note">
               No hay registros de peso corporal todavía.
             </div>
           `}
@@ -350,7 +350,7 @@ function updateProgressView(el) {
             <span class="progress-ex-card-tag">Ejercicio</span>
             <span class="progress-ex-card-title">${esc(currentEx.nombre)}</span>
             <span class="progress-ex-card-sub">
-              <span aria-hidden="true" style="width: 8px; height: 8px; border-radius: 4px; background: var(--primary); display: inline-block"></span>
+              <span aria-hidden="true" class="progress-ex-card-dot"></span>
               <strong>${esc(gName)}</strong> ${fName ? `· ${esc(fName)}` : ''}
             </span>
           </span>
@@ -418,7 +418,7 @@ export async function render(el, [idParam] = []) {
   view = { currentEx, exId, exs, sessions, body, pr, unidad };
 
   el.innerHTML = `
-    <header class="page-head" style="margin-bottom:12px">
+    <header class="page-head page-head--tight">
       <h1>Progreso</h1>
     </header>
 
@@ -435,7 +435,7 @@ export async function render(el, [idParam] = []) {
     <!-- Pestaña Ejercicio -->
     <div id="pane-ejercicio" ${currentTab !== 'ejercicio' ? 'hidden' : ''}>
       <!-- Hidden native select for picker.js synchronization -->
-      <select id="progress-native-select" data-change="exercise" style="position:absolute;opacity:0;pointer-events:none;width:0;height:0" tabindex="-1" aria-hidden="true">
+      <select id="progress-native-select" data-change="exercise" class="native-select-hidden" tabindex="-1" aria-hidden="true">
         ${exs.map((e) => `<option value="${e.id}" data-grupo="${esc(muscleName(e.grupo) || e.grupo)}" ${muscleFocus(e.nombre) ? `data-foco="${esc(muscleFocus(e.nombre))}"` : ''} ${isOwnExercise(e) ? 'data-propio="1"' : ''} ${e.id === exId ? 'selected' : ''}>${esc(e.nombre)}</option>`).join('')}
       </select>
 

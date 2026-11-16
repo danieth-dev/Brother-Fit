@@ -39,7 +39,7 @@ export function triggerPhotoPicker({ onSaved, defaultTipo } = {}) {
   const input = document.createElement('input');
   input.type = 'file';
   input.accept = 'image/*';
-  input.style.display = 'none';
+  input.hidden = true;
   document.body.appendChild(input);
 
   let handled = false;
@@ -173,7 +173,7 @@ export async function openMealResultSheet({
         const isNotFood = analysisErrorCode === 'NOT_FOOD';
         listEl.innerHTML = `
           <div class="meal-items-placeholder">
-            <p style="margin:0 0 10px;color:var(--text);font-weight:600">${esc(analysisError)}</p>
+            <p class="meal-items-error">${esc(analysisError)}</p>
             <button type="button" class="btn btn-sm" data-action="${isNotFood ? 'retake' : 'retry-scan'}">
               ${isNotFood ? 'Tomar otra foto' : 'Reintentar análisis con IA'}
             </button>
@@ -208,9 +208,9 @@ export async function openMealResultSheet({
           <span class="meal-total-kcal">${fmtNum(totals.kcal)} <span class="meal-total-kcal-unit">kcal</span></span>
         </span>
         <span class="meal-total-macros">
-          <span class="meal-macro-line"><span class="meal-macro-dot" style="background: #4DB8FF"></span>Proteína ${fmtNum(totals.proteina)} g</span>
-          <span class="meal-macro-line"><span class="meal-macro-dot" style="background: #FF9F43"></span>Carbohidratos ${fmtNum(totals.carbos)} g</span>
-          <span class="meal-macro-line"><span class="meal-macro-dot" style="background: #B38CFF"></span>Grasa ${fmtNum(totals.grasa)} g</span>
+          <span class="meal-macro-line"><span class="meal-macro-dot meal-macro-dot--proteina"></span>Proteína ${fmtNum(totals.proteina)} g</span>
+          <span class="meal-macro-line"><span class="meal-macro-dot meal-macro-dot--carbos"></span>Carbohidratos ${fmtNum(totals.carbos)} g</span>
+          <span class="meal-macro-line"><span class="meal-macro-dot meal-macro-dot--grasa"></span>Grasa ${fmtNum(totals.grasa)} g</span>
         </span>
       `;
     }
@@ -444,7 +444,7 @@ export async function openMealResultSheet({
       const fileInput = document.createElement('input');
       fileInput.type = 'file';
       fileInput.accept = 'image/*';
-      fileInput.style.display = 'none';
+      fileInput.hidden = true;
       document.body.appendChild(fileInput);
       fileInput.addEventListener('change', async () => {
         const nextFile = fileInput.files?.[0];

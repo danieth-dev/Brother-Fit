@@ -2,7 +2,7 @@
 
 Documento vivo del producto. Describe cómo está armado, dónde vive cada dato y qué no se puede romper. Cuando cambie el comportamiento, el esquema, una pantalla o la forma de publicar, este archivo se actualiza en el mismo cambio.
 
-Última revisión: 15 de noviembre de 2026. Base de datos versión 3. Caché de la app `v190`.
+Última revisión: 15 de noviembre de 2026. Base de datos versión 3. Caché de la app `v191`.
 
 ## Qué es
 
@@ -328,7 +328,6 @@ Resuelto en la `v187`: «Borrar todo» pasa por `clearAllData()` del servicio de
 | `js/views/workout.js` | 851 | Pantalla de entreno completa. |
 | `js/utils/picker.js` | 847 | Hoja de listas, búsqueda, grupos y alta de ejercicio. |
 | `js/services/meals.js` | 751 | Metas, catálogo, guardado y dos proveedores de IA. |
-| `css/components.css` | 8 352 | Todos los componentes y todas las pantallas. |
 
 **Antes de Play Store**
 
@@ -357,7 +356,7 @@ Pendiente:
 | `sw.js` | Caché y versión publicada. |
 | `css/tokens.css` | Color, tipo y fuente. |
 | `css/base.css` | Página, foco, scroll. |
-| `css/components.css` | Controles, listas, gráfica, isla. |
+| `css/components/01-…14-…css` | Componentes por familia y pantalla; `index.html` los carga en orden y ese orden es la cascada. Detalle en `DESIGN.md` → Componentes. |
 | `js/main.js` | Arranque. |
 | `js/db.js` | IndexedDB. |
 | `js/store.js` | Ajustes en memoria. |

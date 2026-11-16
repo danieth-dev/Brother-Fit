@@ -1,0 +1,189 @@
+/* 02-listas-chips.css — Listas, filas, estadísticas y chips.
+ * Parte de los componentes de Bía. El orden de carga está en index.html (01 → 14) y define la cascada. */
+
+/* ---------- Listas y Filas Atléticas (Estilo Card) ---------- */
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+}
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 18px 20px;
+  background: var(--surface);
+  border-radius: var(--r-xl);
+  border: none;
+  text-decoration: none;
+  color: inherit;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+  box-shadow: var(--shadow-sm);
+}
+.row:first-child {
+  border-top: 0;
+}
+.row:hover,
+.row:active {
+  background: var(--surface-2);
+}
+.row strong {
+  display: block;
+  font-size: var(--fs-md);
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.015em;
+  line-height: 1.25;
+}
+.row small {
+  display: block;
+  color: var(--muted);
+  font-size: var(--fs-sm);
+  margin-top: 5px;
+  font-weight: 400;
+  line-height: 1.3;
+}
+.row .chev {
+  display: none;
+}
+.form-card .row,
+.row--compact {
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 10px 0;
+}
+.form-card .row .chev,
+.row--compact .chev {
+  display: inline-flex;
+}
+
+/* Semana en Inicio: mismo alfabeto que el calendario de creatina. */
+.week-strip {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+  margin-top: 22px;
+}
+/* En Inicio la cinta reemplaza a la fecha del encabezado: va pegada al título y antes del disco. */
+.page-head + .week-strip {
+  margin: -8px 0 28px;
+}
+.week-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.week-day-name {
+  color: var(--muted);
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+  line-height: 1;
+}
+.week-day-n {
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-full);
+  background: var(--surface-2);
+  border: 1px solid transparent;
+  color: var(--text);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.week-day.is-future .week-day-n {
+  background: transparent;
+  color: var(--muted);
+}
+.week-day.is-today .week-day-name {
+  color: var(--primary);
+}
+.week-day.is-today .week-day-n {
+  border-color: var(--primary);
+}
+.week-day.is-trained .week-day-n {
+  background: var(--primary);
+  color: var(--primary-ink);
+  border-color: var(--primary);
+  font-weight: 800;
+}
+.week-day.is-today.is-trained .week-day-n {
+  box-shadow: inset 0 0 0 2px var(--primary-ink);
+}
+
+/* ---------- Telemetría de Estadísticas (.stats Card) ---------- */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px 20px;
+  margin-top: 20px;
+  background: var(--surface);
+  border: none;
+  border-radius: var(--r-xl);
+  padding: 22px 20px;
+  box-shadow: var(--shadow-sm);
+}
+.stat {
+  padding: 0;
+  border-left: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+}
+.stat:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+.stat b {
+  font-family: var(--font);
+  font-size: clamp(1.75rem, 6.5vw, 2.15rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  line-height: 1;
+}
+.stat span {
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 6px;
+  line-height: 1.35;
+}
+
+/* ---------- Chips & Badges de Estado ---------- */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: var(--r-full);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--text);
+}
+.chip-ok {
+  background: var(--green-dim);
+  border-color: rgba(16, 185, 129, 0.3);
+  color: var(--green);
+}
+.chip-warn {
+  background: var(--yellow-dim);
+  border-color: var(--line-accent);
+  color: var(--primary);
+}
+

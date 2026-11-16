@@ -70,10 +70,10 @@ Las excepciones que existen hoy están listadas en `SISTEMA.md` → «Deuda téc
 ## Estilo (resumen de `DESIGN.md`)
 
 - Todo color, radio, tamaño de letra y sombra sale de un token de `css/tokens.css`. Nada de hex ni `rgba()` del acento dentro de un componente.
-- Sin `style="…"` en el HTML que generan las vistas y sin `!important` nuevos.
+- Sin `style="…"` en el HTML que generan las vistas, salvo un dato como variable CSS (`style="--pct: 40%"`). Mostrar u ocultar: atributo `hidden`, no `style.display`. Sin `!important` nuevos. Sin colores escritos en el JS: el color va en una clase con token.
 - Fugaz One solo en títulos y a peso 400; cifras con `tabular-nums`; objetivos táctiles de 44 px o más.
 - Cada cambio visual se prueba en modo oscuro y claro, con los tres acentos, a ancho de teléfono.
-- Antes de crear una clase, se busca la existente en `components.css`.
+- Antes de crear una clase, se busca la existente en `css/components/`. Una regla nueva va al archivo de su familia o pantalla (tabla en `DESIGN.md` → Componentes); un archivo nuevo se enlaza en `index.html` en su lugar de la cascada y se añade a `ASSETS` de `sw.js`.
 
 ## Publicar
 

@@ -323,7 +323,7 @@ async function detail(el, id) {
                         <button type="button" data-action="edit-tipo" data-tipo="calentamiento" aria-pressed="${editDraft.tipo === 'calentamiento'}">Calentamiento</button>
                       </div>
 
-                      <div class="editor-effort-wrap" id="editor-effort-wrap" style="display: ${editDraft.tipo === 'calentamiento' ? 'none' : 'block'};">
+                      <div class="editor-effort-wrap" id="editor-effort-wrap" ${editDraft.tipo === 'calentamiento' ? 'hidden' : ''}>
                         <p class="editor-effort-label">¿Cuántas más podías hacer?</p>
                         <div class="editor-rir-grid" role="group" aria-label="Esfuerzo RIR">
                           ${[0, 1, 2, 3, 4].map((r) => `
@@ -413,7 +413,7 @@ async function detail(el, id) {
       });
       if (seg) syncSegThumb(seg);
       const effortWrap = el.querySelector('#editor-effort-wrap');
-      if (effortWrap) effortWrap.style.display = editDraft.tipo === 'calentamiento' ? 'none' : 'block';
+      if (effortWrap) effortWrap.hidden = editDraft.tipo === 'calentamiento';
     },
 
     'edit-rir': (btn) => {

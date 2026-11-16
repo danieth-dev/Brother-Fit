@@ -133,6 +133,9 @@ button, input, select {
   vertical-align: middle;
   flex-shrink: 0;
 }
+/* Color de un icono suelto sin escribir el trazo a mano: icons.x({ cls: 'icon-muted' }). */
+.icon-muted { color: var(--muted); }
+.icon-ok { color: var(--green); }
 
 :focus-visible {
   outline: 2px solid var(--primary);

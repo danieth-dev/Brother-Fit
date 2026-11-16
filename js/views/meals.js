@@ -26,7 +26,7 @@ function largeCalorieRingSvg(kcal, targetKcal) {
   return `
     <svg width="170" height="170" viewBox="0 0 180 180" role="img" aria-label="${fmtNum(kcal)} de ${fmtNum(targetKcal)} kcal" class="meal-ring-svg">
       <circle cx="90" cy="90" r="${r}" fill="none" stroke="var(--line)" stroke-width="14"></circle>
-      <circle cx="90" cy="90" r="${r}" fill="none" stroke="#10B981" stroke-width="14" stroke-linecap="round" stroke-dasharray="${dash} ${totalCirc}" transform="rotate(-90 90 90)"></circle>
+      <circle cx="90" cy="90" r="${r}" fill="none" class="ring-progress" stroke-width="14" stroke-linecap="round" stroke-dasharray="${dash} ${totalCirc}" transform="rotate(-90 90 90)"></circle>
       <text x="90" y="92" text-anchor="middle" fill="var(--text)" font-size="36" font-weight="800" font-family="Inter, system-ui, sans-serif">${fmtNum(kcal)}</text>
       <text x="90" y="114" text-anchor="middle" fill="var(--muted)" font-size="13" font-family="Inter, system-ui, sans-serif">de ${fmtNum(targetKcal)} kcal</text>
     </svg>
@@ -109,7 +109,7 @@ export async function render(el) {
               <span class="meals-macro-val">${fmtNum(totals.proteina)} <span class="meals-macro-target">/ ${fmtNum(targets.proteina)} g</span></span>
             </div>
             <div class="meals-macro-track">
-              <div class="meals-macro-fill" style="width: ${pct.proteina}%; background: #4DB8FF"></div>
+              <div class="meals-macro-fill meals-macro-fill--proteina" style="--pct: ${pct.proteina}%"></div>
             </div>
           </div>
 
@@ -119,7 +119,7 @@ export async function render(el) {
               <span class="meals-macro-val">${fmtNum(totals.carbos)} <span class="meals-macro-target">/ ${fmtNum(targets.carbos)} g</span></span>
             </div>
             <div class="meals-macro-track">
-              <div class="meals-macro-fill" style="width: ${pct.carbos}%; background: #FF9F43"></div>
+              <div class="meals-macro-fill meals-macro-fill--carbos" style="--pct: ${pct.carbos}%"></div>
             </div>
           </div>
 
@@ -129,7 +129,7 @@ export async function render(el) {
               <span class="meals-macro-val">${fmtNum(totals.grasa)} <span class="meals-macro-target">/ ${fmtNum(targets.grasa)} g</span></span>
             </div>
             <div class="meals-macro-track">
-              <div class="meals-macro-fill" style="width: ${pct.grasa}%; background: #B38CFF"></div>
+              <div class="meals-macro-fill meals-macro-fill--grasa" style="--pct: ${pct.grasa}%"></div>
             </div>
           </div>
         </div>
