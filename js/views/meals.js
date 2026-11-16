@@ -2,7 +2,8 @@
  * Diario completo de calorías y macronutrientes con anillo circular de progreso,
  * escáner IA por foto, integración con Bía y edición por comida. */
 
-import { todayMealsSummary, getMealById, calculateTargetsForGoal } from '../services/meals.js';
+import { todayMealsSummary, getMealById } from '../services/meals.js';
+import { calculateTargetsForGoal } from '../services/nutrition.js';
 import { latestWeight } from '../services/body.js';
 import { triggerPhotoPicker, openMealResultSheet } from '../utils/meal-scanner.js';
 import { saveSettings } from '../store.js';

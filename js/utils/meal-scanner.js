@@ -7,21 +7,11 @@
  * 5. Elegir comida (Desayuno, Almuerzo, Merienda, Cena) y guardar en el día. */
 
 import {
-  MEAL_TYPES,
-  COMMON_FOODS,
-  defaultMealTypeByHour,
-  stepForGrams,
-  recalcItemGrams,
-  buildItemFromCatalog,
-  summarizeItems,
-  buildMealTitle,
-  analyzeMealImage,
-  analyzeMealText,
-  saveMeal,
-  deleteMeal,
-  getMealById,
-  todayMealsSummary,
-} from '../services/meals.js';
+  MEAL_TYPES, defaultMealTypeByHour, stepForGrams, recalcItemGrams, buildItemFromCatalog, summarizeItems, buildMealTitle,
+} from '../services/nutrition.js';
+import { COMMON_FOODS } from '../services/food-catalog.js';
+import { analyzeMealImage, analyzeMealText } from '../services/meal-ai.js';
+import { saveMeal, deleteMeal, getMealById, todayMealsSummary } from '../services/meals.js';
 import { esc, fmtNum, toast } from './dom.js';
 import { compressImageFile } from './image.js';
 import { icons } from './icons.js';

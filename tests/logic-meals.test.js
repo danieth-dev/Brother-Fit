@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   normalizeMealItem, recalcItemGrams, summarizeItems, buildMealTitle,
   calculateTargetsForGoal, defaultMealTypeByHour, stepForGrams,
-} from '../js/services/meals.js';
+} from '../js/services/nutrition.js';
 
 test('un alimento guarda su densidad por 100 g y recalcula sin perder precisión', () => {
   const it = normalizeMealItem({ nombre: 'Arroz', gramos: 200, kcal: 260, proteina: 5.4, carbos: 56.4, grasa: 0.6 });

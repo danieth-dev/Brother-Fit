@@ -2,7 +2,7 @@
 
 Documento vivo del producto. Describe cómo está armado, dónde vive cada dato y qué no se puede romper. Cuando cambie el comportamiento, el esquema, una pantalla o la forma de publicar, este archivo se actualiza en el mismo cambio.
 
-Última revisión: 15 de noviembre de 2026. Base de datos versión 3. Caché de la app `v198`.
+Última revisión: 15 de noviembre de 2026. Base de datos versión 3. Caché de la app `v199`.
 
 ## Qué es
 
@@ -218,7 +218,7 @@ La ciencia que la pantalla explica, y que no hay que contradecir en los textos: 
 
 Cada comida es una fila de `meals` con sus alimentos. La foto se comprime en el teléfono (JPEG de 800 px como máximo, unos 50 KB), se manda a la IA y se descarta: no se guarda en ninguna tabla.
 
-El análisis vive en `js/services/meals.js`. Se usa el proveedor elegido en Bía (`voiceProvider`). Si falla, se prueba el otro si tiene clave. Sin ninguna clave, la pantalla avisa «Configura tu API Key en Bía › Conexión» y deja añadir los alimentos a mano. Si un texto no se reconoce, no se inventa nada: la lista queda vacía y un aviso pide añadir los alimentos a mano. Con Gemini, la app pregunta a la cuenta qué modelos con `generateContent` tiene y prueba hasta cinco por orden de preferencia (Flash primero); si esa consulta falla, usa una lista fija. Con OpenAI usa `gpt-4o-mini`. La respuesta es JSON con alimentos y macros. Si la foto no es comida, el error `NOT_FOOD` se muestra tal cual y no se prueba otro proveedor.
+El análisis vive en `js/services/meal-ai.js`. Se usa el proveedor elegido en Bía (`voiceProvider`). Si falla, se prueba el otro si tiene clave; con una descripción escrita, si ninguno responde, la lee el catálogo local (`food-catalog.js`). Sin ninguna clave, la foto no se puede analizar: la pantalla avisa «Configura tu clave en Bía › Conexión» y deja añadir los alimentos a mano. Una clave de Gemini inválida corta la búsqueda de modelos. Si un texto no se reconoce, no se inventa nada: la lista queda vacía y un aviso pide añadir los alimentos a mano. Con Gemini, la app pregunta a la cuenta qué modelos con `generateContent` tiene y prueba hasta cinco por orden de preferencia (Flash primero); si esa consulta falla, usa una lista fija. Con OpenAI usa `gpt-4o-mini`. La respuesta es JSON con alimentos y macros. Si la foto no es comida, el error `NOT_FOOD` se muestra tal cual y no se prueba otro proveedor.
 
 El atleta puede añadir una aclaración antes de analizar (por ejemplo «air fryer, sin aceite») o describir el plato por texto o voz (`analyzeMealText`). En la hoja de resultado (`js/utils/meal-scanner.js`) cada alimento se ajusta con − / + en pasos de 5, 10 o 20 g según su tamaño, y kcal y macros se recalculan con los valores por 100 g que guarda el alimento. Faltantes se añaden desde el catálogo local (`COMMON_FOODS`, unos 30 alimentos con porción típica) o por nombre y gramos. El tipo de comida sale de la hora si no se elige: Desayuno hasta 11:30, Almuerzo hasta 16:00, Merienda hasta 19:30, luego Cena.
 
@@ -315,7 +315,7 @@ Medida el 15 de noviembre de 2026 contra las reglas de `AGENTS.md`. No se añade
 
 Sin deuda abierta: las vistas no abren IndexedDB y ningún servicio toca el DOM.
 
-Resuelto en la `v188`: `js/services/agent.js` (1 660 líneas) se partió en `js/services/bia/` (configuración, memoria, texto, declaraciones de herramientas, herramientas, contexto e instrucciones) y la sesión de voz `FitAgent` pasó a `js/voice/fit-agent.js`, fuera de los servicios. En la `v198` `workout.js` (854 líneas) se partió en la pantalla (488) y `js/views/workout/` (estado, plantillas y reloj); las reglas sin DOM pasaron a `services/session-plan.js` con pruebas. De paso: al acabar el descanso de una rutina ya se pasa de verdad al siguiente ejercicio (antes el repintado volvía al anterior), el aviso de ejercicio creado ya no se acumula con cada repintado y se quitaron los emojis. En la `v197` `picker.js` (849 líneas) se partió en hoja, buscador (`picker-find.js`) y alta de ejercicio (`picker-creator.js`); la regla del grupo muscular pasó a `services/muscle-groups.js` y la búsqueda sin tildes a `utils/text-match.js`, las dos con pruebas; su arrastre propio se borró y usa `sheet-drag.js` (mismos umbrales que las demás hojas). En la `v195` `fit-agent.js` (777 líneas) se partió en un archivo por proveedor (`gemini-live.js`, `openai-realtime.js`) y la cola de audio (`pcm-player.js`); de paso, las respuestas de Bía con OpenAI ya se escriben en el chat (antes solo se oían). Las importaciones dinámicas de `meals.js` desaparecieron: ya no hay ciclo entre comidas y la asistente.
+Resuelto en la `v188`: `js/services/agent.js` (1 660 líneas) se partió en `js/services/bia/` (configuración, memoria, texto, declaraciones de herramientas, herramientas, contexto e instrucciones) y la sesión de voz `FitAgent` pasó a `js/voice/fit-agent.js`, fuera de los servicios. En la `v199` `services/meals.js` (740 líneas) se partió en diario (`meals.js`), cálculos (`nutrition.js`), catálogo con lector local (`food-catalog.js`) e IA (`meal-ai.js`), con pruebas; el lector local se comparó con el viejo y da lo mismo. De paso: «anteayer» ya no se lee como «ayer», una clave de Gemini inválida deja de probar los otros modelos y la descripción escrita también usa el proveedor de respaldo antes del catálogo local. En la `v198` `workout.js` (854 líneas) se partió en la pantalla (488) y `js/views/workout/` (estado, plantillas y reloj); las reglas sin DOM pasaron a `services/session-plan.js` con pruebas. De paso: al acabar el descanso de una rutina ya se pasa de verdad al siguiente ejercicio (antes el repintado volvía al anterior), el aviso de ejercicio creado ya no se acumula con cada repintado y se quitaron los emojis. En la `v197` `picker.js` (849 líneas) se partió en hoja, buscador (`picker-find.js`) y alta de ejercicio (`picker-creator.js`); la regla del grupo muscular pasó a `services/muscle-groups.js` y la búsqueda sin tildes a `utils/text-match.js`, las dos con pruebas; su arrastre propio se borró y usa `sheet-drag.js` (mismos umbrales que las demás hojas). En la `v195` `fit-agent.js` (777 líneas) se partió en un archivo por proveedor (`gemini-live.js`, `openai-realtime.js`) y la cola de audio (`pcm-player.js`); de paso, las respuestas de Bía con OpenAI ya se escriben en el chat (antes solo se oían). Las importaciones dinámicas de `meals.js` desaparecieron: ya no hay ciclo entre comidas y la asistente.
 
 Resuelto en la `v187`: «Borrar todo» pasa por `clearAllData()` del servicio de respaldo; compartir o descargar el respaldo vive en `js/utils/backup-export.js`; los paneles Recuerdos y Conexión salieron de la vista de Bía a `js/utils/agent-panels.js` (Ajustes ya no importa otra vista); el servicio de Bía avisa a Entreno con `js/utils/events.js` en vez de `document`; la compresión de fotos vive en `js/utils/image.js`. De paso se corrigió que guardar la conexión desde Ajustes dibujaba el chat de Bía dentro de Ajustes.
 
@@ -325,7 +325,6 @@ Resuelto en la `v187`: «Borrar todo» pasa por `clearAllData()` del servicio de
 | --- | --- | --- |
 | `js/views/agent.js` | 659 | Pantalla de clave y charla en directo. |
 | `js/utils/agent-panels.js` | 667 | Paneles Recuerdos y Conexión. |
-| `js/services/meals.js` | 751 | Metas, catálogo, guardado y dos proveedores de IA. |
 
 **Antes de Play Store**
 
@@ -376,7 +375,10 @@ Pendiente:
 | `js/voice/gemini-live.js` | Conexión con Gemini Live por WebSocket (voz Aoede): traduce su protocolo a los eventos de `FitAgent`. |
 | `js/voice/openai-realtime.js` | Conexión con OpenAI Realtime por WebRTC (voz Coral): sesión temporal, canal de datos y herramientas. |
 | `js/voice/pcm-player.js` | Cola de audio PCM16 a 24 kHz para las respuestas de Gemini. |
-| `js/services/meals.js` | Comidas, metas de macros, catálogo de alimentos y análisis por foto o texto. |
+| `js/services/meals.js` | Diario de comidas: guardar, leer, resumir el día y lo que Bía consulta de las comidas. |
+| `js/services/nutrition.js` | Cálculos puros: metas por objetivo, alimentos por 100 g, totales, porcentajes y nombre del plato. |
+| `js/services/food-catalog.js` | Catálogo local de alimentos y lector de descripciones sin IA (`parseMealTextLocally`). |
+| `js/services/meal-ai.js` | Análisis de comidas por foto o texto con Gemini u OpenAI: prompt, modelos, proveedor de respaldo y lectura de la respuesta. |
 | `js/services/fit-chat.js` | Charla visible de Bía en `meta.fitChat`. |
 | `js/services/water-reminders.js` | Recordatorios locales de agua tras la creatina. |
 | `js/views/*.js` | Una pantalla por archivo: home, workout, history, progress, creatine, meals, agent, settings, appearance. |

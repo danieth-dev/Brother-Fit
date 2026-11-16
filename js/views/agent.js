@@ -16,7 +16,7 @@ import { toast, esc, go } from '../utils/dom.js';
 import { askConfirm } from '../utils/confirm-sheet.js';
 import { showMemoriesPanel, showConnectionPanel } from '../utils/agent-panels.js';
 import { triggerPhotoPicker, openMealResultSheet } from '../utils/meal-scanner.js';
-import { analyzeMealText } from '../services/meals.js';
+import { analyzeMealText } from '../services/meal-ai.js';
 import { saveAiReport, reportMailtoUrl } from '../services/bia/reports.js';
 import { openReportSheet } from '../utils/report-sheet.js';
 

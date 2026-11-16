@@ -56,6 +56,8 @@ Los datos van **directamente desde tu teléfono** al proveedor que elijas, con t
 - Google: [enlace a la política de privacidad de Google y a las condiciones de la API de Gemini]
 - OpenAI: [enlace a la política de privacidad de OpenAI y a sus condiciones de API]
 
+Al analizar una comida, si el proveedor elegido falla y también guardaste la clave del otro, la app lo intenta con ese otro.
+
 Tu clave se guarda solo en el teléfono y no se incluye en los respaldos.
 
 ### 4B. Si Bía usa un servidor del editor *(alternativa)*

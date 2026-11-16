@@ -1,177 +1,16 @@
-/* Servicio de Nutrición y Escaneo de Comidas (Cal AI para Bía).
- * Guarda únicamente datos numéricos y desglose de alimentos en IndexedDB (cero fotos persistidas).
- * Soporta análisis por foto con Gemini / OpenAI Vision, análisis por texto/voz y catálogo local. */
-
+/* Diario de comidas: guardar, leer y resumir el día, y lo que Bía sabe de las comidas.
+ * Solo se guardan números y el desglose de alimentos; las fotos nunca se guardan.
+ * Cálculos puros en nutrition.js, catálogo en food-catalog.js y análisis con IA en meal-ai.js. */
 import { db } from '../db.js';
 import { state, DEFAULTS } from '../store.js';
 import { todayISO, addDays } from '../utils/dates.js';
-import { getAgentConfig } from './bia/config.js';
+import { now } from '../utils/clock.js';
+import {
+  MEAL_TYPES, normalizeMealItem, summarizeItems, buildMealTitle, macroPercents,
+  defaultMealTypeByHour, currentTimeHHMM,
+} from './nutrition.js';
 
-export const MEAL_TYPES = ['Desayuno', 'Almuerzo', 'Merienda', 'Cena'];
-
-/* Catálogo local de alimentos frecuentes (valores por cada 100 g + porción típica en g). */
-export const COMMON_FOODS = [
-  { nombre: 'Papas en air fryer / horno', porcion: 180, kcal100: 115, p100: 2.5, c100: 24.0, g100: 1.2 },
-  { nombre: 'Huevo frito / a la plancha', porcion: 60, kcal100: 196, p100: 13.6, c100: 0.8, g100: 14.8 },
-  { nombre: 'Carne molida de res', porcion: 140, kcal100: 215, p100: 24.0, c100: 0.0, g100: 13.0 },
-  { nombre: 'Arroz blanco cocido', porcion: 180, kcal100: 130, p100: 2.7, c100: 28.2, g100: 0.3 },
-  { nombre: 'Pechuga de pollo', porcion: 140, kcal100: 165, p100: 31.0, c100: 0.0, g100: 3.6 },
-  { nombre: 'Ensalada mixta', porcion: 90, kcal100: 28, p100: 1.4, c100: 4.5, g100: 0.4 },
-  { nombre: 'Aceite de cocción / oliva', porcion: 5, kcal100: 884, p100: 0.0, c100: 0.0, g100: 100.0 },
-  { nombre: 'Huevo entero cocido', porcion: 120, kcal100: 155, p100: 13.0, c100: 1.1, g100: 11.0 },
-  { nombre: 'Arepa de maíz asada', porcion: 130, kcal100: 195, p100: 4.5, c100: 41.0, g100: 1.2 },
-  { nombre: 'Avena en hojuelas', porcion: 60, kcal100: 389, p100: 16.9, c100: 66.3, g100: 6.9 },
-  { nombre: 'Plátano / Banano', porcion: 120, kcal100: 89, p100: 1.1, c100: 22.8, g100: 0.3 },
-  { nombre: 'Plátano macho maduro', porcion: 150, kcal100: 122, p100: 1.3, c100: 31.9, g100: 0.4 },
-  { nombre: 'Leche entera', porcion: 240, kcal100: 61, p100: 3.2, c100: 4.8, g100: 3.3 },
-  { nombre: 'Leche descremada', porcion: 240, kcal100: 35, p100: 3.4, c100: 5.0, g100: 0.1 },
-  { nombre: 'Carne de res magra', porcion: 150, kcal100: 215, p100: 26.0, c100: 0.0, g100: 12.0 },
-  { nombre: 'Atún al natural', porcion: 120, kcal100: 116, p100: 25.5, c100: 0.0, g100: 1.0 },
-  { nombre: 'Salmón a la plancha', porcion: 150, kcal100: 208, p100: 20.4, c100: 0.0, g100: 13.4 },
-  { nombre: 'Pasta cocida', porcion: 180, kcal100: 158, p100: 5.8, c100: 30.9, g100: 0.9 },
-  { nombre: 'Papa / Patata cocida', porcion: 200, kcal100: 87, p100: 1.9, c100: 20.1, g100: 0.1 },
-  { nombre: 'Batata / Camote asado', porcion: 180, kcal100: 90, p100: 2.0, c100: 20.7, g100: 0.2 },
-  { nombre: 'Pan integral', porcion: 60, kcal100: 247, p100: 13.0, c100: 41.0, g100: 3.4 },
-  { nombre: 'Aguacate / Palta', porcion: 80, kcal100: 160, p100: 2.0, c100: 8.5, g100: 14.7 },
-  { nombre: 'Lentejas cocidas', porcion: 180, kcal100: 116, p100: 9.0, c100: 20.1, g100: 0.4 },
-  { nombre: 'Frijoles / Caraotas cocidas', porcion: 160, kcal100: 127, p100: 8.7, c100: 22.8, g100: 0.5 },
-  { nombre: 'Yogur griego natural', porcion: 170, kcal100: 97, p100: 9.0, c100: 3.9, g100: 5.0 },
-  { nombre: 'Frutos secos / Almendras', porcion: 30, kcal100: 579, p100: 21.2, c100: 21.6, g100: 49.9 },
-  { nombre: 'Mantequilla de maní', porcion: 25, kcal100: 588, p100: 25.0, c100: 20.0, g100: 50.0 },
-  { nombre: 'Proteína Whey (1 scoop)', porcion: 30, kcal100: 390, p100: 78.0, c100: 8.0, g100: 5.0 },
-  { nombre: 'Queso blanco / Mozzarella', porcion: 50, kcal100: 280, p100: 22.0, c100: 2.2, g100: 21.0 },
-];
-
-/* Metas recomendadas según el peso corporal del atleta y su objetivo.
- * Sin un peso registrado no hay recomendación: devuelve null y la pantalla lo pide. */
-export function calculateTargetsForGoal(objetivo, pesoKg) {
-  if (!(Number(pesoKg) > 0)) return null;
-  const w = Math.max(35, Math.min(180, Number(pesoKg)));
-  if (objetivo === 'definir') {
-    const kcal = Math.round((w * 30) / 10) * 10;
-    const proteina = Math.round(w * 2.2);
-    const grasa = Math.round(w * 1.0);
-    const carbos = Math.max(60, Math.round((kcal - proteina * 4 - grasa * 9) / 4));
-    return { kcal, proteina, carbos, grasa, objetivo: 'definir' };
-  }
-  if (objetivo === 'mantener') {
-    const kcal = Math.round((w * 36) / 10) * 10;
-    const proteina = Math.round(w * 1.9);
-    const grasa = Math.round(w * 1.2);
-    const carbos = Math.max(80, Math.round((kcal - proteina * 4 - grasa * 9) / 4));
-    return { kcal, proteina, carbos, grasa, objetivo: 'mantener' };
-  }
-  const kcal = Math.round((w * 43) / 10) * 10;
-  const proteina = Math.round(w * 2.05);
-  const grasa = Math.round(w * 1.35);
-  const carbos = Math.max(100, Math.round((kcal - proteina * 4 - grasa * 9) / 4));
-  return { kcal, proteina, carbos, grasa, objetivo: 'ganar' };
-}
-
-export function defaultMealTypeByHour(d = new Date()) {
-  const h = d.getHours() + d.getMinutes() / 60;
-  if (h >= 5 && h < 11.5) return 'Desayuno';
-  if (h >= 11.5 && h < 16) return 'Almuerzo';
-  if (h >= 16 && h < 19.5) return 'Merienda';
-  return 'Cena';
-}
-
-export function currentTimeHHMM(d = new Date()) {
-  const h = d.getHours();
-  const m = String(d.getMinutes()).padStart(2, '0');
-  return `${h}:${m}`;
-}
-
-export function stepForGrams(g) {
-  const val = Number(g) || 0;
-  if (val <= 25) return 5;
-  if (val <= 90) return 10;
-  return 20;
-}
-
-/* Normaliza un ingrediente para que conserve su densidad nutricional por cada 100 g
- * y permita recalcular sin pérdida de precisión al subir/bajar gramos. */
-export function normalizeMealItem(raw) {
-  const gramos = Math.max(0, Math.round(Number(raw.gramos) || 100));
-  const baseG = gramos > 0 ? gramos : 100;
-  const kcal = Math.max(0, Math.round(Number(raw.kcal) || 0));
-  const proteina = Math.max(0, Math.round((Number(raw.proteina) || 0) * 10) / 10);
-  const carbos = Math.max(0, Math.round((Number(raw.carbos) || 0) * 10) / 10);
-  const grasa = Math.max(0, Math.round((Number(raw.grasa) || 0) * 10) / 10);
-
-  const kcal100 = raw.kcal100 != null ? Number(raw.kcal100) : (kcal / baseG) * 100;
-  const p100 = raw.p100 != null ? Number(raw.p100) : (proteina / baseG) * 100;
-  const c100 = raw.c100 != null ? Number(raw.c100) : (carbos / baseG) * 100;
-  const g100 = raw.g100 != null ? Number(raw.g100) : (grasa / baseG) * 100;
-
-  return {
-    nombre: String(raw.nombre || 'Alimento').trim(),
-    gramos,
-    kcal: Math.round((kcal100 * gramos) / 100),
-    proteina: Math.round(((p100 * gramos) / 100) * 10) / 10,
-    carbos: Math.round(((c100 * gramos) / 100) * 10) / 10,
-    grasa: Math.round(((g100 * gramos) / 100) * 10) / 10,
-    kcal100,
-    p100,
-    c100,
-    g100,
-  };
-}
-
-export function recalcItemGrams(item, newGrams) {
-  const normalized = normalizeMealItem(item);
-  const g = Math.max(0, Math.round(Number(newGrams) || 0));
-  return {
-    ...normalized,
-    gramos: g,
-    kcal: Math.round((normalized.kcal100 * g) / 100),
-    proteina: Math.round(((normalized.p100 * g) / 100) * 10) / 10,
-    carbos: Math.round(((normalized.c100 * g) / 100) * 10) / 10,
-    grasa: Math.round(((normalized.g100 * g) / 100) * 10) / 10,
-  };
-}
-
-export function buildItemFromCatalog(food, customGrams) {
-  const g = customGrams != null ? Number(customGrams) : food.porcion;
-  return recalcItemGrams(
-    {
-      nombre: food.nombre,
-      gramos: g,
-      kcal100: food.kcal100,
-      p100: food.p100,
-      c100: food.c100,
-      g100: food.g100,
-    },
-    g
-  );
-}
-
-export function summarizeItems(items = []) {
-  let kcal = 0;
-  let proteina = 0;
-  let carbos = 0;
-  let grasa = 0;
-  for (const it of items) {
-    kcal += Number(it.kcal) || 0;
-    proteina += Number(it.proteina) || 0;
-    carbos += Number(it.carbos) || 0;
-    grasa += Number(it.grasa) || 0;
-  }
-  return {
-    kcal: Math.round(kcal),
-    proteina: Math.round(proteina),
-    carbos: Math.round(carbos),
-    grasa: Math.round(grasa),
-  };
-}
-
-export function buildMealTitle(items = [], fallback = 'Comida registrada') {
-  const names = items.filter((i) => i.gramos > 0 && i.nombre).map((i) => i.nombre.trim());
-  if (!names.length) return fallback;
-  if (names.length === 1) return names[0];
-  if (names.length === 2) return `${names[0]} y ${names[1].toLowerCase()}`;
-  return `${names[0]}, ${names[1].toLowerCase()} y ${names[2].toLowerCase()}`;
-}
+const WEEK_DAYS = 7;
 
 export function getNutritionTargets() {
   const s = state.settings || {};
@@ -193,34 +32,28 @@ export async function getMealById(id) {
   return db.get('meals', Number(id));
 }
 
+/* Con desglose, los totales salen de los alimentos; sin él, de lo que se escribió. */
+function mealTotals(entry, items) {
+  if (items.length) return summarizeItems(items);
+  const round = (key) => Math.round(Number(entry[key]) || 0);
+  return { kcal: round('kcal'), proteina: round('proteina'), carbos: round('carbos'), grasa: round('grasa') };
+}
+
 export async function saveMeal(entry) {
   const items = (entry.items || []).map(normalizeMealItem).filter((i) => i.gramos > 0);
-  const totals = items.length
-    ? summarizeItems(items)
-    : {
-        kcal: Math.round(Number(entry.kcal) || 0),
-        proteina: Math.round(Number(entry.proteina) || 0),
-        carbos: Math.round(Number(entry.carbos) || 0),
-        grasa: Math.round(Number(entry.grasa) || 0),
-      };
-
-  const tipo = MEAL_TYPES.includes(entry.tipo) ? entry.tipo : defaultMealTypeByHour();
-  const nombre = (entry.nombre || '').trim() || buildMealTitle(items, tipo);
-
+  const totals = mealTotals(entry, items);
+  const ahora = new Date(now());
+  const tipo = MEAL_TYPES.includes(entry.tipo) ? entry.tipo : defaultMealTypeByHour(ahora);
   const record = {
     fecha: entry.fecha || todayISO(),
-    ts: entry.ts || Date.now(),
-    hora: entry.hora || currentTimeHHMM(),
+    ts: entry.ts || ahora.getTime(),
+    hora: entry.hora || currentTimeHHMM(ahora),
     tipo,
-    nombre,
-    kcal: totals.kcal,
-    proteina: totals.proteina,
-    carbos: totals.carbos,
-    grasa: totals.grasa,
+    nombre: (entry.nombre || '').trim() || buildMealTitle(items, tipo),
+    ...totals,
     items,
     origen: entry.origen || 'foto',
   };
-
   if (entry.id != null) {
     record.id = Number(entry.id);
     await db.put('meals', record);
@@ -237,457 +70,74 @@ export async function todayMealsSummary(fecha = todayISO()) {
   const meals = await listMealsByDate(fecha);
   const targets = getNutritionTargets();
   const totals = summarizeItems(meals);
-
-  const pct = {
-    kcal: targets.kcal > 0 ? Math.min(100, Math.round((totals.kcal / targets.kcal) * 100)) : 0,
-    proteina: targets.proteina > 0 ? Math.min(100, Math.round((totals.proteina / targets.proteina) * 100)) : 0,
-    carbos: targets.carbos > 0 ? Math.min(100, Math.round((totals.carbos / targets.carbos) * 100)) : 0,
-    grasa: targets.grasa > 0 ? Math.min(100, Math.round((totals.grasa / targets.grasa) * 100)) : 0,
-  };
-
   return {
     fecha,
     meals,
     totals,
     targets,
-    pct,
+    pct: macroPercents(totals, targets),
     remainingKcal: Math.max(0, targets.kcal - totals.kcal),
     surplusKcal: Math.max(0, totals.kcal - targets.kcal),
   };
 }
 
-const NUTRITION_PROMPT = `Eres el nutricionista deportivo de la app Bía.
-Analiza la imagen o texto y devuelve ÚNICAMENTE un objeto JSON válido (sin markdown adicional) con esta estructura exacta:
-{
-  "esComida": true,
-  "motivo": "",
-  "plato": "Nombre corto del plato en español",
-  "items": [
-    {
-      "nombre": "Nombre del ingrediente en español (ej. Papas en air fryer, Huevo frito, Carne molida)",
-      "gramos": 180,
-      "kcal": 207,
-      "proteina": 4.5,
-      "carbos": 43.2,
-      "grasa": 2.2
-    }
-  ]
-}
-Reglas estrictas:
-1. Si en la foto o texto NO hay ningún alimento, comida, bebida ni suplemento (por ejemplo: una mancuerna, un zapato, una pared, una mascota o una pantalla), devuelve "esComida": false, "motivo": "No veo comida ni bebida en la foto.", "items": [] y NO inventes alimentos.
-2. Si sí hay comida o bebida, devuelve "esComida": true y estima pesos realistas en gramos para las porciones visibles en el plato.
-3. REGLA AIR FRYER Y ACEITE SEPARADO: No infles las calorías de papas, carnes o vegetales asumiendo que fueron sumergidos en aceite profundo. Si las papas están cortadas en dados/trozos dorados sin brillo excesivo de grasa (o si el usuario aclara "air fryer" / "horno"), estímales ~115 kcal por cada 100 g ("Papas en air fryer / horno"). Si crees que algún alimento lleva aceite de sartén (por ejemplo un huevo frito), agrega una fila separada llamada "Aceite de cocción" (ej. 5 g = 44 kcal) para que el atleta pueda subirla, bajarla o quitarla a su gusto.
-4. Asegúrate de que las kcal y macros (proteina, carbos, grasa) sean nutricionalmente coherentes con los gramos indicados.`;
+/* ---------- Lo que Bía consulta ---------- */
 
-function extractJsonObject(raw) {
-  const cleaned = String(raw || '').replace(/```json/gi, '').replace(/```/g, '').trim();
-  try {
-    return JSON.parse(cleaned);
-  } catch {
-    const match = cleaned.match(/\{[\s\S]*\}/);
-    if (match) return JSON.parse(match[0]);
-    throw new Error('Respuesta sin JSON válido.');
-  }
+function dayEntry(fecha, list, { today, yesterday }) {
+  const sum = (key) => list.reduce((acc, m) => acc + (Number(m[key]) || 0), 0);
+  return {
+    fecha,
+    etiqueta: fecha === today ? 'Hoy' : fecha === yesterday ? 'Ayer' : fecha,
+    comidasCount: list.length,
+    kcal: sum('kcal'),
+    proteina: sum('proteina'),
+    carbos: sum('carbos'),
+    grasa: sum('grasa'),
+    platos: list.map((m) => `${m.tipo}: ${m.nombre} (${m.kcal} kcal, ${m.proteina}g P)`),
+  };
 }
 
-function extractParsedItems(parsed) {
-  if (!parsed || typeof parsed !== 'object') return null;
-  if (Array.isArray(parsed)) return parsed;
-  const arr = parsed.items || parsed.ingredientes || parsed.alimentos;
-  return Array.isArray(arr) ? arr : null;
+async function weekHistory(today, yesterday) {
+  const start = addDays(today, -(WEEK_DAYS - 1));
+  const byDate = new Map();
+  for (let i = 0; i < WEEK_DAYS; i++) byDate.set(addDays(today, -i), []);
+  for (const m of await db.getAll('meals')) {
+    if (m.fecha >= start && m.fecha <= today) byDate.get(m.fecha)?.push(m);
+  }
+  const dias = [...byDate].map(([fecha, list]) => dayEntry(fecha, list, { today, yesterday }));
+  const logged = dias.filter((d) => d.comidasCount > 0);
+  const avg = (key) => (logged.length ? Math.round(logged.reduce((a, d) => a + d[key], 0) / logged.length) : 0);
+  return {
+    periodo: 'ultimos_7_dias',
+    metasDiarias: getNutritionTargets(),
+    diasConRegistro: logged.length,
+    promedioKcal: avg('kcal'),
+    promedioProteina: avg('proteina'),
+    dias,
+  };
 }
 
-/* Autodescubrimiento de modelos Gemini con soporte generateContent en la cuenta del usuario. */
-const cachedModelsByKey = new Map();
-
-async function discoverGeminiVisionModels(apiKey) {
-  const fallback = [
-    'gemini-2.5-flash',
-    'gemini-2.5-flash-lite',
-    'gemini-2.0-flash',
-    'gemini-2.0-flash-lite',
-    'gemini-1.5-flash',
-    'gemini-flash-latest',
-  ];
-  if (cachedModelsByKey.has(apiKey)) {
-    return cachedModelsByKey.get(apiKey);
-  }
-
-  try {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`);
-    if (!res.ok) return fallback;
-    const data = await res.json();
-    const available = (data?.models || [])
-      .filter((m) => Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes('generateContent'))
-      .map((m) => String(m.name || '').replace(/^models\//, ''))
-      .filter((id) => (
-        id.startsWith('gemini-') &&
-        !id.includes('tts') &&
-        !id.includes('embedding') &&
-        !id.includes('imagen') &&
-        !id.includes('veo') &&
-        !id.includes('aqa') &&
-        !id.includes('audio') &&
-        !id.includes('robotics') &&
-        !id.includes('computer-use')
-      ));
-
-    if (!available.length) return fallback;
-
-    const scoreModel = (id) => {
-      if (id === 'gemini-2.5-flash') return 100;
-      if (id === 'gemini-2.5-flash-lite') return 95;
-      if (id.startsWith('gemini-2.5-flash') && !id.includes('preview')) return 90;
-      if (id === 'gemini-3-flash-preview' || id === 'gemini-3.1-flash-lite-preview') return 88;
-      if (id === 'gemini-flash-latest') return 85;
-      if (id === 'gemini-2.0-flash') return 80;
-      if (id === 'gemini-2.0-flash-lite') return 78;
-      if (id === 'gemini-1.5-flash') return 75;
-      if (id.includes('flash')) return 70;
-      if (id.includes('pro')) return 50;
-      return 30;
-    };
-
-    available.sort((a, b) => scoreModel(b) - scoreModel(a));
-    const topModels = available.slice(0, 5);
-    cachedModelsByKey.set(apiKey, topModels);
-    return topModels;
-  } catch {
-    return fallback;
-  }
+function dateForPeriod(q, today, yesterday) {
+  if (q.includes('anteayer')) return addDays(today, -2);
+  if (q.includes('ayer')) return yesterday;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(q)) return q;
+  return today;
 }
 
-function formatApiError(provider, status, rawText) {
-  let msg = '';
-  try {
-    const parsed = JSON.parse(rawText);
-    msg = parsed?.error?.message || '';
-  } catch {
-    msg = String(rawText || '').slice(0, 140);
-  }
-  if (status === 400 && /api_key_invalid|key not valid/i.test(msg)) {
-    return `Tu API Key de ${provider} no es válida. Revísala en Bía › Conexión.`;
-  }
-  if (status === 401 || status === 403) {
-    return `Tu API Key de ${provider} fue rechazada (${status}). Verifica que esté activa en Bía › Conexión.`;
-  }
-  if (status === 429) {
-    return `Se alcanzó el límite de cuota gratuita de ${provider} (429). Espera unos segundos y pulsa Reintentar.`;
-  }
-  return msg ? `${provider} (${status}): ${msg.slice(0, 110)}` : `Error ${status} al conectar con ${provider}.`;
-}
-
-async function callGeminiNutrition({ base64, mimeType, textPrompt, userHint }, apiKey) {
-  const models = await discoverGeminiVisionModels(apiKey);
-  let lastError = null;
-
-  let promptText = NUTRITION_PROMPT;
-  if (userHint) {
-    promptText += `\n\nACLARACIÓN IMPORTANTE DEL ATLETA SOBRE ESTE PLATO: "${userHint}". Respeta esta aclaración al identificar los ingredientes, el método de cocción (ej. air fryer = sin aceite extra) y las calorías.`;
-  }
-  if (textPrompt) {
-    promptText += `\n\nDescripción del plato a analizar: "${textPrompt}"`;
-  }
-
-  const parts = [];
-  if (base64) {
-    parts.push({ inline_data: { mime_type: mimeType || 'image/jpeg', data: base64 } });
-  }
-  parts.push({ text: promptText });
-
-  for (const model of models) {
-    try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ role: 'user', parts }],
-          generationConfig: {
-            temperature: 0.15,
-          },
-        }),
-      });
-
-      if (!res.ok) {
-        const errText = await res.text();
-        const friendly = formatApiError('Gemini', res.status, errText);
-        const err = new Error(friendly);
-        err.userMessage = friendly;
-        err.status = res.status;
-        lastError = err;
-        if (res.status === 400 && /api_key_invalid|key not valid/i.test(errText)) {
-          throw err;
-        }
-        continue;
-      }
-
-      const data = await res.json();
-      const candParts = data?.candidates?.[0]?.content?.parts || [];
-      const nonThoughtText = candParts
-        .filter((p) => !p.thought && typeof p.text === 'string')
-        .map((p) => p.text)
-        .join('\n') || candParts.map((p) => p.text || '').join('\n');
-
-      const parsed = extractJsonObject(nonThoughtText);
-      const rawItems = extractParsedItems(parsed);
-
-      if (parsed && (parsed.esComida === false || (Array.isArray(rawItems) && rawItems.length === 0))) {
-        const notFoodErr = new Error(parsed.motivo || 'No detecté comida ni bebida en la foto.');
-        notFoodErr.code = 'NOT_FOOD';
-        throw notFoodErr;
-      }
-      if (rawItems && rawItems.length > 0) {
-        return {
-          plato: parsed.plato || buildMealTitle(rawItems),
-          items: rawItems.map(normalizeMealItem),
-        };
-      }
-    } catch (err) {
-      if (err?.code === 'NOT_FOOD') throw err;
-      lastError = err;
-    }
-  }
-  throw lastError || new Error('No se pudo analizar la comida con Gemini.');
-}
-
-async function callOpenAINutrition({ base64, mimeType, textPrompt, userHint }, apiKey) {
-  let promptText = NUTRITION_PROMPT;
-  if (userHint) {
-    promptText += `\n\nACLARACIÓN IMPORTANTE DEL ATLETA: "${userHint}"`;
-  }
-  if (textPrompt) {
-    promptText += `\n\nDescripción: "${textPrompt}"`;
-  }
-
-  const content = [{ type: 'text', text: promptText }];
-  if (base64) {
-    content.push({
-      type: 'image_url',
-      image_url: { url: `data:${mimeType || 'image/jpeg'};base64,${base64}`, detail: 'low' },
-    });
-  }
-
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o-mini',
-      temperature: 0.15,
-      response_format: { type: 'json_object' },
-      messages: [{ role: 'user', content }],
-    }),
-  });
-
-  if (!res.ok) {
-    const errText = await res.text();
-    const friendly = formatApiError('OpenAI', res.status, errText);
-    const err = new Error(friendly);
-    err.userMessage = friendly;
-    throw err;
-  }
-
-  const data = await res.json();
-  const parsed = extractJsonObject(data?.choices?.[0]?.message?.content || '{}');
-  const rawItems = extractParsedItems(parsed);
-
-  if (parsed && (parsed.esComida === false || (Array.isArray(rawItems) && rawItems.length === 0))) {
-    const notFoodErr = new Error(parsed.motivo || 'No detecté comida ni bebida en la foto.');
-    notFoodErr.code = 'NOT_FOOD';
-    throw notFoodErr;
-  }
-  if (rawItems && rawItems.length > 0) {
-    return {
-      plato: parsed.plato || buildMealTitle(rawItems),
-      items: rawItems.map(normalizeMealItem),
-    };
-  }
-  throw new Error('OpenAI no devolvió ingredientes válidos.');
-}
-
-export async function analyzeMealImage({ base64, mimeType, userHint = '' }) {
-  const cfg = await getAgentConfig();
-  const geminiKey = (cfg.geminiKey || '').trim();
-  const openaiKey = (cfg.openaiKey || '').trim();
-
-  if (cfg.provider === 'openai' && openaiKey) {
-    try {
-      return await callOpenAINutrition({ base64, mimeType, userHint }, openaiKey);
-    } catch (err) {
-      if (err?.code === 'NOT_FOOD') throw err;
-      if (geminiKey) return callGeminiNutrition({ base64, mimeType, userHint }, geminiKey);
-      throw err;
-    }
-  }
-  if (geminiKey) {
-    try {
-      return await callGeminiNutrition({ base64, mimeType, userHint }, geminiKey);
-    } catch (err) {
-      if (err?.code === 'NOT_FOOD') throw err;
-      if (openaiKey) return callOpenAINutrition({ base64, mimeType, userHint }, openaiKey);
-      throw err;
-    }
-  }
-  if (openaiKey) {
-    return callOpenAINutrition({ base64, mimeType, userHint }, openaiKey);
-  }
-
-  const err = new Error('Configura tu API Key en Bía › Conexión para analizar fotos con IA.');
-  err.code = 'NO_API_KEY';
-  throw err;
-}
-
-/* Analiza una descripción escrita o hablada ("me comí dos huevos y una arepa").
- * Si nada se reconoce, devuelve items vacíos: nunca se inventa un plato. */
-export async function analyzeMealText(text) {
-  const clean = String(text || '').trim();
-  if (!clean) return { plato: '', items: [] };
-
-  const cfg = await getAgentConfig();
-  const geminiKey = (cfg.geminiKey || '').trim();
-  const openaiKey = (cfg.openaiKey || '').trim();
-
-  try {
-    if (cfg.provider === 'openai' && openaiKey) {
-      return await callOpenAINutrition({ textPrompt: clean }, openaiKey);
-    }
-    if (geminiKey) {
-      return await callGeminiNutrition({ textPrompt: clean }, geminiKey);
-    }
-    if (openaiKey) {
-      return await callOpenAINutrition({ textPrompt: clean }, openaiKey);
-    }
-  } catch (e) {
-    if (e?.code === 'NOT_FOOD') throw e;
-    console.warn('Fallback a parser local de alimentos:', e);
-  }
-
-  /* Parser local inteligente sobre COMMON_FOODS si no hay red o API key */
-  const lower = clean.toLowerCase();
-  const isBoiledEgg = /huevo.*(sancochad|hervid|duro|cocid)/i.test(lower);
-  const isFriedEgg = /huevo.*(frit|plancha|revuelt)/i.test(lower);
-  const matched = [];
-
-  for (const food of COMMON_FOODS) {
-    const foodLower = food.nombre.toLowerCase();
-    if (foodLower.includes('huevo')) {
-      if (isBoiledEgg && foodLower.includes('frito')) continue;
-      if (isFriedEgg && foodLower.includes('cocido')) continue;
-      if (!isBoiledEgg && !isFriedEgg && foodLower.includes('frito') && matched.some((m) => m.nombre.toLowerCase().includes('huevo'))) continue;
-    }
-
-    const keywords = foodLower
-      .split(/[\s/]+/)
-      .filter((w) => w.length > 3 && !['cocido', 'cocida', 'natural', 'entera', 'entero', 'horno', 'plancha', 'frito'].includes(w));
-    if (keywords.some((kw) => lower.includes(kw))) {
-      if (foodLower.includes('huevo') && matched.some((m) => m.nombre.toLowerCase().includes('huevo'))) continue;
-      const gramsRegex = new RegExp(`(\\d+)\\s*(?:g|gr|gramos)\\s*(?:de\\s+)?${keywords[0]}`, 'i');
-      const unitRegex = new RegExp(`(\\d+)\\s+${keywords[0]}`, 'i');
-      const mGrams = clean.match(gramsRegex);
-      const mUnits = clean.match(unitRegex);
-      let grams = food.porcion;
-      if (mGrams) {
-        grams = Number(mGrams[1]);
-      } else if (mUnits) {
-        const n = Number(mUnits[1]);
-        const unitWeight = foodLower.includes('huevo') ? 60 : food.porcion;
-        grams = n <= 12 ? n * unitWeight : n;
-      } else if (foodLower.includes('huevo entero')) {
-        grams = 60; // 1 huevo sancochado por defecto si no especifica cantidad
-      }
-      matched.push(buildItemFromCatalog(food, grams));
-    }
-  }
-
-  if (matched.length > 0) {
-    return {
-      plato: buildMealTitle(matched, clean),
-      items: matched,
-    };
-  }
-
-  return { plato: clean, items: [] };
-}
-
-/* Consulta histórica de comidas para la herramienta consultar_comidas de Bía ('hoy', 'ayer', 'semana' o 'YYYY-MM-DD'). */
+/* Consulta histórica para la herramienta consultar_comidas de Bía ('hoy', 'ayer', 'semana' o 'YYYY-MM-DD'). */
 export async function getMealsHistoryForFit(periodo = 'hoy') {
   const q = String(periodo || 'hoy').trim().toLowerCase();
   const today = todayISO();
   const yesterday = addDays(today, -1);
+  if (q.includes('sem') || q.includes('7') || q.includes('hist')) return weekHistory(today, yesterday);
 
-  if (q.includes('sem') || q.includes('7') || q.includes('hist')) {
-    const allMeals = await db.getAll('meals');
-    const start = addDays(today, -6);
-    const byDate = new Map();
-    for (let i = 0; i < 7; i++) {
-      const d = addDays(today, -i);
-      byDate.set(d, []);
-    }
-    for (const m of allMeals) {
-      if (m.fecha >= start && m.fecha <= today) {
-        if (!byDate.has(m.fecha)) byDate.set(m.fecha, []);
-        byDate.get(m.fecha).push(m);
-      }
-    }
-    const sToday = await todayMealsSummary(today);
-    const dias = [];
-    let sumKcal = 0;
-    let sumProt = 0;
-    let daysWithLogs = 0;
-    for (const [fecha, list] of byDate.entries()) {
-      const kcal = list.reduce((acc, m) => acc + (Number(m.kcal) || 0), 0);
-      const proteina = list.reduce((acc, m) => acc + (Number(m.proteina) || 0), 0);
-      const carbos = list.reduce((acc, m) => acc + (Number(m.carbos) || 0), 0);
-      const grasa = list.reduce((acc, m) => acc + (Number(m.grasa) || 0), 0);
-      if (list.length > 0) {
-        sumKcal += kcal;
-        sumProt += proteina;
-        daysWithLogs++;
-      }
-      dias.push({
-        fecha,
-        etiqueta: fecha === today ? 'Hoy' : fecha === yesterday ? 'Ayer' : fecha,
-        comidasCount: list.length,
-        kcal,
-        proteina,
-        carbos,
-        grasa,
-        platos: list.map((m) => `${m.tipo}: ${m.nombre} (${m.kcal} kcal, ${m.proteina}g P)`),
-      });
-    }
-    return {
-      periodo: 'ultimos_7_dias',
-      metasDiarias: sToday.targets,
-      diasConRegistro: daysWithLogs,
-      promedioKcal: daysWithLogs ? Math.round(sumKcal / daysWithLogs) : 0,
-      promedioProteina: daysWithLogs ? Math.round(sumProt / daysWithLogs) : 0,
-      dias,
-    };
-  }
-
-  let targetDate = today;
-  if (q.includes('ayer')) {
-    targetDate = yesterday;
-  } else if (q.includes('anteayer')) {
-    targetDate = addDays(today, -2);
-  } else if (/^\d{4}-\d{2}-\d{2}$/.test(q)) {
-    targetDate = q;
-  }
-
-  const s = await todayMealsSummary(targetDate);
-  const protFalta = Math.max(0, s.targets.proteina - s.totals.proteina);
+  const s = await todayMealsSummary(dateForPeriod(q, today, yesterday));
   return {
     fecha: s.fecha,
     esHoy: s.fecha === today,
     metas: s.targets,
     consumido: s.totals,
-    restante: {
-      kcal: s.remainingKcal,
-      proteina: protFalta,
-    },
+    restante: { kcal: s.remainingKcal, proteina: Math.max(0, s.targets.proteina - s.totals.proteina) },
     comidas: s.meals.map((m) => ({
       id: m.id,
       hora: m.hora,
@@ -702,15 +152,17 @@ export async function getMealsHistoryForFit(periodo = 'hoy') {
   };
 }
 
-/* Devuelve un bloque de texto estructurado con el diario de comidas de hoy y ayer para Bía. */
+function mealLine(m) {
+  const itemsDesc = (m.items || []).map((i) => `${i.nombre} ${i.gramos}g`).join(', ');
+  return `  * [ID ${m.id}] ${m.hora} · ${m.tipo}: ${m.nombre} — ${m.kcal} kcal, Proteína ${m.proteina} g${itemsDesc ? ` (${itemsDesc})` : ''}.`;
+}
+
+/* Bloque de texto con el diario de hoy y el cierre de ayer para las instrucciones de Bía. */
 export async function getMealsContextForFit() {
   try {
     const today = todayISO();
     const yesterday = addDays(today, -1);
-    const [s, sYesterday] = await Promise.all([
-      todayMealsSummary(today),
-      todayMealsSummary(yesterday),
-    ]);
+    const [s, sY] = await Promise.all([todayMealsSummary(today), todayMealsSummary(yesterday)]);
     const protFalta = Math.max(0, s.targets.proteina - s.totals.proteina);
     const lines = [
       `\n\nNUTRICIÓN Y COMIDAS DE HOY (${s.fecha}):`,
@@ -718,23 +170,13 @@ export async function getMealsContextForFit() {
       `- Consumido hoy: ${s.totals.kcal} kcal · Proteína ${s.totals.proteina} g · Carbohidratos ${s.totals.carbos} g · Grasa ${s.totals.grasa} g.`,
       `- Restante hoy: ${s.remainingKcal} kcal y ${protFalta} g de proteína para llegar a la meta.`,
     ];
-    if (s.meals.length === 0) {
-      lines.push('- Comidas registradas hoy: Ninguna todavía.');
-    } else {
-      lines.push('- Comidas registradas hoy:');
-      for (const m of s.meals) {
-        const itemsDesc = (m.items || []).map((i) => `${i.nombre} ${i.gramos}g`).join(', ');
-        lines.push(`  * [ID ${m.id}] ${m.hora} · ${m.tipo}: ${m.nombre} — ${m.kcal} kcal, Proteína ${m.proteina} g${itemsDesc ? ` (${itemsDesc})` : ''}.`);
-      }
-    }
-    if (sYesterday.meals.length > 0) {
-      lines.push(
-        `- Cierre de ayer (${yesterday}): ${sYesterday.totals.kcal} / ${sYesterday.targets.kcal} kcal · Proteína ${sYesterday.totals.proteina} / ${sYesterday.targets.proteina} g (${sYesterday.meals.length} comidas).`
-      );
+    if (s.meals.length) lines.push('- Comidas registradas hoy:', ...s.meals.map(mealLine));
+    else lines.push('- Comidas registradas hoy: Ninguna todavía.');
+    if (sY.meals.length) {
+      lines.push(`- Cierre de ayer (${yesterday}): ${sY.totals.kcal} / ${sY.targets.kcal} kcal · Proteína ${sY.totals.proteina} / ${sY.targets.proteina} g (${sY.meals.length} comidas).`);
     }
     return lines.join('\n');
   } catch {
     return '';
   }
 }
-
