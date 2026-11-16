@@ -284,7 +284,7 @@ La isla de navegación sustituye una barra de borde a borde. El zoom con dos ded
 
 ## Publicación
 
-Cada push a `main` dispara `.github/workflows/deploy.yml`. Primero corre las pruebas de `tests/` con Node; si fallan, no se publica. Después copia solo la app a `_site/` (`index.html`, `manifest.webmanifest`, `sw.js`, `.nojekyll`, `css/`, `js/`, `fonts/`, `icons/`) y publica eso en GitHub Pages. No se publican los documentos, `rpe-test.html` ni las carpetas de agentes. Un archivo nuevo en la raíz se añade a esa lista; uno dentro de esas carpetas ya va incluido (y siempre se añade a `ASSETS` de `sw.js`).
+Cada push a `main` dispara `.github/workflows/deploy.yml`. En GitHub, Settings → Pages tiene como fuente **GitHub Actions**: ese workflow es lo único que publica. Si se vuelve a «Deploy from a branch», GitHub publica además el repositorio entero sin pasar por las pruebas. Primero corre las pruebas de `tests/` con Node; si fallan, no se publica. Después copia solo la app a `_site/` (`index.html`, `manifest.webmanifest`, `sw.js`, `.nojekyll`, `css/`, `js/`, `fonts/`, `icons/`) y publica eso en GitHub Pages. No se publican los documentos, `rpe-test.html` ni las carpetas de agentes. Un archivo nuevo en la raíz se añade a esa lista; uno dentro de esas carpetas ya va incluido (y siempre se añade a `ASSETS` de `sw.js`).
 
 Para Play Store la app tendrá que empaquetarse como app de Android (por ejemplo, una Trusted Web Activity sobre la URL publicada). La forma está por decidir y ese paso todavía no existe en el repositorio.
 
