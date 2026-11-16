@@ -284,7 +284,7 @@ La isla de navegación sustituye una barra de borde a borde. El zoom con dos ded
 
 ## Publicación
 
-Cada push a `main` dispara `.github/workflows/deploy.yml`, que copia solo la app a `_site/` (`index.html`, `manifest.webmanifest`, `sw.js`, `.nojekyll`, `css/`, `js/`, `fonts/`, `icons/`) y publica eso en GitHub Pages. No se publican los documentos, `rpe-test.html` ni las carpetas de agentes. Un archivo nuevo en la raíz se añade a esa lista; uno dentro de esas carpetas ya va incluido (y siempre se añade a `ASSETS` de `sw.js`).
+Cada push a `main` dispara `.github/workflows/deploy.yml`. Primero corre las pruebas de `tests/` con Node; si fallan, no se publica. Después copia solo la app a `_site/` (`index.html`, `manifest.webmanifest`, `sw.js`, `.nojekyll`, `css/`, `js/`, `fonts/`, `icons/`) y publica eso en GitHub Pages. No se publican los documentos, `rpe-test.html` ni las carpetas de agentes. Un archivo nuevo en la raíz se añade a esa lista; uno dentro de esas carpetas ya va incluido (y siempre se añade a `ASSETS` de `sw.js`).
 
 Para Play Store la app tendrá que empaquetarse como app de Android (por ejemplo, una Trusted Web Activity sobre la URL publicada). La forma está por decidir y ese paso todavía no existe en el repositorio.
 
@@ -342,7 +342,7 @@ Pendiente:
 - **Formularios de Play Console:** seguridad de los datos (Data safety), declaración de apps de salud y fitness, clasificación de contenido.
 - **Correo de soporte** en `js/app-info.js` (`supportEmail`). Sin él, los reportes de respuestas de Bía solo quedan en el teléfono y no te llegan.
 - **Ficha de la tienda:** capturas, ícono de 512 px, gráfico destacado de 1024×500, textos.
-- No hay pruebas automáticas salvo `rpe-test.html`.
+- Pruebas: la lógica pura tiene 32 pruebas en `tests/` (Node, corren en CI antes de publicar) y la de esfuerzo con base de datos, 32 en `rpe-test.html` (navegador, a mano). Faltan pruebas de interfaz y de respaldo/importación con base de datos.
 
 ## Mapa de archivos
 
@@ -402,4 +402,6 @@ Pendiente:
 | `js/utils/clock.js` | Reloj único. Las pruebas pueden adelantarlo. |
 | `js/utils/set-line.js` | Botones de esfuerzo en la serie ya hecha. |
 | `rpe-test.html` | Casos del esfuerzo sobre una base temporal. |
+| `tests/*.test.js` | Pruebas de lógica pura con `node:test`. `npm test`. |
+| `package.json` | Solo para las pruebas: `type: module` y el script `test`. Sin dependencias; no se publica. |
 | `fonts/FugazOne-Regular.ttf` | Títulos. Licencia en `fonts/OFL.txt`. |

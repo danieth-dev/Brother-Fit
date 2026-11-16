@@ -47,6 +47,14 @@ python3 -m http.server 8000
 Abre http://localhost:8000. Para probar desde el teléfono en la misma red, usa la IP de tu PC,
 aunque la instalación y el modo offline requieren HTTPS (siguiente sección).
 
+## Pruebas
+
+```
+npm test
+```
+
+Corre las pruebas de lógica de `tests/` con Node (sin instalar nada). Las de esfuerzo con base de datos están en `rpe-test.html`: ábrelo con el servidor local.
+
 ## Publicarlo y usarlo en el teléfono
 
 Necesitas HTTPS. Las opciones gratuitas más simples:

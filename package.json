@@ -1,0 +1,9 @@
+{
+  "name": "bia",
+  "private": true,
+  "type": "module",
+  "description": "Bía: PWA local-first de entreno, creatina y comidas. Sin dependencias ni build; este archivo solo existe para correr las pruebas con Node.",
+  "scripts": {
+    "test": "node --test \"tests/*.test.js\""
+  }
+}

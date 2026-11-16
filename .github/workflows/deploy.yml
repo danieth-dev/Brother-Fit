@@ -1,8 +1,9 @@
-name: Deploy Brother Fit to GitHub Pages
+name: Pruebas y publicación de Bía
 
 on:
   push:
     branches: ["main"]
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -15,7 +16,25 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Lógica pura (fechas, unidades, 1RM, esfuerzo, creatina, comidas, Bía) con node:test. Sin dependencias.
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Pruebas
+        run: node --test "tests/*.test.js"
+
+  # Solo publica si las pruebas pasan y es un push a main (no en pull requests).
   deploy:
+    needs: test
+    if: github.event_name != 'pull_request'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
