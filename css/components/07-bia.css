@@ -7,27 +7,27 @@
 /* Agent Viewport & Layout */
 body.in-agent-view,
 body:has(.agent-view) {
-  overflow: hidden !important;
+  overflow: hidden;
 }
 
 #app:has(.agent-view),
 body.in-agent-view #app {
-  padding: 0 !important;
-  max-width: 560px !important;
-  margin: 0 auto !important;
-  height: 100dvh !important;
-  height: 100vh !important;
-  display: flex !important;
-  flex-direction: column !important;
-  overflow: hidden !important;
+  padding: 0;
+  max-width: 560px;
+  margin: 0 auto;
+  height: 100dvh;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 #app:has(.agent-view) .view,
 body.in-agent-view #app .view {
-  height: 100% !important;
-  display: flex !important;
-  flex-direction: column !important;
-  overflow: hidden !important;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .agent-view {
@@ -99,11 +99,11 @@ body.in-agent-view #app .view {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #10B981;
+  background: var(--green);
   display: inline-block;
 }
 .agent-chat-status[data-ok="0"] .agent-chat-status-dot {
-  background: #EF4444;
+  background: var(--red);
 }
 
 .agent-chat-head-actions {
@@ -201,7 +201,7 @@ body.in-agent-view #app .view {
   border-bottom: 2px solid var(--primary);
 }
 .agent-provider-tab.is-active[data-provider="openai"] {
-  border-bottom: 2px solid #10A37F;
+  border-bottom: 2px solid var(--green);
 }
 
 .agent-model-select {
@@ -226,7 +226,7 @@ body.in-agent-view #app .view {
 .agent-model-btn.is-active {
   background: var(--surface-2);
   color: var(--text);
-  border-color: #10A37F;
+  border-color: var(--green);
 }
 
 /* Mensajes / Chat Bubbles */
@@ -403,7 +403,7 @@ body.in-agent-view #app .view {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 19px;
+  font-size: var(--fs-lg);
   font-weight: 800;
   font-style: italic;
   margin: 0;
@@ -550,7 +550,7 @@ body.in-agent-view #app .view {
 }
 .agent-action-btn.active-live {
   background: var(--red);
-  color: #FFFFFF;
+  color: var(--on-color);
   animation: pulse-ring 1.2s infinite ease-out;
 }
 .agent-action-btn.is-send {
@@ -647,7 +647,7 @@ body.in-agent-view #app .view {
 }
 .agent-sheet-head-titles h2 {
   margin: 0;
-  font-size: 28px;
+  font-size: var(--fs-2xl);
   line-height: 1.15;
   font-weight: 800;
   font-style: italic;
@@ -738,7 +738,7 @@ body.in-agent-view #app .view {
   gap: 2px;
 }
 .agent-rec-value {
-  font-size: 17px;
+  font-size: var(--fs-md);
   font-weight: 700;
   color: var(--text);
 }
@@ -1385,7 +1385,7 @@ body.in-agent-view #app .view {
 .rest-zone {
   display: inline-flex;
   align-items: center;
-  font-size: 0.72rem;
+  font-size: var(--fs-xs);
   color: var(--primary);
   background: rgba(0, 0, 0, 0.25);
   border: 1px solid var(--line-accent);

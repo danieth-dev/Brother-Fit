@@ -89,6 +89,51 @@
 
   --white: #f8fafc;
 
+  /* Blanco puro sobre un fondo de color fijo (rojo, foto, botón vivo): igual en los dos modos. */
+  --on-color: #ffffff;
+  /* Negro sobre las muestras de acento de Aspecto, que no cambian con el modo. */
+  --swatch-ink: #07080a;
+
+  /* Opción elegida de un segmento sin acento (pestañas, tipo de serie) y su pastilla. */
+  --seg-on: #3a3a3a;
+  /* Fondo de un editor abierto dentro de una lista (serie en Detalle). */
+  --editor-bg: #232323;
+
+  /* Aviso «Estimado» de una comida analizada. */
+  --warn-bg: #3a2f12;
+  --warn-text: #ffb020;
+
+  /* Grupos musculares: el mismo color en puntos, chips y rutina, en los dos modos. */
+  --muscle-pecho: #ff6b7a;
+  --muscle-espalda: #2ec4b6;
+  --muscle-piernas: #ffd166;
+  --muscle-hombros: #7ed957;
+  --muscle-brazos: #4d8dff;
+  --muscle-triceps: #ff9f43;
+  --muscle-core: #b38cff;
+  --muscle-cardio: #00c49f;
+  --muscle-otro: #a8a8a8;
+
+  /* Ilustraciones: disco de Inicio y plato de ejemplo de Comida. */
+  --plate-bg: radial-gradient(circle at center, #171b22 0%, #101217 65%, #0a0c10 100%);
+  --plate-groove: #07080a;
+  --meal-scene-bg: radial-gradient(circle at 50% 55%, #2a2622, #0b0a09);
+  --meal-plate: radial-gradient(circle at 40% 35%, #ffffff, #e4dfd4);
+  --meal-rice: #f4f1ea;
+  --meal-rice-edge: #e0dbce;
+  --meal-protein: #b9803f;
+  --meal-veg: #4f8a3a;
+
+  /* Vistas previas de Aspecto: enseñan cada modo, no el modo activo. */
+  --preview-dark-bg: #0a0a0a;
+  --preview-dark-ink: #f5f5f5;
+  --preview-dark-card: #1e1e1e;
+  --preview-dark-line: #3a3a3a;
+  --preview-light-bg: #f2f2f2;
+  --preview-light-ink: #111111;
+  --preview-light-card: #ffffff;
+  --preview-light-line: #d8d8d8;
+
   /* Radios de Precisión */
   --r-xs: 4px;
   --r-sm: 8px;
@@ -121,6 +166,13 @@ html[data-modo="claro"] {
   --line: #cbd5e1;
   --line-strong: #94a3b8;
   --line-accent: rgba(180, 83, 9, 0.35);
+
+  --seg-on: #ffffff;
+  --editor-bg: #f1f5f9;
+  --warn-bg: #fef3c7;
+  --warn-text: #b45309;
+  --plate-bg: radial-gradient(circle at center, #ffffff 0%, #f1f5f9 65%, #e2e8f0 100%);
+  --plate-groove: #cbd5e1;
 
   --text: #090b0f;
   --muted: #475569;

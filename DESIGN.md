@@ -127,7 +127,7 @@ Este documento es la fuente de verdad del diseño de Bía. Lo leen las personas 
 
 Fuente de los valores: `css/tokens.css` (tokens), `css/base.css` (página, tipografía base e iconos) y `css/components/01-…css` a `14-…css` (componentes, cargados en ese orden desde `index.html`). El frontmatter de arriba usa el formato de `DESIGN.md` que entiende la skill; los valores son los del **modo oscuro con acento amarillo**, que es el de fábrica.
 
-Última revisión: 16 de noviembre de 2026 (caché `v200`).
+Última revisión: 16 de noviembre de 2026 (caché `v201`).
 
 ## 1. Idea
 
@@ -181,6 +181,23 @@ Los tres últimos se calculan desde `--primary` en `:root`, así que siguen solo
 | `--white` | `#f8fafc` | Punto de grupo muscular sin grupo. |
 | `--macro-proteina`, `--macro-carbos`, `--macro-grasa` | `#4db8ff`, `#ff9f43`, `#b38cff` | Barras y puntos de macros en Comidas. Iguales en los dos modos. |
 
+### Tokens de componente
+
+Colores que no son del acento ni de estado, pero que se repiten o necesitan versión clara. Están en `css/tokens.css` como todos los demás; un componente no escribe el valor.
+
+| Token | Oscuro / claro | Uso |
+| --- | --- | --- |
+| `--on-color` | `#ffffff` en los dos | Texto sobre un fondo de color fijo: botón rojo, foto de comida, micrófono en vivo. |
+| `--swatch-ink` | `#07080a` en los dos | Marca de elegido sobre las muestras de acento de Aspecto. |
+| `--seg-on` | `#3a3a3a` / `#ffffff` | Pastilla de la opción elegida en segmentos neutros (pestañas de Progreso, métricas, tipo de serie del editor). El texto encima es `--text`. |
+| `--editor-bg` | `#232323` / `#f1f5f9` | Editor de serie abierto dentro de Detalle de entreno. |
+| `--warn-bg`, `--warn-text` | `#3a2f12` y `#ffb020` / `#fef3c7` y `#b45309` | Aviso «Estimado» de una comida analizada. |
+| `--plate-bg`, `--plate-groove` | Degradado oscuro / degradado claro | Disco de creatina de Inicio. |
+| `--meal-scene-bg`, `--meal-plate`, `--meal-rice`, `--meal-rice-edge`, `--meal-protein`, `--meal-veg` | Iguales en los dos | Plato de ejemplo de la hoja de comida, antes de la foto. |
+| `--preview-dark-*`, `--preview-light-*` (`bg`, `ink`, `card`, `line`) | Fijos | Miniaturas de Aspecto: enseñan cada modo, no el activo. |
+
+Quedan `rgba()` negros y blancos para sombras y velos (37 usos). Están permitidos: no son del acento y no cambian con el modo.
+
 ### Modo claro (`html[data-modo="claro"]`)
 
 Fondo `#edf0f5`, superficies blancas, texto `#090b0f`, bordes `#cbd5e1`. El amarillo no se lee sobre blanco, así que el acento pasa a **ámbar `#b45309`** con texto blanco encima. Las sombras pasan a pizarra suave. `modo: "sistema"` sigue a `prefers-color-scheme`. `meta[name="theme-color"]` se sincroniza con el modo efectivo (`#07080a` o `#edf0f5`) desde `js/store.js`.
@@ -213,7 +230,7 @@ Cada grupo tiene un color fijo, igual en los dos modos, para el punto (`.dot`, `
 | Cardio | `#00c49f` |
 | Otro | `#a8a8a8` (y no se muestra el nombre del grupo) |
 
-Hoy estos colores viven escritos en `css/components/04-series-descanso.css`. Las rutinas semanales guardadas antes de la `v189` traen además un `dot` con su hex; las nuevas no, y su punto usa `--line-strong`. Ver «Deuda conocida».
+Son los tokens `--muscle-pecho`, `--muscle-espalda`, `--muscle-piernas`, `--muscle-hombros`, `--muscle-brazos` (Bíceps y Brazos), `--muscle-triceps`, `--muscle-core`, `--muscle-cardio` y `--muscle-otro`. Las rutinas semanales guardadas antes de la `v189` traen además un `dot` con su hex; las nuevas no, y su punto usa `--line-strong`. Ver «Deuda conocida».
 
 ## 3. Tipografía
 
@@ -247,6 +264,8 @@ Todo valor que cambia (peso, reps, tiempo, kcal, racha) lleva `font-variant-nume
 | `--fs-hero` | 44 px | Cronómetro de sesión. |
 
 Etiquetas de campo y de sección: `--fs-xs`, peso 600–700, mayúsculas, `letter-spacing: 0.05em`, color `--muted`.
+
+Todo `font-size` de `css/components/` usa un token de la escala; el único valor suelto es un `0.8em` relativo a su texto. Los títulos de página (Inicio, Entreno, Historial, Progreso, Comida, Ajustes, Aspecto) usan el mismo `h1`: `--fs-3xl`.
 
 ## 4. Espacio y layout
 
@@ -351,13 +370,15 @@ Los archivos se cargan en orden numérico y **ese orden es la cascada**: una reg
 **No**
 - Hex o `rgba()` del acento dentro de un componente: rompe azul, rosado y modo claro.
 - `style="..."` en el HTML que generan las vistas: el estilo va en una clase. Única excepción: un **dato** que el CSS no puede conocer, pasado como variable (`style="--pct: 40%"` para el ancho de una barra, `--dot` para el color guardado de un día de la rutina). Mostrar u ocultar se hace con el atributo `hidden`, nunca con `style.display`.
-- `!important` para ganar a otra regla: se corrige la especificidad.
+- `!important` para ganar a otra regla: se corrige la especificidad. Los únicos `!important` están en `css/base.css`: `[hidden]` y movimiento reducido. Una regla general que no debe ganar a las de cada componente usa `:where()` para pesar menos.
 - Degradados de color, sombras de color, emojis o iconos de otra librería.
 - Texto blanco sobre el acento en modo oscuro.
 
 ## 11. Deuda conocida
 
 Medida el 15 de noviembre de 2026. Cada cambio que toque una de estas zonas la deja mejor, y esta lista se actualiza.
+
+Resuelto en la `v201`: los 93 hex de `css/components/` pasaron a tokens (tabla «Tokens de componente» y grupos musculares); los 52 `font-size` sueltos pasaron al paso más cercano de la escala (un empate sube: 17 → 18, 22 → 24, 13,5 → 14) y los títulos de Ajustes, Aspecto, Historial y Comida usan el `h1` común; se quitaron los 156 `!important` de componentes. Se comprobó comparando los estilos calculados de cada elemento en todas las pantallas y hojas, en oscuro y claro y a 360 px: sin `!important` no cambió nada; los únicos cambios son los de tamaño y estos colores, que pasaron al token de estado más cercano: punto de creatina de Inicio (`--blue`), punto de conexión de Bía (`--green`/`--red`), modelo elegido en Conexión (`--green`), subida/bajada en Progreso (`--red`/`--green`), chevron de Historial (`--muted`), borde al pasar sobre «Repetir» (`--text-dim`) y punto de la rutina actual (`--text`, que en claro ahora se ve). El degradado de los filtros de Historial usa `--bg` y en claro ya coincide con el fondo. Dos reglas que solo funcionaban por `!important` se arreglaron: el botón de esfuerzo elegido del editor en modo claro y las pestañas de Progreso a 360 px.
 
 Resuelto en la `v192`: 13 y 15 px entraron a la escala como `--fs-xs-plus` y `--fs-sm-plus`; sus 69 usos pasaron a token sin cambio visual.
 
@@ -367,10 +388,7 @@ Resuelto: el amarillo escrito a mano en `components.css` (22 usos que dejaban bo
 
 | Problema | Hoy | Meta |
 | --- | --- | --- |
-| Hex y `rgba()` sueltos en `css/components/` | 93 hex y 39 `rgba()` | Tokens o, si es propio de un componente, una variable local documentada |
-| `font-size` escrito en px/rem en vez de token | 52 frente a 305 con token. Ninguno pasa de 6 usos: 17 px (6), 13,5 px (6), 32 px, 22 px, 19 px, 14,5 px, 11,5 px y varios en rem. | Llevar cada uno al token más cercano al tocar su componente, comprobándolo a la vista. |
-| `!important` en `css/components/` | 156 | Solo en `[hidden]` y en movimiento reducido |
-| Colores de grupo muscular escritos en CSS, y `dot` con hex en rutinas guardadas antes de la `v189` | Literales | Tokens `--g-pecho`, etc., y la rutina coloreada por grupo, sin hex guardado |
+| `dot` con hex en rutinas semanales guardadas antes de la `v189` | Datos viejos en `meta` | La rutina coloreada por grupo con `--muscle-*`, sin hex guardado |
 | Selectores repetidos (`.field`, `.compare-card`, `.compare-row`…) en distintos puntos de la cascada | Varios | Una sola definición por selector |
 
 ## 12. Cómo se mantiene

@@ -163,7 +163,7 @@
 
 .repeat-card-title {
   margin: 0;
-  font-size: 17px;
+  font-size: var(--fs-md);
   font-weight: 700;
   color: var(--text);
   white-space: nowrap;
@@ -183,10 +183,10 @@
 .repeat-card-btn {
   height: 44px;
   padding: 0 16px;
-  border: 1px solid var(--line-strong, #4A4A4A);
+  border: 1px solid var(--line-strong);
   border-radius: 12px;
   background: transparent;
-  color: var(--text, #F5F5F5);
+  color: var(--text);
   font-size: var(--fs-sm);
   font-weight: 600;
   font-family: inherit;
@@ -200,7 +200,7 @@
 }
 .repeat-card-btn:hover {
   background: var(--surface-2);
-  border-color: #666666;
+  border-color: var(--text-dim);
 }
 .repeat-card-btn:active {
   transform: scale(0.97);
@@ -257,7 +257,7 @@
   background: var(--primary);
 }
 .routine-dot.is-cur {
-  background: #FFFFFF;
+  background: var(--text);
   box-shadow: 0 0 6px rgba(255, 255, 255, 0.6);
   transform: scale(1.25);
 }
@@ -345,7 +345,7 @@
 .confirm-stat-value {
   margin: 0;
   font-family: var(--font);
-  font-size: 1.75rem;
+  font-size: var(--fs-2xl);
   font-weight: 800;
   line-height: 1.15;
   font-variant-numeric: tabular-nums;
@@ -501,7 +501,8 @@
     flex: 1 1 auto;
     min-width: 0;
   }
-  .seg:not(.tipo-seg):not(.unit-seg) button {
+  /* :where() deja esta regla débil: las pestañas y segmentos con estilo propio la ganan. */
+  .seg:where(:not(.tipo-seg):not(.unit-seg)) button {
     font-size: var(--fs-2xs);
     letter-spacing: 0.01em;
     padding: 0 4px;
@@ -516,11 +517,11 @@
     padding: 8px 8px 10px;
   }
   .big-num-input {
-    font-size: 1.65rem !important;
+    font-size: var(--fs-xl);
   }
   .stepper-step-btn {
     height: 40px;
-    font-size: 0.88rem;
+    font-size: var(--fs-sm);
   }
 }
 
@@ -535,11 +536,11 @@
     padding: 6px 6px 8px;
   }
   .big-num-input {
-    font-size: var(--fs-xl) !important;
+    font-size: var(--fs-xl);
   }
   .stepper-step-btn {
     height: 38px;
-    font-size: 0.82rem;
+    font-size: var(--fs-xs-plus);
   }
   h1 {
     font-size: clamp(1.75rem, 9vw, var(--fs-3xl));

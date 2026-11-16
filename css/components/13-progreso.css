@@ -25,7 +25,7 @@
   top: 0;
   left: 0;
   z-index: 0;
-  background: #3A3A3A;
+  background: var(--seg-on);
   border-radius: var(--r-md);
   box-shadow: none;
   pointer-events: none;
@@ -35,33 +35,33 @@
   transition: none;
 }
 html[data-modo="claro"] .seg.progress-tabs .seg-thumb {
-  background: #FFFFFF;
+  background: var(--seg-on);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 #pane-ejercicio > .picker-trigger {
-  position: absolute !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
-  width: 1px !important;
-  height: 1px !important;
-  overflow: hidden !important;
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
 }
 .seg.progress-tabs .progress-tab-btn {
   position: relative;
   z-index: 1;
   flex: 1;
-  min-height: 0 !important;
-  height: 44px !important;
-  border: none !important;
-  border-radius: var(--r-md) !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  color: var(--muted) !important;
-  font-size: var(--fs-sm-plus) !important;
-  font-weight: 600 !important;
-  font-family: inherit !important;
-  text-transform: none !important;
-  letter-spacing: normal !important;
+  min-height: 0;
+  height: 44px;
+  border: none;
+  border-radius: var(--r-md);
+  background: transparent;
+  box-shadow: none;
+  color: var(--muted);
+  font-size: var(--fs-sm-plus);
+  font-weight: 600;
+  font-family: inherit;
+  text-transform: none;
+  letter-spacing: normal;
   cursor: pointer;
   transition: color 0.15s ease;
   display: flex;
@@ -71,26 +71,26 @@ html[data-modo="claro"] .seg.progress-tabs .seg-thumb {
   touch-action: manipulation;
 }
 .seg.progress-tabs .progress-tab-btn:hover {
-  color: var(--text) !important;
+  color: var(--text);
 }
 .seg.progress-tabs .progress-tab-btn[aria-pressed="true"] {
-  color: #FFFFFF !important;
-  font-weight: 700 !important;
-  background: transparent !important;
-  box-shadow: none !important;
+  color: var(--text);
+  font-weight: 700;
+  background: transparent;
+  box-shadow: none;
 }
 html[data-modo="claro"] .seg.progress-tabs .progress-tab-btn[aria-pressed="true"] {
-  color: var(--text) !important;
-  font-weight: 700 !important;
+  color: var(--text);
+  font-weight: 700;
 }
 .seg.progress-tabs:not(:has(.seg-thumb)) .progress-tab-btn[aria-pressed="true"] {
-  background: #3A3A3A !important;
-  color: #FFFFFF !important;
+  background: var(--seg-on);
+  color: var(--text);
 }
 html[data-modo="claro"] .seg.progress-tabs:not(:has(.seg-thumb)) .progress-tab-btn[aria-pressed="true"] {
-  background: #FFFFFF !important;
-  color: var(--text) !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+  background: var(--seg-on);
+  color: var(--text);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 /* Tarjeta del ejercicio seleccionado */
@@ -124,7 +124,7 @@ html[data-modo="claro"] .seg.progress-tabs:not(:has(.seg-thumb)) .progress-tab-b
 }
 .progress-ex-card-title {
   display: block;
-  font-size: 22px;
+  font-size: var(--fs-xl);
   line-height: 1.25;
   font-weight: 700;
   margin: 2px 0 4px;
@@ -238,7 +238,7 @@ html[data-modo="claro"] .seg.progress-tabs:not(:has(.seg-thumb)) .progress-tab-b
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
-  font-size: 13.5px;
+  font-size: var(--fs-sm);
   color: var(--muted);
 }
 .compare-card-head strong {
@@ -256,14 +256,14 @@ html[data-modo="claro"] .seg.progress-tabs:not(:has(.seg-thumb)) .progress-tab-b
 }
 .compare-row-name {
   width: 110px;
-  font-size: 14.5px;
+  font-size: var(--fs-sm-plus);
   color: var(--muted);
   flex-shrink: 0;
 }
 .compare-row-vals {
   flex: 1;
   text-align: right;
-  font-size: 14.5px;
+  font-size: var(--fs-sm-plus);
   color: var(--muted);
 }
 .compare-arrow {
@@ -289,11 +289,11 @@ html[data-modo="claro"] .seg.progress-tabs:not(:has(.seg-thumb)) .progress-tab-b
 }
 .trend-badge--down {
   background: rgba(255, 77, 77, 0.14);
-  color: #FF5A65;
+  color: var(--red);
 }
 .trend-badge--up {
   background: rgba(0, 230, 118, 0.14);
-  color: #00D06C;
+  color: var(--green);
 }
 .trend-badge--neutral {
   color: var(--muted);
@@ -369,7 +369,7 @@ html[data-modo="claro"] .seg.progress-tabs:not(:has(.seg-thumb)) .progress-tab-b
 }
 .sess-item-sub {
   display: block;
-  font-size: 12.5px;
+  font-size: var(--fs-xs-plus);
   color: var(--muted);
   margin-top: 2px;
 }
@@ -402,7 +402,7 @@ html[data-modo="claro"] .seg.progress-tabs:not(:has(.seg-thumb)) .progress-tab-b
 }
 .body-hero-val {
   margin: 4px 0 0;
-  font-size: 42px;
+  font-size: var(--fs-hero);
   line-height: 1.05;
   font-weight: 800;
   font-family: var(--font-display);
@@ -448,7 +448,7 @@ html[data-modo="claro"] .seg.progress-tabs:not(:has(.seg-thumb)) .progress-tab-b
   border: none;
   background: transparent;
   color: var(--primary);
-  font-size: 13.5px;
+  font-size: var(--fs-sm);
   font-weight: 700;
   font-family: inherit;
   cursor: pointer;
@@ -482,7 +482,7 @@ html[data-modo="claro"] .seg.progress-tabs:not(:has(.seg-thumb)) .progress-tab-b
   border-radius: var(--r-md);
   background: var(--surface-2);
   color: var(--text);
-  font-size: 22px;
+  font-size: var(--fs-xl);
   font-weight: 700;
   font-family: inherit;
   outline: none;
@@ -532,7 +532,7 @@ html[data-modo="claro"] .seg.progress-tabs:not(:has(.seg-thumb)) .progress-tab-b
 }
 .body-history-val {
   display: block;
-  font-size: 19px;
+  font-size: var(--fs-lg);
   font-weight: 800;
   font-family: var(--font-display);
   color: var(--text);

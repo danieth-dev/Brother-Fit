@@ -12,25 +12,25 @@
   box-shadow: 0 0 6px currentColor;
 }
 .dot[data-g="Pecho"],
-.muscle-dot[data-g="Pecho"] { background: #FF6B7A; color: #FF6B7A; }
+.muscle-dot[data-g="Pecho"] { background: var(--muscle-pecho); color: var(--muscle-pecho); }
 .dot[data-g="Espalda"],
-.muscle-dot[data-g="Espalda"] { background: #2EC4B6; color: #2EC4B6; }
+.muscle-dot[data-g="Espalda"] { background: var(--muscle-espalda); color: var(--muscle-espalda); }
 .dot[data-g="Piernas"],
-.muscle-dot[data-g="Piernas"] { background: #FFD166; color: #FFD166; }
+.muscle-dot[data-g="Piernas"] { background: var(--muscle-piernas); color: var(--muscle-piernas); }
 .dot[data-g="Hombros"],
-.muscle-dot[data-g="Hombros"] { background: #7ED957; color: #7ED957; }
+.muscle-dot[data-g="Hombros"] { background: var(--muscle-hombros); color: var(--muscle-hombros); }
 .dot[data-g="Brazos"],
-.muscle-dot[data-g="Brazos"] { background: #4D8DFF; color: #4D8DFF; }
+.muscle-dot[data-g="Brazos"] { background: var(--muscle-brazos); color: var(--muscle-brazos); }
 .dot[data-g="Bíceps"],
-.muscle-dot[data-g="Bíceps"] { background: #4D8DFF; color: #4D8DFF; }
+.muscle-dot[data-g="Bíceps"] { background: var(--muscle-brazos); color: var(--muscle-brazos); }
 .dot[data-g="Tríceps"],
-.muscle-dot[data-g="Tríceps"] { background: #FF9F43; color: #FF9F43; }
+.muscle-dot[data-g="Tríceps"] { background: var(--muscle-triceps); color: var(--muscle-triceps); }
 .dot[data-g="Core"],
-.muscle-dot[data-g="Core"] { background: #B38CFF; color: #B38CFF; }
+.muscle-dot[data-g="Core"] { background: var(--muscle-core); color: var(--muscle-core); }
 .dot[data-g="Cardio"],
-.muscle-dot[data-g="Cardio"] { background: #00C49F; color: #00C49F; }
+.muscle-dot[data-g="Cardio"] { background: var(--muscle-cardio); color: var(--muscle-cardio); }
 .dot[data-g="Otro"],
-.muscle-dot[data-g="Otro"] { background: #A8A8A8; color: #A8A8A8; }
+.muscle-dot[data-g="Otro"] { background: var(--muscle-otro); color: var(--muscle-otro); }
 .muscle {
   display: inline-flex;
   align-items: center;
@@ -158,7 +158,7 @@
 }
 
 .ref-card-reps {
-  font-size: 1.35rem;
+  font-size: var(--fs-lg);
   font-weight: 800;
   line-height: 1.15;
   color: var(--text);
