@@ -381,6 +381,10 @@ body.in-agent-view #app .view {
 .agent-card-memory-undo:hover {
   color: var(--text);
 }
+/* Recuerdo deshecho: se apaga un momento antes de quitarse. */
+.agent-card-memory.is-undone {
+  opacity: 0.4;
+}
 
 .agent-card-exercise {
   align-self: flex-start;

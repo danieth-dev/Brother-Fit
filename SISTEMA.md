@@ -2,7 +2,7 @@
 
 Documento vivo del producto. Describe cómo está armado, dónde vive cada dato y qué no se puede romper. Cuando cambie el comportamiento, el esquema, una pantalla o la forma de publicar, este archivo se actualiza en el mismo cambio.
 
-Última revisión: 15 de noviembre de 2026. Base de datos versión 3. Caché de la app `v199`.
+Última revisión: 15 de noviembre de 2026. Base de datos versión 3. Caché de la app `v200`.
 
 ## Qué es
 
@@ -104,7 +104,7 @@ El día del peso corporal y el de una toma de creatina usan la misma hoja, con e
 | `#/progress` y `#/progress/:id` | Progreso | Dos pestañas. Ejercicio: PR, comparativa, gráfica (1RM estimado, ajustado, peso máximo, volumen) y tabla. Peso corporal: registro, gráfica y lista. |
 | `#/meals` | Comidas | Anillo de calorías y barras de proteína, carbos y grasa del día frente a la meta; objetivo (ganar, mantener, definir) que recalcula la meta con el último peso corporal; lista de comidas del día con su tipo y proteína (tocar una la edita); escanear foto, añadir a mano o pedir a Bía. |
 | `#/creatine` | Creatina | Disco + racha, calendario, progreso/ciencia en pliegue, últimas 5 tomas (+ pliegue «Ver todas»). |
-| `#/agent` | Bía | Voz en directo y caja de texto, con botón de cámara para escanear comida. Sin clave, solo pide la clave. Panel «Recuerdos»: perfil (nombre, peso, estatura, creatina), rutina semanal, notas y entrenos. Panel «Conexión y API key»: proveedor (Gemini u OpenAI), claves y estado. La charla se guarda en el teléfono; Nuevo chat la borra tras confirmar. |
+| `#/agent` | Bía | Voz en directo y caja de texto, con botón de cámara para escanear comida. Sin clave, solo pide la clave. Panel «Recuerdos»: perfil (nombre, peso, estatura, creatina), rutina semanal, notas y entrenos. Panel «Conexión y clave»: proveedor (Gemini u OpenAI), claves y estado. La charla se guarda en el teléfono; Nuevo chat la borra tras confirmar. |
 | `#/settings` | Ajustes | Cinco grupos: Preferencias (Aspecto, descanso, recordatorios de agua), Asistente Bía (Recuerdos y Conexión), Datos y respaldo, Aplicación (instalar) y Zona de riesgo (borrar todo). |
 | `#/appearance` | Aspecto e inicio | Modo de pantalla (oscuro, claro o sistema), color de acento (amarillo, azul o rosado) y vista del disco de creatina en Inicio (completo o compacto al tomar). |
 
@@ -242,7 +242,7 @@ El peso corporal es independiente del entreno. Se guarda por fecha y se dibuja c
 
 La app y la asistente se llaman igual: **Bía**. Es un solo nombre y un solo personaje. Antes la asistente se llamaba Fit y la app Brother Fit; si el atleta la llama Fit, responde igual sin corregirlo, pero si preguntan su nombre dice Bía.
 
-Bía tiene dos proveedores, que se eligen en «Conexión y API key» (`voiceProvider`):
+Bía tiene dos proveedores, que se eligen en «Conexión y clave» (`voiceProvider`):
 
 - **Gemini** (de fábrica): canal en directo por WebSocket, modelo `models/gemini-3.8-live`, voz Aoede, audio de respuesta a 24 kHz PCM16. No se envía `thinkingConfig`. En pantalla solo entra `outputTranscription.text`. El texto de `part.text` es razonamiento interno y no se muestra. Lo que dice el atleta se transcribe en el teléfono con `SpeechRecognition` del navegador y se manda como texto.
 - **OpenAI Realtime**: WebRTC, modelo `openaiModel` (de fábrica `gpt-4o-mini-realtime-preview`), voz Coral, transcripción con `whisper-1`.
@@ -275,7 +275,7 @@ El nombre lo resuelve la app: ignora mayúsculas y acentos, y acepta el singular
 
 **Reportar una respuesta.** La política de Play para IA generativa pide que el atleta pueda marcar una respuesta ofensiva o dañina sin salir de la app. Tocar una burbuja de Bía muestra «Reportar respuesta»; la hoja pide un motivo y un comentario opcional (`js/utils/report-sheet.js`). El reporte se guarda en `meta.aiReports` y la burbuja queda con borde discontinuo. Si `APP_INFO.supportEmail` (`js/app-info.js`) tiene un correo, se abre el correo del teléfono con el reporte ya escrito; si está vacío, solo se guarda.
 
-Las claves se escriben en «Conexión y API key» y quedan en `meta.geminiApiKey` y `meta.openaiApiKey`. Sin la clave del proveedor activo no hay sesión. La charla visible vive en `meta.fitChat`. Al cambiar de pestaña, si la sesión sigue abierta, solo se redibuja. Si se cortó, al reconectar se inyecta el historial una vez como contexto y Bía no lo repite. Nuevo chat (icono +) pide confirmación, borra solo esa charla y abre sesión limpia. Los recuerdos no se tocan.
+Las claves se escriben en «Conexión y clave» y quedan en `meta.geminiApiKey` y `meta.openaiApiKey`. Sin la clave del proveedor activo no hay sesión. La charla visible vive en `meta.fitChat`. Al cambiar de pestaña, si la sesión sigue abierta, solo se redibuja. Si se cortó, al reconectar se inyecta el historial una vez como contexto y Bía no lo repite. Nuevo chat (icono +) pide confirmación, borra solo esa charla y abre sesión limpia. Los recuerdos no se tocan.
 
 ## Interfaz
 
@@ -315,16 +315,13 @@ Medida el 15 de noviembre de 2026 contra las reglas de `AGENTS.md`. No se añade
 
 Sin deuda abierta: las vistas no abren IndexedDB y ningún servicio toca el DOM.
 
-Resuelto en la `v188`: `js/services/agent.js` (1 660 líneas) se partió en `js/services/bia/` (configuración, memoria, texto, declaraciones de herramientas, herramientas, contexto e instrucciones) y la sesión de voz `FitAgent` pasó a `js/voice/fit-agent.js`, fuera de los servicios. En la `v199` `services/meals.js` (740 líneas) se partió en diario (`meals.js`), cálculos (`nutrition.js`), catálogo con lector local (`food-catalog.js`) e IA (`meal-ai.js`), con pruebas; el lector local se comparó con el viejo y da lo mismo. De paso: «anteayer» ya no se lee como «ayer», una clave de Gemini inválida deja de probar los otros modelos y la descripción escrita también usa el proveedor de respaldo antes del catálogo local. En la `v198` `workout.js` (854 líneas) se partió en la pantalla (488) y `js/views/workout/` (estado, plantillas y reloj); las reglas sin DOM pasaron a `services/session-plan.js` con pruebas. De paso: al acabar el descanso de una rutina ya se pasa de verdad al siguiente ejercicio (antes el repintado volvía al anterior), el aviso de ejercicio creado ya no se acumula con cada repintado y se quitaron los emojis. En la `v197` `picker.js` (849 líneas) se partió en hoja, buscador (`picker-find.js`) y alta de ejercicio (`picker-creator.js`); la regla del grupo muscular pasó a `services/muscle-groups.js` y la búsqueda sin tildes a `utils/text-match.js`, las dos con pruebas; su arrastre propio se borró y usa `sheet-drag.js` (mismos umbrales que las demás hojas). En la `v195` `fit-agent.js` (777 líneas) se partió en un archivo por proveedor (`gemini-live.js`, `openai-realtime.js`) y la cola de audio (`pcm-player.js`); de paso, las respuestas de Bía con OpenAI ya se escriben en el chat (antes solo se oían). Las importaciones dinámicas de `meals.js` desaparecieron: ya no hay ciclo entre comidas y la asistente.
+Resuelto en la `v188`: `js/services/agent.js` (1 660 líneas) se partió en `js/services/bia/` (configuración, memoria, texto, declaraciones de herramientas, herramientas, contexto e instrucciones) y la sesión de voz `FitAgent` pasó a `js/voice/fit-agent.js`, fuera de los servicios. En la `v200` `views/agent.js` (718 líneas) se partió en la pantalla (319) y `js/views/agent/`, y `utils/agent-panels.js` (673) en `memories-panel.js`, `connection-panel.js` y la hoja común `agent-sheet.js`; las tarjetas de herramientas son una tabla y los modelos de OpenAI viven en `bia/config.js`. De paso: «Registrar serie 1» abre Entreno con ese ejercicio (antes escribía un campo que nadie leía), se borró un oyente de «change-key» que nunca se activaba y el recuerdo deshecho se apaga con una clase, no con estilo en el JS. En la `v199` `services/meals.js` (740 líneas) se partió en diario (`meals.js`), cálculos (`nutrition.js`), catálogo con lector local (`food-catalog.js`) e IA (`meal-ai.js`), con pruebas; el lector local se comparó con el viejo y da lo mismo. De paso: «anteayer» ya no se lee como «ayer», una clave de Gemini inválida deja de probar los otros modelos y la descripción escrita también usa el proveedor de respaldo antes del catálogo local. En la `v198` `workout.js` (854 líneas) se partió en la pantalla (488) y `js/views/workout/` (estado, plantillas y reloj); las reglas sin DOM pasaron a `services/session-plan.js` con pruebas. De paso: al acabar el descanso de una rutina ya se pasa de verdad al siguiente ejercicio (antes el repintado volvía al anterior), el aviso de ejercicio creado ya no se acumula con cada repintado y se quitaron los emojis. En la `v197` `picker.js` (849 líneas) se partió en hoja, buscador (`picker-find.js`) y alta de ejercicio (`picker-creator.js`); la regla del grupo muscular pasó a `services/muscle-groups.js` y la búsqueda sin tildes a `utils/text-match.js`, las dos con pruebas; su arrastre propio se borró y usa `sheet-drag.js` (mismos umbrales que las demás hojas). En la `v195` `fit-agent.js` (777 líneas) se partió en un archivo por proveedor (`gemini-live.js`, `openai-realtime.js`) y la cola de audio (`pcm-player.js`); de paso, las respuestas de Bía con OpenAI ya se escriben en el chat (antes solo se oían). Las importaciones dinámicas de `meals.js` desaparecieron: ya no hay ciclo entre comidas y la asistente.
 
 Resuelto en la `v187`: «Borrar todo» pasa por `clearAllData()` del servicio de respaldo; compartir o descargar el respaldo vive en `js/utils/backup-export.js`; los paneles Recuerdos y Conexión salieron de la vista de Bía a `js/utils/agent-panels.js` (Ajustes ya no importa otra vista); el servicio de Bía avisa a Entreno con `js/utils/events.js` en vez de `document`; la compresión de fotos vive en `js/utils/image.js`. De paso se corrigió que guardar la conexión desde Ajustes dibujaba el chat de Bía dentro de Ajustes.
 
 **Tamaño y responsabilidades**
 
-| Archivo | Líneas | Mezcla |
-| --- | --- | --- |
-| `js/views/agent.js` | 659 | Pantalla de clave y charla en directo. |
-| `js/utils/agent-panels.js` | 667 | Paneles Recuerdos y Conexión. |
+Sin deuda abierta: desde la `v200` ningún archivo de `js/` pasa de 600 líneas.
 
 **Antes de Play Store**
 
@@ -382,6 +379,7 @@ Pendiente:
 | `js/services/fit-chat.js` | Charla visible de Bía en `meta.fitChat`. |
 | `js/services/water-reminders.js` | Recordatorios locales de agua tras la creatina. |
 | `js/views/*.js` | Una pantalla por archivo: home, workout, history, progress, creatine, meals, agent, settings, appearance. |
+| `js/views/agent/` | Partes de la pantalla Bía: alta de la clave (`key-setup.js`), plantilla (`chat-markup.js`), lista de mensajes y reportes (`messages.js`) y tarjetas de herramientas (`chat-cards.js`). |
 | `js/views/workout/` | Partes de la pantalla Entreno que solo usa `workout.js`: estado entre repintados (`session.js`), plantillas (`markup.js`) y reloj del descanso (`rest.js`). |
 | `js/services/session-plan.js` | Reglas puras del entreno en curso: descanso automático, título de una sesión, orden de la lista y siguiente paso de la rutina. |
 | `js/utils/meal-scanner.js` | Hoja de foto → resultado, edición de gramos y guardado de una comida. |
@@ -399,7 +397,9 @@ Pendiente:
 | `js/utils/report-sheet.js` | Hoja para reportar una respuesta: motivo y comentario. |
 | `js/utils/backup-nudge.js` | Aviso «Asegura tus PRs». |
 | `js/utils/backup-export.js` | Compartir o descargar el respaldo y marcar `lastBackup`. |
-| `js/utils/agent-panels.js` | Paneles Recuerdos y Conexión de Bía; se abren desde Bía y desde Ajustes. |
+| `js/utils/memories-panel.js` | Panel Recuerdos de Bía (perfil, rutina, notas con «Deshacer»); se abre desde Bía y desde Ajustes. |
+| `js/utils/connection-panel.js` | Panel Conexión y clave (proveedor, modelo, claves, desconectar); se abre desde Bía, Ajustes y Recuerdos. |
+| `js/utils/agent-sheet.js` | Hoja común de los paneles de Bía: abrir, cerrar, fondo y arrastre. |
 | `js/utils/events.js` | Avisos entre capas (`EVENTS.EXERCISE_SELECTED`, `EVENTS.SET_LOGGED`) sin tocar el DOM. |
 | `js/utils/image.js` | Comprimir la foto de una comida antes de analizarla. |
 | `js/utils/exercise-editor.js` | Ficha para corregir o eliminar un ejercicio del atleta. |

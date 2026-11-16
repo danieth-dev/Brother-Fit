@@ -10,7 +10,8 @@ import { getActiveAgent } from '../voice/fit-agent.js';
 import { toast, esc, num } from '../utils/dom.js';
 import { icons } from '../utils/icons.js';
 import { askConfirm } from '../utils/confirm-sheet.js';
-import { showMemoriesPanel, showConnectionPanel } from '../utils/agent-panels.js';
+import { showMemoriesPanel } from '../utils/memories-panel.js';
+import { showConnectionPanel } from '../utils/connection-panel.js';
 import { exportBackup } from '../utils/backup-export.js';
 
 function formatRelativeBackup(ts) {

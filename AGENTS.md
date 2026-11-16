@@ -33,7 +33,7 @@ index.html → js/main.js (arranque) → js/router.js (hash → vista)
 
 `js/utils/` tiene dos clases de archivo:
 
-- **Piezas de interfaz** (`picker.js`, `meal-scanner.js`, `confirm-sheet.js`, `exercise-editor.js`, `agent-panels.js`, `backup-export.js`, `image.js`, `chart.js`, `components.js`…): usan el DOM o APIs del navegador y pueden llamar servicios.
+- **Piezas de interfaz** (`picker.js`, `meal-scanner.js`, `confirm-sheet.js`, `exercise-editor.js`, `memories-panel.js`, `connection-panel.js`, `backup-export.js`, `image.js`, `chart.js`, `components.js`…): usan el DOM o APIs del navegador y pueden llamar servicios.
 - **Utilidades puras** (`dates.js`, `clock.js`, `units.js`, `events.js`, `text-match.js`): sin DOM y sin servicios; cualquier capa puede usarlas.
 
 `js/voice/` es un adaptador del navegador: usa `<audio>`, `AudioContext`, `SpeechRecognition`, WebSocket y WebRTC, y llama a `services/bia/` para las reglas (instrucciones, herramientas). Las vistas lo usan; los servicios nunca lo importan.
