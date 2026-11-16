@@ -11,6 +11,7 @@
 import { db } from '../db.js';
 import { state } from '../store.js';
 import { now } from '../utils/clock.js';
+import { emit, EVENTS } from '../utils/events.js';
 import {
   getActiveWorkout, startWorkout, finishWorkout, finishWorkoutSummary,
   lastSetFor, lastSessionSetsFor, prByExercise, progressForExercise,
@@ -314,7 +315,7 @@ async function resolveSpokenExercise(spoken) {
   }
   const ex = found.exercise;
   state.activeExercise = { id: ex.id, nombre: ex.nombre, grupo: ex.grupo };
-  document.dispatchEvent(new CustomEvent('bf-exercise', { detail: { id: ex.id } }));
+  emit(EVENTS.EXERCISE_SELECTED, { id: ex.id });
   return { ok: true, exercise: ex };
 }
 
@@ -373,7 +374,7 @@ export async function executeToolCall(name, args) {
     }
 
     state.activeExercise = { id: ex.id, nombre: ex.nombre, grupo: ex.grupo };
-    document.dispatchEvent(new CustomEvent('bf-exercise', { detail: { id: ex.id } }));
+    emit(EVENTS.EXERCISE_SELECTED, { id: ex.id });
 
     const restEnd = now() + restSeconds(reps) * 1000;
     const res = await registerSet({
@@ -391,7 +392,7 @@ export async function executeToolCall(name, args) {
     }
     if (!res?.duplicada) {
       await saveActiveRest(restEnd, reps);
-      document.dispatchEvent(new CustomEvent('bf-set', { detail: { restEnd, lastReps: reps } }));
+      emit(EVENTS.SET_LOGGED, { restEnd, lastReps: reps });
     }
     return res;
   }

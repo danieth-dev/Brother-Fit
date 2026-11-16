@@ -1,6 +1,7 @@
 /* Aviso persuasivo para respaldar PRs. Una vez al día como máximo. */
 import { askConfirm } from './confirm-sheet.js';
-import { backupNudgeNeeded, markBackupNudgeShown, exportData } from '../services/backup.js';
+import { backupNudgeNeeded, markBackupNudgeShown } from '../services/backup.js';
+import { exportBackup } from './backup-export.js';
 import { toast } from './dom.js';
 
 export async function maybePromptBackup() {
@@ -15,7 +16,7 @@ export async function maybePromptBackup() {
   });
   if (!ok) return;
   try {
-    const r = await exportData();
+    const r = await exportBackup();
     if (r.mode === 'cancelled') return;
     toast(r.mode === 'share' ? 'Respaldo compartido' : 'Respaldo guardado');
   } catch (e) {

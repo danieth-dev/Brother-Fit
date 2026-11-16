@@ -254,45 +254,6 @@ export async function todayMealsSummary(fecha = todayISO()) {
   };
 }
 
-/* Comprime una imagen en el navegador a JPEG <= 800px (~50 KB) para que la llamada Vision
- * sea ultrarrápida (~1.5–2.5 s) y económica (~250 tokens). No se guarda en base de datos. */
-export function compressImageFile(file, maxDim = 800, quality = 0.72) {
-  return new Promise((resolve, reject) => {
-    if (!file) {
-      reject(new Error('No se seleccionó ninguna imagen.'));
-      return;
-    }
-    const previewUrl = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = () => {
-      try {
-        let { width, height } = img;
-        if (width > maxDim || height > maxDim) {
-          if (width >= height) {
-            height = Math.round((height * maxDim) / width);
-            width = maxDim;
-          } else {
-            width = Math.round((width * maxDim) / height);
-            height = maxDim;
-          }
-        }
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-        const dataUrl = canvas.toDataURL('image/jpeg', quality);
-        const base64 = dataUrl.split(',')[1] || '';
-        resolve({ base64, mimeType: 'image/jpeg', previewUrl, width, height });
-      } catch (err) {
-        reject(err);
-      }
-    };
-    img.onerror = () => reject(new Error('No se pudo leer la imagen seleccionada.'));
-    img.src = previewUrl;
-  });
-}
-
 const NUTRITION_PROMPT = `Eres el nutricionista deportivo de la app Bía.
 Analiza la imagen o texto y devuelve ÚNICAMENTE un objeto JSON válido (sin markdown adicional) con esta estructura exacta:
 {

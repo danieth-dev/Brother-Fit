@@ -21,6 +21,7 @@
   <script type="module">
     import { setDbName, closeDB, db } from './js/db.js';
     import { setNow } from './js/utils/clock.js';
+    import { on, EVENTS } from './js/utils/events.js';
 
     const TEST_DB = 'brother-fit-rpe-test';
     setDbName(TEST_DB);
@@ -400,7 +401,7 @@
         const w = await workouts.startWorkout();
         state.activeExercise = { id: ap, nombre: 'Aperturas', grupo: 'Pecho' };
         let picked = null;
-        document.addEventListener('bf-exercise', (e) => { picked = e.detail.id; });
+        const stopPicked = on(EVENTS.EXERCISE_SELECTED, (d) => { picked = d.id; });
 
         const saved = await agent.executeToolCall('registrar_serie', {
           reps: 6, ejercicio: 'dominadas', corporal: true, rir: 0,
@@ -409,6 +410,7 @@
         assert(saved.preguntar === false, 'el 0 ya era el esfuerzo');
         assert(state.activeExercise.id === dom, 'la pantalla pasa a Dominadas');
         assert(picked === dom, 'Entreno recibe el ejercicio');
+        stopPicked();
         let detail = await workouts.getWorkoutDetail(w.id);
         const of = (id) => detail.groups.find((g) => g.exercise.id === id)?.sets || [];
         assert(of(dom).length === 1 && of(dom)[0].peso === 0, '0 kg añadidos');

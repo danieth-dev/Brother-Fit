@@ -10,6 +10,7 @@ import { state, saveSettings } from '../store.js';
 import { delegate, forms, changes, toast, esc, num, go } from '../utils/dom.js';
 import { formatDuration, formatShort, parseISO } from '../utils/dates.js';
 import { now } from '../utils/clock.js';
+import { on, EVENTS } from '../utils/events.js';
 import { icons } from '../utils/icons.js';
 import { bindExerciseEdit, openExerciseEditor } from '../utils/exercise-editor.js';
 import { askConfirm } from '../utils/confirm-sheet.js';
@@ -48,14 +49,15 @@ let activeIsExCompleted = false;
 let activeCurExName = '';
 let lastConfiguredSetKey = '';
 
-document.addEventListener('bf-set', (e) => {
-  if (!e.detail?.restEnd) return;
-  restEnd = e.detail.restEnd;
-  if (e.detail.lastReps) lastReps = e.detail.lastReps;
+/* Bía puede anotar una serie o elegir ejercicio desde su pantalla: Entreno lo recoge al volver. */
+on(EVENTS.SET_LOGGED, (detail) => {
+  if (!detail?.restEnd) return;
+  restEnd = detail.restEnd;
+  if (detail.lastReps) lastReps = detail.lastReps;
 });
 
-document.addEventListener('bf-exercise', (e) => {
-  const id = Number(e.detail?.id);
+on(EVENTS.EXERCISE_SELECTED, (detail) => {
+  const id = Number(detail?.id);
   if (id) {
     selectedEx = id;
     pendingNextEx = null;

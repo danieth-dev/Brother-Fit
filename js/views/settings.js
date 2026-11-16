@@ -4,14 +4,14 @@
  */
 
 import { state, saveSettings } from '../store.js';
-import { exportData, importData, lastBackup } from '../services/backup.js';
+import { importData, lastBackup, clearAllData } from '../services/backup.js';
 import { ensureNotifyPermission, cancelWaterReminders, resumeWaterReminders } from '../services/water-reminders.js';
 import { getActiveAgent } from '../services/agent.js';
-import { showMemoriesPanel, showConnectionPanel } from './agent.js';
-import { db } from '../db.js';
 import { toast, esc, num } from '../utils/dom.js';
 import { icons } from '../utils/icons.js';
 import { askConfirm } from '../utils/confirm-sheet.js';
+import { showMemoriesPanel, showConnectionPanel } from '../utils/agent-panels.js';
+import { exportBackup } from '../utils/backup-export.js';
 
 function formatRelativeBackup(ts) {
   if (!ts) {
@@ -343,18 +343,18 @@ export async function render(el) {
 
   // 3. Abrir Recuerdos
   el.querySelector('#btn-open-memories')?.addEventListener('click', () => {
-    showMemoriesPanel(el, getActiveAgent());
+    showMemoriesPanel(getActiveAgent(), { onChange: () => render(el) });
   });
 
   // 4. Abrir Conexión y API key
   el.querySelector('#btn-open-connection')?.addEventListener('click', () => {
-    showConnectionPanel(el, getActiveAgent());
+    showConnectionPanel(getActiveAgent(), { onChange: () => render(el) });
   });
 
   // 5. Crear respaldo
   el.querySelector('#btn-create-backup')?.addEventListener('click', async () => {
     try {
-      const r = await exportData();
+      const r = await exportBackup();
       if (r.mode === 'cancelled') return;
       toast(r.mode === 'share' ? 'Respaldo compartido' : 'Respaldo guardado con éxito');
       await render(el);
@@ -416,7 +416,7 @@ export async function render(el) {
 
     try {
       localStorage.setItem('brother_fit_cleared', '1');
-      await db.clearAll();
+      await clearAllData();
       location.hash = '#/';
       location.reload();
     } catch (err) {

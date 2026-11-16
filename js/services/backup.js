@@ -1,5 +1,5 @@
-/* Exportar e importar todos los datos como JSON.
- * Preferimos la hoja nativa de compartir; si no hay, descarga el archivo. */
+/* Respaldo: arma el archivo, lo restaura y decide cuándo recordar respaldar.
+ * Compartir o descargar el archivo es de interfaz: js/utils/backup-export.js. */
 import { db } from '../db.js';
 import { todayISO } from '../utils/dates.js';
 
@@ -19,49 +19,15 @@ function backupFilename() {
   return `brother-ft-${todayISO()}.json`;
 }
 
-function downloadBlob(blob, filename) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.append(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 2000);
+/** Todo el contenido de la base como archivo JSON listo para compartir o descargar. */
+export async function buildBackupFile() {
+  const json = JSON.stringify(await buildPayload());
+  return new File([json], backupFilename(), { type: 'application/json' });
 }
 
-async function markLastBackup() {
+/** Se llama solo cuando el respaldo salió del teléfono (compartido o descargado). */
+export async function markLastBackup() {
   await db.put('meta', { key: 'lastBackup', value: Date.now() });
-}
-
-/**
- * Comparte el respaldo con la hoja del sistema (WhatsApp, Drive, Archivos…).
- * Si no se puede, descarga el JSON como antes.
- * @returns {Promise<{ mode: 'share' | 'download' | 'cancelled' }>}
- */
-export async function exportData() {
-  const filename = backupFilename();
-  const blob = new Blob([JSON.stringify(await buildPayload())], { type: 'application/json' });
-  const file = new File([blob], filename, { type: 'application/json' });
-
-  if (typeof navigator.share === 'function' && navigator.canShare?.({ files: [file] })) {
-    try {
-      await navigator.share({
-        files: [file],
-        title: 'Bía',
-        text: 'Respaldo de Bía — asegura tus PRs',
-      });
-      await markLastBackup();
-      return { mode: 'share' };
-    } catch (err) {
-      if (err?.name === 'AbortError') return { mode: 'cancelled' };
-      /* Si share falla por otro motivo, caemos a descarga. */
-    }
-  }
-
-  downloadBlob(blob, filename);
-  await markLastBackup();
-  return { mode: 'download' };
 }
 
 export async function importData(file) {
@@ -71,6 +37,11 @@ export async function importData(file) {
     throw new Error('Ese archivo no es un respaldo de Bía.');
   }
   await db.restoreAll(payload.data); // atómico: si falla, queda todo como estaba
+}
+
+/** «Borrar todo»: restaurar un volcado vacío, en una sola transacción. */
+export async function clearAllData() {
+  await db.clearAll();
 }
 
 export async function lastBackup() {

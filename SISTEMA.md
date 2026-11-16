@@ -2,7 +2,7 @@
 
 Documento vivo del producto. Describe cómo está armado, dónde vive cada dato y qué no se puede romper. Cuando cambie el comportamiento, el esquema, una pantalla o la forma de publicar, este archivo se actualiza en el mismo cambio.
 
-Última revisión: 15 de noviembre de 2026. Base de datos versión 3. Caché de la app `v186`.
+Última revisión: 15 de noviembre de 2026. Base de datos versión 3. Caché de la app `v187`.
 
 ## Qué es
 
@@ -310,22 +310,20 @@ Medida el 15 de noviembre de 2026 contra las reglas de `AGENTS.md`. No se añade
 
 | Dónde | Problema |
 | --- | --- |
-| `js/views/settings.js` | Importa `db.js` y llama `db.clearAll()` para «Borrar todo». Debe pasar por `services/backup.js`. |
-| `js/views/agent.js` | Importa `db.js` sin usarlo. |
-| `js/views/settings.js` | Importa `showMemoriesPanel` y `showConnectionPanel` de otra vista (`views/agent.js`). Esos paneles deben vivir en `js/utils/`. |
-| `js/services/agent.js` | Toca el navegador: lanza `CustomEvent` en `document` para avisar a Entreno, crea el `<audio>` y usa `SpeechRecognition`. La conexión de voz (audio, micrófono, WebSocket/WebRTC) debe separarse de las herramientas y el prompt. |
-| `js/services/backup.js` | Crea un `<a>` para descargar. La descarga es de interfaz. |
-| `js/services/meals.js` | Comprime la foto con un `<canvas>`. Es de interfaz. |
+| `js/services/agent.js` | La clase `FitAgent` crea el `<audio>` y usa `SpeechRecognition`. La conexión de voz (audio, micrófono, WebSocket/WebRTC) debe salir del servicio a su propio módulo al partir `agent.js`. |
+
+Resuelto en la `v187`: «Borrar todo» pasa por `clearAllData()` del servicio de respaldo; compartir o descargar el respaldo vive en `js/utils/backup-export.js`; los paneles Recuerdos y Conexión salieron de la vista de Bía a `js/utils/agent-panels.js` (Ajustes ya no importa otra vista); el servicio de Bía avisa a Entreno con `js/utils/events.js` en vez de `document`; la compresión de fotos vive en `js/utils/image.js`. De paso se corrigió que guardar la conexión desde Ajustes dibujaba el chat de Bía dentro de Ajustes.
 
 **Tamaño y responsabilidades**
 
 | Archivo | Líneas | Mezcla |
 | --- | --- | --- |
-| `js/services/agent.js` | 1 659 | Declaración de herramientas, su ejecución, prompt, contexto, perfil, rutina, claves, y la clase `FitAgent` con dos proveedores de voz. |
-| `js/views/agent.js` | 1 315 | Charla, panel de Recuerdos, panel de Conexión y escáner. |
+| `js/services/agent.js` | 1 660 | Declaración de herramientas, su ejecución, prompt, contexto, perfil, rutina, claves, y la clase `FitAgent` con dos proveedores de voz. |
+| `js/views/agent.js` | 656 | Pantalla de clave y charla en directo. |
+| `js/utils/agent-panels.js` | 667 | Paneles Recuerdos y Conexión. |
 | `js/views/workout.js` | 851 | Pantalla de entreno completa. |
 | `js/utils/picker.js` | 847 | Hoja de listas, búsqueda, grupos y alta de ejercicio. |
-| `js/services/meals.js` | 790 | Metas, catálogo, guardado, compresión de imagen y dos proveedores de IA. |
+| `js/services/meals.js` | 751 | Metas, catálogo, guardado y dos proveedores de IA. |
 | `css/components.css` | 8 352 | Todos los componentes y todas las pantallas. |
 
 **Antes de Play Store**
@@ -372,6 +370,10 @@ Medida el 15 de noviembre de 2026 contra las reglas de `AGENTS.md`. No se añade
 | `js/utils/units.js` | Conversión kg / lb. |
 | `js/utils/dom.js`, `dates.js`, `icons.js`, `components.js` | Eventos, avisos, fechas, iconos SVG y piezas de interfaz compartidas. |
 | `js/utils/backup-nudge.js` | Aviso «Asegura tus PRs». |
+| `js/utils/backup-export.js` | Compartir o descargar el respaldo y marcar `lastBackup`. |
+| `js/utils/agent-panels.js` | Paneles Recuerdos y Conexión de Bía; se abren desde Bía y desde Ajustes. |
+| `js/utils/events.js` | Avisos entre capas (`EVENTS.EXERCISE_SELECTED`, `EVENTS.SET_LOGGED`) sin tocar el DOM. |
+| `js/utils/image.js` | Comprimir la foto de una comida antes de analizarla. |
 | `js/utils/exercise-editor.js` | Ficha para corregir o eliminar un ejercicio del atleta. |
 | `js/utils/calendar.js` | Hoja del día. |
 | `js/utils/time-sheet.js` | Hoja de la hora. Los minutos van de 5 en 5. |

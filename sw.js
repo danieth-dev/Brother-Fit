@@ -1,7 +1,7 @@
 /* Service worker de Bía.
  * Con red responde lo publicado y guarda una copia. Sin red usa esa copia.
  * Sube VERSION al publicar para que el teléfono suelte la caché anterior. */
-const VERSION = 'v186';
+const VERSION = 'v187';
 const CACHE = `brother-ft-${VERSION}`;
 
 const ASSETS = [
@@ -32,6 +32,10 @@ const ASSETS = [
   './js/utils/seg-swipe.js',
   './js/utils/meal-scanner.js',
   './js/utils/components.js',
+  './js/utils/agent-panels.js',
+  './js/utils/backup-export.js',
+  './js/utils/events.js',
+  './js/utils/image.js',
   './js/services/workouts.js',
   './js/services/creatine.js',
   './js/services/body.js',

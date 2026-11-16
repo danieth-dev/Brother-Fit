@@ -15,7 +15,6 @@ import {
   buildItemFromCatalog,
   summarizeItems,
   buildMealTitle,
-  compressImageFile,
   analyzeMealImage,
   analyzeMealText,
   saveMeal,
@@ -25,6 +24,7 @@ import {
   getDemoPhotoResult,
 } from '../services/meals.js';
 import { esc, fmtNum, toast } from './dom.js';
+import { compressImageFile } from './image.js';
 import { icons } from './icons.js';
 
 let activeOverlay = null;

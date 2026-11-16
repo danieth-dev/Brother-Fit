@@ -30,20 +30,20 @@ index.html → js/main.js (arranque) → js/router.js (hash → vista)
 
 `js/utils/` tiene dos clases de archivo:
 
-- **Piezas de interfaz** (`picker.js`, `meal-scanner.js`, `confirm-sheet.js`, `exercise-editor.js`, `chart.js`, `components.js`…): pintan y escuchan como una vista y pueden llamar servicios.
-- **Utilidades puras** (`dates.js`, `clock.js`, `units.js`): sin DOM y sin servicios; cualquier capa puede usarlas.
+- **Piezas de interfaz** (`picker.js`, `meal-scanner.js`, `confirm-sheet.js`, `exercise-editor.js`, `agent-panels.js`, `backup-export.js`, `image.js`, `chart.js`, `components.js`…): usan el DOM o APIs del navegador y pueden llamar servicios.
+- **Utilidades puras** (`dates.js`, `clock.js`, `units.js`, `events.js`): sin DOM y sin servicios; cualquier capa puede usarlas.
 
 Dependencias en un solo sentido: **vistas → piezas de interfaz → servicios → db**, y todas pueden usar utilidades puras. Nunca al revés.
 
 - Una vista no importa `db.js` ni abre IndexedDB. Pide los datos a un servicio.
-- Un servicio no toca el DOM (`document`, `window`, `innerHTML`). Recibe datos y devuelve datos o lanza un `Error` con un mensaje para el atleta.
+- Un servicio no toca el DOM (`document`, `window`, `innerHTML`, `<canvas>`, descargas). Recibe datos y devuelve datos o lanza un `Error` con un mensaje para el atleta. Para avisar a una pantalla de algo que pasó, emite con `emit(EVENTS.X, detalle)` de `js/utils/events.js`; la vista escucha con `on()`.
 - Una vista no importa otra vista. Lo que se comparte entre pantallas (una hoja, un panel) vive en `js/utils/`.
 - Las llamadas a proveedores de IA y sus claves pasan por `js/services/agent.js` (`getAgentConfig`) o por el servicio del dominio, nunca desde una vista.
 
 ## Patrones
 
 - **Vista**: `export async function render(el, params)`. Carga datos con servicios, pinta con un template y escucha con `delegate(el, { accion: handler })` sobre `data-action`. Todo texto dinámico pasa por `esc()`.
-- **Hojas y paneles**: viven en `document.body`, fuera de `#app`, se cierran al cambiar de ruta y usan `sheet-drag.js` para cerrarse arrastrando. Confirmaciones con `confirm-sheet.js`.
+- **Hojas y paneles**: viven en `document.body`, fuera de `#app`, se cierran al cambiar de ruta y usan `sheet-drag.js` para cerrarse arrastrando. Confirmaciones con `confirm-sheet.js`. Un panel que se abre desde varias pantallas recibe `{ onChange }` para que cada una se redibuje a sí misma; nunca llama al `render` de otra vista.
 - **Controles**: los `<select>`, fechas y horas usan las hojas propias (`picker.js`, `calendar.js`, `time-sheet.js`); el control real sigue en el formulario.
 - **Datos**: pesos siempre en kg en la base; la conversión a lb es solo de pantalla (`units.js`). Fechas como `YYYY-MM-DD` (`dates.js`). La hora actual sale de `clock.js` (`now()`) para que las pruebas puedan moverla.
 - **Escrituras de varias tablas**: en una sola transacción con `db.mutate()`.
