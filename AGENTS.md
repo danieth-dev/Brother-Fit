@@ -95,7 +95,7 @@ Servidor local: `python -m http.server 8123` en la raíz y abrir `http://localho
 
 Dos juegos de pruebas, y los dos deben pasar antes de cerrar un cambio:
 
-- **Lógica pura** con Node (sin dependencias): `npm test` o `node --test "tests/*.test.js"`. Cubre fechas, unidades, 1RM, esfuerzo, creatina, comidas y texto y reportes de Bía. Corre también en GitHub Actions y, si falla, no se publica.
-- **Lógica con base de datos** en el navegador: abrir `http://localhost:8123/rpe-test.html` (esfuerzo, series y herramientas de Bía sobre la base aparte `brother-fit-rpe-test`).
+- **Lógica pura** con Node (sin dependencias): `npm test` o `node --test "tests/*.test.js"`. Cubre fechas, unidades, 1RM, esfuerzo, creatina, comidas, respaldo y texto y reportes de Bía. Corre también en GitHub Actions y, si falla, no se publica.
+- **Lógica con base de datos** en el navegador: abrir `http://localhost:8123/rpe-test.html` (esfuerzo, series, herramientas de Bía y respaldo sobre la base aparte `brother-fit-rpe-test`).
 
 Una regla nueva o un error corregido en una función pura llega con su prueba en `tests/`. Las funciones de `services/` que no tocan IndexedDB se prueban ahí; las que sí, en `rpe-test.html`.

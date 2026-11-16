@@ -125,15 +125,22 @@ export const db = {
     const availableStores = STORES.filter((s) => conn.objectStoreNames.contains(s));
     return new Promise((resolve, reject) => {
       const tx = conn.transaction(availableStores, 'readwrite');
-      for (const name of availableStores) {
-        const st = tx.objectStore(name);
-        st.clear();
-        const rows = Array.isArray(data?.[name]) ? data[name] : [];
-        for (const row of rows) st.put(row);
-      }
       tx.oncomplete = () => resolve();
       tx.onerror = (e) => reject(e.target.error || tx.error);
-      tx.onabort = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error || new Error('No se pudo restaurar.'));
+      /* put() lanza en el acto con una fila sin clave válida. Sin abort() los clear() ya pedidos
+       * se confirmarían y la base quedaría vacía. */
+      try {
+        for (const name of availableStores) {
+          const st = tx.objectStore(name);
+          st.clear();
+          const rows = Array.isArray(data?.[name]) ? data[name] : [];
+          for (const row of rows) st.put(row);
+        }
+      } catch (err) {
+        try { tx.abort(); } catch {}
+        reject(new Error('El respaldo tiene datos dañados. No se cambió nada.', { cause: err }));
+      }
     });
   },
   clearAll() { return this.restoreAll({}); }

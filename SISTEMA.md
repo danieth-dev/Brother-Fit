@@ -2,7 +2,7 @@
 
 Documento vivo del producto. Describe cómo está armado, dónde vive cada dato y qué no se puede romper. Cuando cambie el comportamiento, el esquema, una pantalla o la forma de publicar, este archivo se actualiza en el mismo cambio.
 
-Última revisión: 15 de noviembre de 2026. Base de datos versión 3. Caché de la app `v195`.
+Última revisión: 15 de noviembre de 2026. Base de datos versión 3. Caché de la app `v196`.
 
 ## Qué es
 
@@ -157,7 +157,7 @@ Los pesos de series y peso corporal se guardan siempre en **kg**. En Entreno y e
 
 Los controles segmentados (`.seg`: tipo de serie, kg/lb, métricas, tipo en historial) se pueden pulsar o arrastrar: la pastilla amarilla se mueve con el dedo y al soltar encaja en la opción más cercana (`js/utils/seg-swipe.js`). Si el `.seg` tiene varias filas (métricas en Progreso), el gesto es libre en 2D. En Progreso, cambiar kg/lb o la métrica del gráfico actualiza números y charts sin remount del `.seg` (si no, parpadea la pastilla). El segmento de unidad no va dentro del `<label>` del input de peso, para no liar el gesto.
 
-El respaldo es un JSON `{ app: "brother-ft", schema: 1, exportedAt, data }`. Al asegurar PRs se intenta `navigator.share` con el archivo; si el teléfono no puede, se descarga como antes. Cancelar la hoja de compartir no actualiza `lastBackup`. Las claves de IA (`geminiApiKey`, `openaiApiKey`) no salen en el respaldo; al importar, se descartan las que traiga el archivo y se conservan las del teléfono. Importar reemplaza todas las tablas en una sola transacción: si falla, no queda a medias. Borrar todo es restaurar un volcado vacío.
+El respaldo es un JSON `{ app: "brother-ft", schema: 1, exportedAt, data }`. Al asegurar PRs se intenta `navigator.share` con el archivo; si el teléfono no puede, se descarga como antes. Cancelar la hoja de compartir no actualiza `lastBackup`. Las claves de IA (`geminiApiKey`, `openaiApiKey`) no salen en el respaldo; al importar, se descartan las que traiga el archivo y se conservan las del teléfono. Importar reemplaza todas las tablas en una sola transacción: si falla, no queda a medias. Una fila dañada (sin clave válida) aborta la transacción y avisa «El respaldo tiene datos dañados. No se cambió nada.»; hasta la `v195` esa fila dejaba las tablas vacías. Las reglas sin base (leer el archivo, mezclar las claves, cuándo avisar) son funciones puras de `services/backup.js` con pruebas en `tests/logic-backup.test.js`. Borrar todo es restaurar un volcado vacío.
 
 Aviso de respaldo (`js/utils/backup-nudge.js`): al abrir Inicio o al terminar un entreno, si hay al menos un entreno cerrado y nunca respaldó, o el último respaldo tiene ≥7 días, o hay ≥5 entrenos cerrados desde entonces. Copy: «Asegura tus PRs». No más de una vez al día (`backupNudgeDay`).
 
@@ -341,7 +341,7 @@ Pendiente:
 - **Formularios de Play Console:** seguridad de los datos (Data safety), declaración de apps de salud y fitness, clasificación de contenido.
 - **Correo de soporte** en `js/app-info.js` (`supportEmail`). Sin él, los reportes de respuestas de Bía solo quedan en el teléfono y no te llegan.
 - **Ficha de la tienda:** capturas, ícono de 512 px, gráfico destacado de 1024×500, textos.
-- Pruebas: la lógica pura tiene 32 pruebas en `tests/` (Node, corren en CI antes de publicar) y la de esfuerzo con base de datos, 32 en `rpe-test.html` (navegador, a mano). Faltan pruebas de interfaz y de respaldo/importación con base de datos.
+- Pruebas: la lógica pura tiene 44 pruebas en `tests/` (Node, corren en CI antes de publicar) y la de base de datos, 36 en `rpe-test.html` (navegador, a mano), incluidas la ida y vuelta del respaldo, el archivo dañado y borrar todo. Faltan pruebas de interfaz.
 
 ## Mapa de archivos
 
@@ -403,7 +403,7 @@ Pendiente:
 | `js/utils/chart.js` | Gráfica SVG. |
 | `js/utils/clock.js` | Reloj único. Las pruebas pueden adelantarlo. |
 | `js/utils/set-line.js` | Botones de esfuerzo en la serie ya hecha. |
-| `rpe-test.html` | Casos del esfuerzo sobre una base temporal. |
+| `rpe-test.html` | Casos del esfuerzo, las herramientas de Bía y el respaldo sobre una base temporal. |
 | `tests/*.test.js` | Pruebas de lógica pura con `node:test`. `npm test`. |
 | `package.json` | Solo para las pruebas: `type: module` y el script `test`. Sin dependencias; no se publica. |
 | `fonts/FugazOne-Regular.ttf` | Títulos. Licencia en `fonts/OFL.txt`. |

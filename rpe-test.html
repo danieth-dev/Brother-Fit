@@ -575,6 +575,58 @@
         assert(await effort.loadPending() === null, 'vencida al leer');
         assert((await db.get('meta', 'rpeSeq')).value === 1, 'el respaldo puede bajar el contador');
       });
+
+      const backup = await import('./js/services/backup.js');
+      const asFile = (text) => new File([text], 'respaldo.json', { type: 'application/json' });
+      const snapshot = async () => JSON.stringify(await db.dumpAll());
+
+      await check('respaldo: ida y vuelta deja la base igual y no pisa la clave del teléfono', async () => {
+        await closeOpen();
+        const w = await workouts.startWorkout();
+        const ex = await workouts.addExercise('Remo respaldo', 'Espalda');
+        await effort.registerSet({ workoutId: w.id, exerciseId: ex, peso: 60, reps: 8, restEnd: clock.t + 60_000 });
+        await workouts.finishWorkout(w.id);
+        await db.put('meta', { key: 'geminiApiKey', value: 'clave-vieja' });
+
+        const text = await (await backup.buildBackupFile()).text();
+        assert(!text.includes('clave-vieja'), 'la clave no sale en el archivo');
+        const before = JSON.parse(await snapshot());
+
+        await workouts.addExercise('Agregado después', 'Pierna');
+        await db.put('meta', { key: 'geminiApiKey', value: 'clave-nueva' });
+        await backup.importData(asFile(text));
+
+        const after = await db.dumpAll();
+        for (const store of ['exercises', 'workouts', 'sets', 'bodyMetrics', 'meals', 'agentMemory', 'supplements']) {
+          assert(JSON.stringify(after[store]) === JSON.stringify(before[store]), `${store} igual al respaldo`);
+        }
+        assert((await db.get('meta', 'geminiApiKey'))?.value === 'clave-nueva', 'la clave del teléfono se queda');
+      });
+
+      await check('respaldo dañado: no se borra nada', async () => {
+        const before = await snapshot();
+        const bad = JSON.stringify({ app: backup.BACKUP_APP, schema: 1, data: { sets: [{ id: { roto: true } }] } });
+        let msg = '';
+        try { await backup.importData(asFile(bad)); } catch (e) { msg = e.message; }
+        assert(msg.includes('dañados'), `avisa: ${msg}`);
+        assert(await snapshot() === before, 'la base quedó como estaba');
+      });
+
+      await check('respaldo ajeno o roto: no toca la base', async () => {
+        const before = await snapshot();
+        for (const text of ['{no json', JSON.stringify({ app: 'otra', data: {} })]) {
+          let failed = false;
+          try { await backup.importData(asFile(text)); } catch { failed = true; }
+          assert(failed, 'se rechaza');
+        }
+        assert(await snapshot() === before, 'la base quedó como estaba');
+      });
+
+      await check('borrar todo vacía todas las tablas', async () => {
+        await backup.clearAllData();
+        const dump = await db.dumpAll();
+        assert(Object.values(dump).every((rows) => rows.length === 0), 'todo vacío');
+      });
     } finally {
       const failed = results.filter((r) => !r.ok).length;
       document.getElementById('out').innerHTML = results.map((r) =>
