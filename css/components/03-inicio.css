@@ -321,7 +321,7 @@ html[data-modo="claro"] .plate {
   text-overflow: ellipsis;
 }
 .recent-workout-sub {
-  font-size: 13px;
+  font-size: var(--fs-xs-plus);
   color: var(--muted);
   line-height: 1.3;
 }

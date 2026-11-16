@@ -127,7 +127,7 @@ Este documento es la fuente de verdad del diseño de Bía. Lo leen las personas 
 
 Fuente de los valores: `css/tokens.css` (tokens), `css/base.css` (página, tipografía base e iconos) y `css/components/01-…css` a `14-…css` (componentes, cargados en ese orden desde `index.html`). El frontmatter de arriba usa el formato de `DESIGN.md` que entiende la skill; los valores son los del **modo oscuro con acento amarillo**, que es el de fábrica.
 
-Última revisión: 15 de noviembre de 2026 (caché `v191`).
+Última revisión: 15 de noviembre de 2026 (caché `v192`).
 
 ## 1. Idea
 
@@ -235,7 +235,9 @@ Todo valor que cambia (peso, reps, tiempo, kcal, racha) lleva `font-variant-nume
 | --- | --- | --- |
 | `--fs-2xs` | 11 px | Etiquetas de la isla de navegación. |
 | `--fs-xs` | 12 px | Etiquetas de campo en mayúsculas, chips, metadatos. |
+| `--fs-xs-plus` | 13 px | Texto secundario de filas, subtítulos de tarjeta, etiquetas de campo en paneles. |
 | `--fs-sm` | 14 px | Texto secundario, botones compactos, avisos. |
+| `--fs-sm-plus` | 15 px | Títulos de fila (Ajustes, Recuerdos), botones secundarios, valores de lista. |
 | `--fs-base` | 16 px | Cuerpo, campos, botones. |
 | `--fs-md` | 18 px | `h3`, títulos de sección. |
 | `--fs-lg` | 20 px | `h2`. |
@@ -357,6 +359,8 @@ Los archivos se cargan en orden numérico y **ese orden es la cascada**: una reg
 
 Medida el 15 de noviembre de 2026. Cada cambio que toque una de estas zonas la deja mejor, y esta lista se actualiza.
 
+Resuelto en la `v192`: 13 y 15 px entraron a la escala como `--fs-xs-plus` y `--fs-sm-plus`; sus 69 usos pasaron a token sin cambio visual.
+
 Resuelto en la `v191`: los 89 `style="…"` del JS pasaron a clases, `hidden` o variables de dato (quedan 6, todos `--pct`/`--dot`); los colores fijos del JS (macros, anillos, estados, chevrons) pasaron a tokens (`--macro-*`, `.ring-progress`, `.settings-dot--*`, `.icon-muted`, `.icon-ok`); 118 `font-size` que coincidían exactamente con la escala pasaron a token; y `components.css` se partió en 14 archivos por sección, en el mismo orden. Se comprobó comparando los estilos calculados de cada elemento antes y después en todas las pantallas, en oscuro y claro.
 
 Resuelto: el amarillo escrito a mano en `components.css` (22 usos que dejaban bordes y halos amarillos con acento azul o rosado) pasó a tokens del acento en la `v186`, y se borró el bloque `.tema-pick`, que no se usaba.
@@ -364,7 +368,7 @@ Resuelto: el amarillo escrito a mano en `components.css` (22 usos que dejaban bo
 | Problema | Hoy | Meta |
 | --- | --- | --- |
 | Hex y `rgba()` sueltos en `css/components/` | 93 hex y 39 `rgba()` | Tokens o, si es propio de un componente, una variable local documentada |
-| `font-size` escrito en px/rem en vez de token | 121 frente a 236 con token. Son tamaños fuera de la escala: 13 px (45), 15 px (24), 17 px, 13,5 px… | **Decisión de diseño pendiente:** añadir 13 y 15 px a la escala o redondearlos a 12/14/16. Cualquiera de las dos cambia algo a la vista. |
+| `font-size` escrito en px/rem en vez de token | 52 frente a 305 con token. Ninguno pasa de 6 usos: 17 px (6), 13,5 px (6), 32 px, 22 px, 19 px, 14,5 px, 11,5 px y varios en rem. | Llevar cada uno al token más cercano al tocar su componente, comprobándolo a la vista. |
 | `!important` en `css/components/` | 156 | Solo en `[hidden]` y en movimiento reducido |
 | Colores de grupo muscular escritos en CSS, y `dot` con hex en rutinas guardadas antes de la `v189` | Literales | Tokens `--g-pecho`, etc., y la rutina coloreada por grupo, sin hex guardado |
 | Selectores repetidos (`.field`, `.compare-card`, `.compare-row`…) en distintos puntos de la cascada | Varios | Una sola definición por selector |

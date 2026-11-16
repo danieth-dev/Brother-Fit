@@ -132,7 +132,7 @@
 
 .repeat-section-head p {
   margin: 4px 0 0;
-  font-size: 13px;
+  font-size: var(--fs-xs-plus);
   color: var(--muted);
   line-height: 1.35;
 }
@@ -176,7 +176,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 13px;
+  font-size: var(--fs-xs-plus);
   color: var(--muted);
 }
 
@@ -222,7 +222,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
+  font-size: var(--fs-xs-plus);
   font-weight: 600;
 }
 .routine-tag {

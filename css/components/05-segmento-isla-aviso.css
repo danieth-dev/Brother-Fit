@@ -112,7 +112,7 @@ html[data-modo="claro"] .seg.metric-seg .seg-thumb {
   background: transparent !important;
   box-shadow: none !important;
   color: var(--muted) !important;
-  font-size: 13px !important;
+  font-size: var(--fs-xs-plus) !important;
   font-weight: 600 !important;
   font-family: inherit !important;
   text-transform: none !important;
@@ -270,7 +270,7 @@ html[data-modo="claro"] .seg.metric-seg:not(:has(.seg-thumb)) button[aria-presse
 }
 .chart .val-text {
   fill: var(--text);
-  font-size: 13px;
+  font-size: var(--fs-xs-plus);
   font-weight: 700;
 }
 .chart .pt--single {

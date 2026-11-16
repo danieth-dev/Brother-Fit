@@ -57,7 +57,7 @@ html[data-modo="claro"] .seg.progress-tabs .seg-thumb {
   background: transparent !important;
   box-shadow: none !important;
   color: var(--muted) !important;
-  font-size: 15px !important;
+  font-size: var(--fs-sm-plus) !important;
   font-weight: 600 !important;
   font-family: inherit !important;
   text-transform: none !important;
@@ -133,7 +133,7 @@ html[data-modo="claro"] .seg.progress-tabs:not(:has(.seg-thumb)) .progress-tab-b
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 13px;
+  font-size: var(--fs-xs-plus);
   color: var(--muted);
 }
 .progress-ex-card-dot {
@@ -211,7 +211,7 @@ html[data-modo="claro"] .seg.progress-tabs:not(:has(.seg-thumb)) .progress-tab-b
   color: var(--text);
 }
 .pr-card-unit {
-  font-size: 13px;
+  font-size: var(--fs-xs-plus);
   font-weight: 600;
   color: var(--muted);
 }
@@ -336,7 +336,7 @@ html[data-modo="claro"] .seg.progress-tabs:not(:has(.seg-thumb)) .progress-tab-b
 }
 .chart-card-note {
   margin: 10px 0 0;
-  font-size: 13px;
+  font-size: var(--fs-xs-plus);
   line-height: 1.45;
   color: var(--muted);
 }
@@ -379,7 +379,7 @@ html[data-modo="claro"] .seg.progress-tabs:not(:has(.seg-thumb)) .progress-tab-b
   gap: 10px;
 }
 .sess-item-max {
-  font-size: 15px;
+  font-size: var(--fs-sm-plus);
   font-weight: 700;
   color: var(--text);
 }
@@ -438,7 +438,7 @@ html[data-modo="claro"] .seg.progress-tabs:not(:has(.seg-thumb)) .progress-tab-b
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 15px;
+  font-size: var(--fs-sm-plus);
   font-weight: 600;
   color: var(--text);
 }
@@ -539,7 +539,7 @@ html[data-modo="claro"] .seg.progress-tabs:not(:has(.seg-thumb)) .progress-tab-b
 }
 .body-history-date {
   display: block;
-  font-size: 13px;
+  font-size: var(--fs-xs-plus);
   color: var(--muted);
   margin-top: 2px;
 }

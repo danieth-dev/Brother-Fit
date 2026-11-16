@@ -91,7 +91,7 @@ body.in-agent-view #app .view {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 13px;
+  font-size: var(--fs-xs-plus);
   color: var(--muted);
 }
 
@@ -153,7 +153,7 @@ body.in-agent-view #app .view {
 }
 .agent-key-label {
   margin: 0 0 6px;
-  font-size: 13px;
+  font-size: var(--fs-xs-plus);
   font-weight: 600;
   color: var(--muted);
 }
@@ -182,7 +182,7 @@ body.in-agent-view #app .view {
   border: none;
   background: transparent;
   color: var(--muted);
-  font-size: 13px;
+  font-size: var(--fs-xs-plus);
   font-weight: 700;
   cursor: pointer;
   transition: all 0.16s ease;
@@ -358,7 +358,7 @@ body.in-agent-view #app .view {
 }
 .agent-card-memory-text {
   display: block;
-  font-size: 15px;
+  font-size: var(--fs-sm-plus);
   font-weight: 600;
   color: var(--text);
   white-space: nowrap;
@@ -414,7 +414,7 @@ body.in-agent-view #app .view {
 }
 .agent-card-exercise-sub {
   margin: 2px 0 0 16px;
-  font-size: 13px;
+  font-size: var(--fs-xs-plus);
   color: var(--muted);
 }
 .agent-card-exercise-btn {
@@ -723,7 +723,7 @@ body.in-agent-view #app .view {
 }
 
 .agent-rec-label {
-  font-size: 15px;
+  font-size: var(--fs-sm-plus);
   color: var(--muted);
 }
 
@@ -773,7 +773,7 @@ body.in-agent-view #app .view {
   border: 1px solid var(--primary);
   border-radius: 8px;
   color: var(--text);
-  font-size: 15px;
+  font-size: var(--fs-sm-plus);
   font-weight: 700;
   padding: 6px 10px;
   outline: none;
@@ -833,7 +833,7 @@ body.in-agent-view #app .view {
 .agent-rec-note-sub {
   display: block;
   margin-top: 2px;
-  font-size: 13px;
+  font-size: var(--fs-xs-plus);
   color: var(--muted);
 }
 .agent-rec-day-text {
@@ -877,7 +877,7 @@ body.in-agent-view #app .view {
 }
 .agent-rec-workout-sub {
   display: block;
-  font-size: 13px;
+  font-size: var(--fs-xs-plus);
   color: var(--muted);
   margin-top: 2px;
 }
@@ -915,7 +915,7 @@ body.in-agent-view #app .view {
 }
 .conn-status-title {
   display: block;
-  font-size: 15px;
+  font-size: var(--fs-sm-plus);
   font-weight: 700;
   color: var(--text);
 }
@@ -958,7 +958,7 @@ body.in-agent-view #app .view {
 }
 .conn-key-label {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--fs-xs-plus);
   font-weight: 600;
   color: var(--muted);
 }
@@ -970,20 +970,20 @@ body.in-agent-view #app .view {
   flex: 1;
   height: 44px;
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: var(--fs-xs-plus);
   letter-spacing: 0.04em;
 }
 .conn-key-toggle {
   min-height: 44px;
   padding: 0 14px;
-  font-size: 13px;
+  font-size: var(--fs-xs-plus);
 }
 .conn-key-link {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   margin-top: 4px;
-  font-size: 13px;
+  font-size: var(--fs-xs-plus);
   color: var(--primary);
   text-decoration: none;
 }
@@ -1046,7 +1046,7 @@ body.in-agent-view #app .view {
   z-index: 10;
 }
 .agent-undo-bar span {
-  font-size: 15px;
+  font-size: var(--fs-sm-plus);
   font-weight: 600;
   color: var(--text);
 }

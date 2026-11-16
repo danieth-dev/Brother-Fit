@@ -31,7 +31,9 @@
   /* Escala Tipográfica Sistemática */
   --fs-2xs: 0.6875rem; /* 11px */
   --fs-xs: 0.75rem;    /* 12px */
+  --fs-xs-plus: 0.8125rem; /* 13px: texto secundario de filas, etiquetas de campo en paneles */
   --fs-sm: 0.875rem;   /* 14px */
+  --fs-sm-plus: 0.9375rem; /* 15px: títulos de fila y botones secundarios */
   --fs-base: 1rem;     /* 16px */
   --fs-md: 1.125rem;   /* 18px */
   --fs-lg: 1.25rem;    /* 20px */

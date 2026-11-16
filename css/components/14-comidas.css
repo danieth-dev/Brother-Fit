@@ -65,7 +65,7 @@
 }
 .home-food-kcal-sub {
   margin: 2px 0 0;
-  font-size: 13px;
+  font-size: var(--fs-xs-plus);
   color: var(--muted);
   white-space: nowrap;
   overflow: hidden;
@@ -78,7 +78,7 @@
 .home-food-protein-head {
   display: flex;
   justify-content: space-between;
-  font-size: 13px;
+  font-size: var(--fs-xs-plus);
   margin-bottom: 6px;
   gap: 4px;
 }
@@ -112,7 +112,7 @@
   border-radius: 14px;
   background: transparent;
   color: var(--text);
-  font-size: 15px;
+  font-size: var(--fs-sm-plus);
   font-weight: 600;
   font-family: inherit;
   display: flex;
@@ -207,13 +207,13 @@
   color: var(--text);
 }
 .meals-hero-unit {
-  font-size: 15px;
+  font-size: var(--fs-sm-plus);
   color: var(--muted);
   font-weight: 600;
 }
 .meals-hero-note {
   margin: 6px 0 0;
-  font-size: 13px;
+  font-size: var(--fs-xs-plus);
   line-height: 1.4;
   color: var(--muted);
 }
@@ -221,7 +221,7 @@
   border: none;
   background: transparent;
   color: var(--text);
-  font-size: 13px;
+  font-size: var(--fs-xs-plus);
   font-weight: 700;
   padding: 2px 0;
   cursor: pointer;
@@ -258,7 +258,7 @@
   border: 1px solid var(--line-strong);
   background: var(--surface);
   color: var(--text);
-  font-size: 15px;
+  font-size: var(--fs-sm-plus);
   font-weight: 700;
   font-family: inherit;
 }
@@ -332,7 +332,7 @@
   border-radius: 14px;
   background: transparent;
   color: var(--text);
-  font-size: 15px;
+  font-size: var(--fs-sm-plus);
   font-weight: 600;
   font-family: inherit;
   display: flex;
@@ -386,7 +386,7 @@
 }
 .meals-row-time {
   width: 48px;
-  font-size: 13px;
+  font-size: var(--fs-xs-plus);
   color: var(--muted);
   flex-shrink: 0;
 }
@@ -402,7 +402,7 @@
 }
 .meals-row-sub {
   display: block;
-  font-size: 13px;
+  font-size: var(--fs-xs-plus);
   color: var(--muted);
   margin-top: 2px;
 }
@@ -419,7 +419,7 @@
 }
 .meals-list-footnote {
   margin: 10px 4px 0;
-  font-size: 13px;
+  font-size: var(--fs-xs-plus);
   line-height: 1.45;
   color: var(--muted);
 }
@@ -438,7 +438,7 @@
 }
 .meals-empty-sub {
   margin: 6px 0 0;
-  font-size: 13px;
+  font-size: var(--fs-xs-plus);
   color: var(--muted);
 }
 
@@ -706,7 +706,7 @@ html[data-modo="claro"] .meal-type-pill[aria-pressed="true"] {
   border: 1px solid var(--line-strong);
   background: var(--surface);
   color: var(--text);
-  font-size: 13px;
+  font-size: var(--fs-xs-plus);
   font-weight: 600;
   font-family: inherit;
   cursor: pointer;
@@ -755,7 +755,7 @@ html[data-modo="claro"] .meal-goal-pill[aria-pressed="true"] {
 .meal-item-name {
   flex: 1;
   min-width: 0;
-  font-size: 15px;
+  font-size: var(--fs-sm-plus);
   font-weight: 700;
   color: var(--text);
   line-height: 1.25;
@@ -794,7 +794,7 @@ html[data-modo="claro"] .meal-goal-pill[aria-pressed="true"] {
 .meal-item-kcal {
   width: 72px;
   text-align: right;
-  font-size: 15px;
+  font-size: var(--fs-sm-plus);
   font-weight: 700;
   color: var(--text);
   flex-shrink: 0;
@@ -810,7 +810,7 @@ html[data-modo="claro"] .meal-goal-pill[aria-pressed="true"] {
   border-radius: 16px;
   background: transparent;
   color: var(--text);
-  font-size: 15px;
+  font-size: var(--fs-sm-plus);
   font-weight: 600;
   font-family: inherit;
   display: flex;
@@ -903,7 +903,7 @@ html[data-modo="claro"] .meal-goal-pill[aria-pressed="true"] {
   color: var(--text);
 }
 .meal-total-kcal-unit {
-  font-size: 15px;
+  font-size: var(--fs-sm-plus);
   color: var(--muted);
   font-weight: 600;
 }

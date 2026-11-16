@@ -129,12 +129,12 @@ html[data-modo="claro"] .history-filter-pill.is-active {
 }
 .history-week-title {
   margin: 0;
-  font-size: 15px;
+  font-size: var(--fs-sm-plus);
   font-weight: 700;
   color: var(--text);
 }
 .history-week-meta {
-  font-size: 13px;
+  font-size: var(--fs-xs-plus);
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
@@ -219,7 +219,7 @@ html[data-modo="claro"] .history-workout-card:hover {
   align-items: center;
   gap: 6px;
   margin-top: 4px;
-  font-size: 13px;
+  font-size: var(--fs-xs-plus);
   color: var(--muted);
   font-variant-numeric: tabular-nums;
   flex-wrap: wrap;
