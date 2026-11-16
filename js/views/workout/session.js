@@ -1,0 +1,45 @@
+/* Estado de la pantalla Entreno que sobrevive entre repintados: ejercicio elegido, descanso,
+ * borrador de la serie y rutina. Solo lo usan los archivos de js/views/workout*. */
+import { state } from '../../store.js';
+import { on, EVENTS } from '../../utils/events.js';
+
+export const session = {
+  selectedEx: null,
+  restEnd: 0,
+  lastReps: 0,
+  draftTipo: 'trabajo',
+  draftRir: null,
+  openEffortId: null,
+  todayLogOpen: false,
+  /* Id del siguiente ejercicio de la rutina, ROUTINE_DONE o null. */
+  pendingNextEx: null,
+  /* Lo que muestra el aviso de descanso de una rutina. */
+  nextExObj: null,
+  isExCompleted: false,
+  curExName: '',
+  lastConfiguredSetKey: '',
+};
+
+/* Bía puede anotar una serie o elegir ejercicio desde su pantalla: Entreno lo recoge al volver. */
+on(EVENTS.SET_LOGGED, (detail) => {
+  if (!detail?.restEnd) return;
+  session.restEnd = detail.restEnd;
+  if (detail.lastReps) session.lastReps = detail.lastReps;
+});
+
+on(EVENTS.EXERCISE_SELECTED, (detail) => {
+  const id = Number(detail?.id);
+  if (!id) return;
+  session.selectedEx = id;
+  session.pendingNextEx = null;
+});
+
+export function setActiveExercise(ex) {
+  state.activeExercise = ex ? { id: ex.id, nombre: ex.nombre, grupo: ex.grupo } : null;
+}
+
+/** Sin entreno en curso: se olvida el descanso y lo abierto. */
+export function resetSession() {
+  session.restEnd = 0;
+  session.todayLogOpen = false;
+}

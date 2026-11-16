@@ -42,7 +42,7 @@ Dependencias en un solo sentido: **vistas → piezas de interfaz y voz → servi
 
 - Una vista no importa `db.js` ni abre IndexedDB. Pide los datos a un servicio.
 - Un servicio no toca el DOM (`document`, `window`, `innerHTML`, `<canvas>`, descargas). Recibe datos y devuelve datos o lanza un `Error` con un mensaje para el atleta. Para avisar a una pantalla de algo que pasó, emite con `emit(EVENTS.X, detalle)` de `js/utils/events.js`; la vista escucha con `on()`.
-- Una vista no importa otra vista. Lo que se comparte entre pantallas (una hoja, un panel) vive en `js/utils/`.
+- Una vista no importa otra vista. Lo que se comparte entre pantallas (una hoja, un panel) vive en `js/utils/`. Si una pantalla crece, sus partes van a `js/views/<pantalla>/` y solo las importa esa pantalla (ejemplo: `js/views/workout/`).
 - Las claves y el proveedor de IA se leen con `getAgentConfig()` de `js/services/bia/config.js`. Las llamadas a la IA las hace el servicio del dominio (`services/meals.js`) o el adaptador de voz, nunca una vista.
 
 ## Patrones

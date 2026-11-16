@@ -28,6 +28,15 @@ export const formatMedium = (iso) => {
 };
 export const formatShort = (iso) => fShort.format(parseISO(iso));
 export const formatDay = (iso) => fDay.format(parseISO(iso));
+
+const DIAS_CORTOS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+const MESES_CORTOS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+/** «Jue 29 Oct». Fijo en español, sin depender del idioma del teléfono. */
+export function formatWeekdayShort(iso) {
+  if (!iso) return '';
+  const d = parseISO(iso);
+  return `${DIAS_CORTOS[d.getDay()]} ${d.getDate()} ${MESES_CORTOS[d.getMonth()]}`;
+}
 export const formatMonth = (y, m) => fMonth.format(new Date(y, m, 1));
 
 export function formatDuration(ms) {
