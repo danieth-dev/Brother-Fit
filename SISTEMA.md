@@ -2,7 +2,7 @@
 
 Documento vivo del producto. Describe cómo está armado, dónde vive cada dato y qué no se puede romper. Cuando cambie el comportamiento, el esquema, una pantalla o la forma de publicar, este archivo se actualiza en el mismo cambio.
 
-Última revisión: 15 de noviembre de 2026. Base de datos versión 3. Caché de la app `v194`.
+Última revisión: 15 de noviembre de 2026. Base de datos versión 3. Caché de la app `v195`.
 
 ## Qué es
 
@@ -45,6 +45,7 @@ index.html
        └─ js/utils/picker.js   listas propias, fuera de #app
             └─ js/views/*       llaman a js/services/* y a js/voice/
                  ├─ js/voice/fit-agent.js   voz en directo; usa services/bia/
+                 │    └─ gemini-live.js · openai-realtime.js · pcm-player.js
                  └─ js/services/*   llaman a db (la asistente vive en services/bia/)
 ```
 
@@ -314,7 +315,7 @@ Medida el 15 de noviembre de 2026 contra las reglas de `AGENTS.md`. No se añade
 
 Sin deuda abierta: las vistas no abren IndexedDB y ningún servicio toca el DOM.
 
-Resuelto en la `v188`: `js/services/agent.js` (1 660 líneas) se partió en `js/services/bia/` (configuración, memoria, texto, declaraciones de herramientas, herramientas, contexto e instrucciones) y la sesión de voz `FitAgent` pasó a `js/voice/fit-agent.js`, fuera de los servicios. Las importaciones dinámicas de `meals.js` desaparecieron: ya no hay ciclo entre comidas y la asistente.
+Resuelto en la `v188`: `js/services/agent.js` (1 660 líneas) se partió en `js/services/bia/` (configuración, memoria, texto, declaraciones de herramientas, herramientas, contexto e instrucciones) y la sesión de voz `FitAgent` pasó a `js/voice/fit-agent.js`, fuera de los servicios. En la `v195` `fit-agent.js` (777 líneas) se partió en un archivo por proveedor (`gemini-live.js`, `openai-realtime.js`) y la cola de audio (`pcm-player.js`); de paso, las respuestas de Bía con OpenAI ya se escriben en el chat (antes solo se oían). Las importaciones dinámicas de `meals.js` desaparecieron: ya no hay ciclo entre comidas y la asistente.
 
 Resuelto en la `v187`: «Borrar todo» pasa por `clearAllData()` del servicio de respaldo; compartir o descargar el respaldo vive en `js/utils/backup-export.js`; los paneles Recuerdos y Conexión salieron de la vista de Bía a `js/utils/agent-panels.js` (Ajustes ya no importa otra vista); el servicio de Bía avisa a Entreno con `js/utils/events.js` en vez de `document`; la compresión de fotos vive en `js/utils/image.js`. De paso se corrigió que guardar la conexión desde Ajustes dibujaba el chat de Bía dentro de Ajustes.
 
@@ -322,7 +323,6 @@ Resuelto en la `v187`: «Borrar todo» pasa por `clearAllData()` del servicio de
 
 | Archivo | Líneas | Mezcla |
 | --- | --- | --- |
-| `js/voice/fit-agent.js` | 777 | Una clase con los dos proveedores de voz (Gemini Live y OpenAI Realtime), micrófono y audio. El siguiente corte: un archivo por proveedor. |
 | `js/views/agent.js` | 659 | Pantalla de clave y charla en directo. |
 | `js/utils/agent-panels.js` | 667 | Paneles Recuerdos y Conexión. |
 | `js/views/workout.js` | 851 | Pantalla de entreno completa. |
@@ -374,7 +374,10 @@ Pendiente:
 | `js/services/bia/tools.js` | `executeToolCall`: ejecuta cada herramienta contra los datos reales. |
 | `js/services/bia/context.js` | Entrenos recientes, historial consultado y peso corporal para el contexto. |
 | `js/services/bia/prompt.js` | `buildSystemInstruction`: personaje, reglas y contexto. |
-| `js/voice/fit-agent.js` | Sesión de voz en el navegador (`FitAgent`, `getActiveAgent`): Gemini Live o OpenAI Realtime, micrófono y audio. |
+| `js/voice/fit-agent.js` | Sesión de voz en el navegador (`FitAgent`, `getActiveAgent`): estado de la charla, micrófono (`SpeechRecognition`), avisos del entreno y herramientas. Elige el proveedor. |
+| `js/voice/gemini-live.js` | Conexión con Gemini Live por WebSocket (voz Aoede): traduce su protocolo a los eventos de `FitAgent`. |
+| `js/voice/openai-realtime.js` | Conexión con OpenAI Realtime por WebRTC (voz Coral): sesión temporal, canal de datos y herramientas. |
+| `js/voice/pcm-player.js` | Cola de audio PCM16 a 24 kHz para las respuestas de Gemini. |
 | `js/services/meals.js` | Comidas, metas de macros, catálogo de alimentos y análisis por foto o texto. |
 | `js/services/fit-chat.js` | Charla visible de Bía en `meta.fitChat`. |
 | `js/services/water-reminders.js` | Recordatorios locales de agua tras la creatina. |
