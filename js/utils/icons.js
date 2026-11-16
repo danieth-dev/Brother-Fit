@@ -64,7 +64,8 @@ export const icons = {
   arrowLeft: (opts) => svg('<path d="M15 5l-7 7 7 7"/>', opts),
   waveform: (opts) => svg('<path d="M4 10v4M8 6v12M12 3v18M16 8v8M20 11v2"/>', opts),
   send: (opts) => svg('<line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>', opts),
-  crown: (opts) => svg('<path d="M4 18h16M5 18L4 8l5 4 3-6 3 6 5-4-1 10"/>', opts),
+  /* Rellena con el color del texto (currentColor): en Progreso es el acento. */
+  crown: (opts) => svg('<path d="M5 18L4 8l5 4 3-6 3 6 5-4-1 10z" fill="currentColor"/><path d="M4 18h16"/>', opts),
   pulse: (opts) => svg('<path d="M3 12h4l3-8 4 16 3-8h4"/>', opts),
   chevronsUpDown: (opts) => svg('<path d="M8 9l4-4 4 4M8 15l4 4 4-4"/>', opts),
   camera: (opts) => svg('<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13.5" r="3.5"/>', opts),

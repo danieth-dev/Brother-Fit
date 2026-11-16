@@ -127,7 +127,7 @@ Este documento es la fuente de verdad del diseño de Bía. Lo leen las personas 
 
 Fuente de los valores: `css/tokens.css` (tokens), `css/base.css` (página, tipografía base e iconos) y `css/components/01-…css` a `14-…css` (componentes, cargados en ese orden desde `index.html`). El frontmatter de arriba usa el formato de `DESIGN.md` que entiende la skill; los valores son los del **modo oscuro con acento amarillo**, que es el de fábrica.
 
-Última revisión: 16 de noviembre de 2026 (caché `v193`).
+Última revisión: 16 de noviembre de 2026 (caché `v194`).
 
 ## 1. Idea
 
@@ -280,7 +280,7 @@ Profundidad con sombras neutras de contacto, nunca de color: `--shadow-sm` (fila
 
 ## 7. Iconos
 
-Un único juego propio en `js/utils/icons.js`: SVG de 24×24, trazo de 2 px, puntas y uniones redondeadas, `currentColor`, `aria-hidden="true"`. Se piden como `icons.nombre({ size })`. No se usan fuentes de iconos, emojis ni caracteres Unicode como icono. El ícono de la app (`icons/icon.svg`) es un disco: anillos amarillos sobre negro.
+Un único juego propio en `js/utils/icons.js`: SVG de 24×24, trazo de 2 px, puntas y uniones redondeadas, `currentColor`, `aria-hidden="true"`. Se piden como `icons.nombre({ size })`. No se usan fuentes de iconos, emojis ni caracteres Unicode como icono. Única excepción al trazo: la corona (`icons.crown`) va rellena con `currentColor`, porque marca el récord de peso en Progreso y tiene que destacar sobre los otros dos indicadores. El ícono de la app (`icons/icon.svg`) es un disco: anillos amarillos sobre negro.
 
 ## 8. Componentes
 
