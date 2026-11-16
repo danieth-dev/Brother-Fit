@@ -23,7 +23,9 @@ Lee `SISTEMA.md` antes de tocar lógica y `DESIGN.md` antes de tocar interfaz. P
 index.html → js/main.js (arranque) → js/router.js (hash → vista)
    js/views/*      dibujan y escuchan; una pantalla por archivo
    js/utils/*      dos clases de pieza (ver abajo)
+   js/voice/*      adaptador de voz: micrófono, audio y conexión en directo con la IA
    js/services/*   reglas de negocio, cálculos y llamadas a la IA
+                   (services/bia/: la asistente, un archivo por responsabilidad)
    js/db.js        el ÚNICO módulo que conoce IndexedDB
    js/store.js     ajustes en memoria y su persistencia
 ```
@@ -33,12 +35,14 @@ index.html → js/main.js (arranque) → js/router.js (hash → vista)
 - **Piezas de interfaz** (`picker.js`, `meal-scanner.js`, `confirm-sheet.js`, `exercise-editor.js`, `agent-panels.js`, `backup-export.js`, `image.js`, `chart.js`, `components.js`…): usan el DOM o APIs del navegador y pueden llamar servicios.
 - **Utilidades puras** (`dates.js`, `clock.js`, `units.js`, `events.js`): sin DOM y sin servicios; cualquier capa puede usarlas.
 
-Dependencias en un solo sentido: **vistas → piezas de interfaz → servicios → db**, y todas pueden usar utilidades puras. Nunca al revés.
+`js/voice/` es un adaptador del navegador: usa `<audio>`, `AudioContext`, `SpeechRecognition`, WebSocket y WebRTC, y llama a `services/bia/` para las reglas (instrucciones, herramientas). Las vistas lo usan; los servicios nunca lo importan.
+
+Dependencias en un solo sentido: **vistas → piezas de interfaz y voz → servicios → db**, y todas pueden usar utilidades puras. Nunca al revés.
 
 - Una vista no importa `db.js` ni abre IndexedDB. Pide los datos a un servicio.
 - Un servicio no toca el DOM (`document`, `window`, `innerHTML`, `<canvas>`, descargas). Recibe datos y devuelve datos o lanza un `Error` con un mensaje para el atleta. Para avisar a una pantalla de algo que pasó, emite con `emit(EVENTS.X, detalle)` de `js/utils/events.js`; la vista escucha con `on()`.
 - Una vista no importa otra vista. Lo que se comparte entre pantallas (una hoja, un panel) vive en `js/utils/`.
-- Las llamadas a proveedores de IA y sus claves pasan por `js/services/agent.js` (`getAgentConfig`) o por el servicio del dominio, nunca desde una vista.
+- Las claves y el proveedor de IA se leen con `getAgentConfig()` de `js/services/bia/config.js`. Las llamadas a la IA las hace el servicio del dominio (`services/meals.js`) o el adaptador de voz, nunca una vista.
 
 ## Patrones
 

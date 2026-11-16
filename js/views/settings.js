@@ -6,7 +6,7 @@
 import { state, saveSettings } from '../store.js';
 import { importData, lastBackup, clearAllData } from '../services/backup.js';
 import { ensureNotifyPermission, cancelWaterReminders, resumeWaterReminders } from '../services/water-reminders.js';
-import { getActiveAgent } from '../services/agent.js';
+import { getActiveAgent } from '../voice/fit-agent.js';
 import { toast, esc, num } from '../utils/dom.js';
 import { icons } from '../utils/icons.js';
 import { askConfirm } from '../utils/confirm-sheet.js';

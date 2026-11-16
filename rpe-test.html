@@ -37,7 +37,10 @@
 
     const effort = await import('./js/services/effort.js');
     const workouts = await import('./js/services/workouts.js');
-    const agent = await import('./js/services/agent.js');
+    const agent = {
+      ...(await import('./js/services/bia/tools.js')),
+      ...(await import('./js/services/bia/text.js')),
+    };
     const { state } = await import('./js/store.js');
     const results = [];
 

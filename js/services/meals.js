@@ -5,7 +5,7 @@
 import { db } from '../db.js';
 import { state } from '../store.js';
 import { todayISO, addDays } from '../utils/dates.js';
-import { getAgentConfig } from './agent.js';
+import { getAgentConfig } from './bia/config.js';
 
 export const MEAL_TYPES = ['Desayuno', 'Almuerzo', 'Merienda', 'Cena'];
 

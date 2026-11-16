@@ -4,7 +4,8 @@ import {
   loadActiveRest, saveActiveRest, clearActiveRest, listWorkoutSummaries, getWorkoutExerciseSets
 } from '../services/workouts.js';
 import { registerSet, setEffort, setTipo, skipRestClock, AVISO_DUPLICADA } from '../services/effort.js';
-import { getActiveAgent, saveMemory } from '../services/agent.js';
+import { getActiveAgent } from '../voice/fit-agent.js';
+import { saveMemory } from '../services/bia/memory.js';
 import { creatineSummary } from '../services/creatine.js';
 import { state, saveSettings } from '../store.js';
 import { delegate, forms, changes, toast, esc, num, go } from '../utils/dom.js';

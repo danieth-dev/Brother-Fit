@@ -2,7 +2,7 @@
 
 Documento vivo del producto. Describe cómo está armado, dónde vive cada dato y qué no se puede romper. Cuando cambie el comportamiento, el esquema, una pantalla o la forma de publicar, este archivo se actualiza en el mismo cambio.
 
-Última revisión: 15 de noviembre de 2026. Base de datos versión 3. Caché de la app `v187`.
+Última revisión: 15 de noviembre de 2026. Base de datos versión 3. Caché de la app `v188`.
 
 ## Qué es
 
@@ -34,7 +34,7 @@ Se toca en el mismo cambio que modifica el sistema. No es un diario de cada ajus
 
 ## Arquitectura
 
-Las reglas completas de capas, patrones y calidad están en `AGENTS.md`; el sistema visual, en `DESIGN.md`. Las vistas dibujan y escuchan. Los servicios deciden y calculan. `js/db.js` es el único módulo que abre IndexedDB. Las vistas no leen ni escriben tablas por su cuenta. Las claves y el proveedor de IA se leen y escriben con `getAgentConfig()` / `setAgentConfig()` de `js/services/agent.js`, y `js/services/meals.js` las reutiliza para el análisis de comidas.
+Las reglas completas de capas, patrones y calidad están en `AGENTS.md`; el sistema visual, en `DESIGN.md`. Las vistas dibujan y escuchan. Los servicios deciden y calculan. `js/db.js` es el único módulo que abre IndexedDB. Las vistas no leen ni escriben tablas por su cuenta. Las claves y el proveedor de IA se leen y escriben con `getAgentConfig()` / `setAgentConfig()` de `js/services/bia/config.js`, y `js/services/meals.js` las reutiliza para el análisis de comidas.
 
 ```
 index.html
@@ -43,8 +43,9 @@ index.html
        ├─ js/store.js    ajustes en memoria
        ├─ js/router.js   hash → vista
        └─ js/utils/picker.js   listas propias, fuera de #app
-            └─ js/views/*       llaman a js/services/*
-                 └─ js/services/*   llaman a db
+            └─ js/views/*       llaman a js/services/* y a js/voice/
+                 ├─ js/voice/fit-agent.js   voz en directo; usa services/bia/
+                 └─ js/services/*   llaman a db (la asistente vive en services/bia/)
 ```
 
 Al navegar, el router crea un `<section class="view">` nuevo y tira el anterior. Los listeners y temporizadores de esa pantalla mueren con ella. Si el atleta cambia de ruta mientras una vista todavía está cargando, el resultado viejo se descarta.
@@ -142,7 +143,7 @@ Claves de `meta`:
 | `geminiApiKey` | Clave de Gemini. Solo en este teléfono. No va al repositorio, pero **sí viaja dentro del respaldo**, porque el respaldo vuelca `meta` completo. |
 | `openaiApiKey` | Clave de OpenAI. Mismo trato que la de Gemini. |
 | `openaiModel` | Modelo de OpenAI Realtime. De fábrica `gpt-4o-mini-realtime-preview`. |
-| `athleteProfile` | `{ nombre, peso, estatura, creatina }` en texto libre, editable en Recuerdos. Hoy tiene valores de fábrica del autor en `agent.js` (`DEFAULT_PROFILE`): hay que quitarlos antes de publicar. |
+| `athleteProfile` | `{ nombre, peso, estatura, creatina }` en texto libre, editable en Recuerdos. Hoy tiene valores de fábrica del autor en `services/bia/memory.js` (`DEFAULT_PROFILE`): hay que quitarlos antes de publicar. |
 | `weeklyRoutine` | `[{ dia, grupo, dot }]`. Rutina semanal que Bía conoce. Hoy también tiene una rutina de fábrica (`DEFAULT_ROUTINE`). |
 | `fitChat` | `{ messages: [{ role, text, ts }], updatedAt }`. Charla visible de Bía. Tope 60 mensajes. No son recuerdos. Se borra solo con Nuevo chat. |
 
@@ -308,9 +309,9 @@ Medida el 15 de noviembre de 2026 contra las reglas de `AGENTS.md`. No se añade
 
 **Capas**
 
-| Dónde | Problema |
-| --- | --- |
-| `js/services/agent.js` | La clase `FitAgent` crea el `<audio>` y usa `SpeechRecognition`. La conexión de voz (audio, micrófono, WebSocket/WebRTC) debe salir del servicio a su propio módulo al partir `agent.js`. |
+Sin deuda abierta: las vistas no abren IndexedDB y ningún servicio toca el DOM.
+
+Resuelto en la `v188`: `js/services/agent.js` (1 660 líneas) se partió en `js/services/bia/` (configuración, memoria, texto, declaraciones de herramientas, herramientas, contexto e instrucciones) y la sesión de voz `FitAgent` pasó a `js/voice/fit-agent.js`, fuera de los servicios. Las importaciones dinámicas de `meals.js` desaparecieron: ya no hay ciclo entre comidas y la asistente.
 
 Resuelto en la `v187`: «Borrar todo» pasa por `clearAllData()` del servicio de respaldo; compartir o descargar el respaldo vive en `js/utils/backup-export.js`; los paneles Recuerdos y Conexión salieron de la vista de Bía a `js/utils/agent-panels.js` (Ajustes ya no importa otra vista); el servicio de Bía avisa a Entreno con `js/utils/events.js` en vez de `document`; la compresión de fotos vive en `js/utils/image.js`. De paso se corrigió que guardar la conexión desde Ajustes dibujaba el chat de Bía dentro de Ajustes.
 
@@ -318,8 +319,8 @@ Resuelto en la `v187`: «Borrar todo» pasa por `clearAllData()` del servicio de
 
 | Archivo | Líneas | Mezcla |
 | --- | --- | --- |
-| `js/services/agent.js` | 1 660 | Declaración de herramientas, su ejecución, prompt, contexto, perfil, rutina, claves, y la clase `FitAgent` con dos proveedores de voz. |
-| `js/views/agent.js` | 656 | Pantalla de clave y charla en directo. |
+| `js/voice/fit-agent.js` | 777 | Una clase con los dos proveedores de voz (Gemini Live y OpenAI Realtime), micrófono y audio. El siguiente corte: un archivo por proveedor. |
+| `js/views/agent.js` | 659 | Pantalla de clave y charla en directo. |
 | `js/utils/agent-panels.js` | 667 | Paneles Recuerdos y Conexión. |
 | `js/views/workout.js` | 851 | Pantalla de entreno completa. |
 | `js/utils/picker.js` | 847 | Hoja de listas, búsqueda, grupos y alta de ejercicio. |
@@ -328,7 +329,7 @@ Resuelto en la `v187`: «Borrar todo» pasa por `clearAllData()` del servicio de
 
 **Antes de Play Store**
 
-- Perfil y rutina de fábrica del autor (`DEFAULT_PROFILE`, `DEFAULT_ROUTINE` en `agent.js`) y 49 kg por defecto en `meals.js`.
+- Perfil y rutina de fábrica del autor (`DEFAULT_PROFILE`, `DEFAULT_ROUTINE` en `services/bia/memory.js`) y 49 kg por defecto en `meals.js`.
 - Plato de demostración en el escáner (`getDemoPhotoResult`).
 - Las claves de IA viajan dentro del respaldo.
 - El deploy publica todo el repositorio, incluidos `.agents/`, `.cursor/` y el ejecutable de la skill.
@@ -358,7 +359,14 @@ Resuelto en la `v187`: «Borrar todo» pasa por `clearAllData()` del servicio de
 | `js/services/body.js` | Peso corporal. |
 | `js/services/creatine.js` | Tomas y saturación. |
 | `js/services/backup.js` | Exportar e importar. |
-| `js/services/agent.js` | Bía: proveedores, voz, herramientas, contexto, recuerdos, perfil, rutina y claves. |
+| `js/services/bia/config.js` | Proveedor de IA, claves y modelo (`getAgentConfig`, `setAgentConfig`). |
+| `js/services/bia/memory.js` | Recuerdos, perfil y rutina semanal. |
+| `js/services/bia/text.js` | Qué se muestra de lo que dice Bía y qué cuenta como turno del atleta. |
+| `js/services/bia/tool-declarations.js` | Herramientas que el modelo puede pedir (solo datos). |
+| `js/services/bia/tools.js` | `executeToolCall`: ejecuta cada herramienta contra los datos reales. |
+| `js/services/bia/context.js` | Entrenos recientes, historial consultado y peso corporal para el contexto. |
+| `js/services/bia/prompt.js` | `buildSystemInstruction`: personaje, reglas y contexto. |
+| `js/voice/fit-agent.js` | Sesión de voz en el navegador (`FitAgent`, `getActiveAgent`): Gemini Live o OpenAI Realtime, micrófono y audio. |
 | `js/services/meals.js` | Comidas, metas de macros, catálogo de alimentos y análisis por foto o texto. |
 | `js/services/fit-chat.js` | Charla visible de Bía en `meta.fitChat`. |
 | `js/services/water-reminders.js` | Recordatorios locales de agua tras la creatina. |

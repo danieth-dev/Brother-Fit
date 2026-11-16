@@ -212,7 +212,7 @@ Cada grupo tiene un color fijo, igual en los dos modos, para el punto (`.dot`, `
 | Cardio | `#00c49f` |
 | Otro | `#a8a8a8` (y no se muestra el nombre del grupo) |
 
-Hoy estos colores viven escritos en `components.css` y repetidos en la rutina semanal de `js/services/agent.js`. Ver «Deuda conocida».
+Hoy estos colores viven escritos en `components.css` y repetidos en la rutina semanal de `js/services/bia/memory.js`. Ver «Deuda conocida».
 
 ## 3. Tipografía
 

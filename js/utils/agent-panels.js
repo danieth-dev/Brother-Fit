@@ -2,10 +2,11 @@
  * Se abren desde la pantalla de Bía y desde Ajustes, así que viven aquí y no en una vista.
  * Quien abre un panel pasa onChange para redibujarse cuando cambia la conexión. */
 
+import { getAgentConfig, setAgentConfig } from '../services/bia/config.js';
 import {
-  getAgentConfig, setAgentConfig, loadAllMemories, deleteMemory, clearAllMemories,
+  loadAllMemories, deleteMemory, clearAllMemories,
   loadAthleteProfile, saveAthleteProfile, loadWeeklyRoutine, saveWeeklyRoutine,
-} from '../services/agent.js';
+} from '../services/bia/memory.js';
 import { listWorkoutSummaries } from '../services/workouts.js';
 import { icons } from './icons.js';
 import { toast, esc, go } from './dom.js';

@@ -4,7 +4,10 @@
  * Athletic Dark Chat with Interactive Action Cards & Prompt Chips.
  */
 
-import { FitAgent, getActiveAgent, visibleFitText, getAgentConfig, setAgentConfig, deleteMemory } from '../services/agent.js';
+import { FitAgent, getActiveAgent } from '../voice/fit-agent.js';
+import { visibleFitText } from '../services/bia/text.js';
+import { getAgentConfig, setAgentConfig } from '../services/bia/config.js';
+import { deleteMemory } from '../services/bia/memory.js';
 import { loadFitChat, appendFitChat, clearFitChat, formatChatForContext } from '../services/fit-chat.js';
 import { getActiveWorkout, startWorkout, listExercises, muscleName } from '../services/workouts.js';
 import { state } from '../store.js';
