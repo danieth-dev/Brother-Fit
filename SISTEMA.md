@@ -321,7 +321,9 @@ Resuelto en la `v187`: «Borrar todo» pasa por `clearAllData()` del servicio de
 
 **Tamaño y responsabilidades**
 
-Sin deuda abierta: desde la `v200` ningún archivo de `js/` pasa de 600 líneas.
+| Archivo | Líneas | Mezcla |
+| --- | --- | --- |
+| `js/services/workouts.js` | 645 | Catálogo de ejercicios, entrenos, series, récords y progreso. El siguiente corte: el catálogo de ejercicios aparte. |
 
 **Antes de Play Store**
 
