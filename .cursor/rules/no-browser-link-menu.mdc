@@ -5,7 +5,7 @@ alwaysApply: true
 
 # Sin menú de vínculo al mantener pulsado
 
-En el teléfono, una pulsación larga sobre un `<a>` o botón abre el menú de Brave/Chrome (copiar vínculo, compartir, abrir en navegador). **Eso no debe salir nunca** en Brother Fit: la app debe sentirse nativa.
+En el teléfono, una pulsación larga sobre un `<a>` o botón abre el menú de Brave/Chrome (copiar vínculo, compartir, abrir en navegador). **Eso no debe salir nunca** en Bía: la app debe sentirse nativa.
 
 ## Obligatorio
 

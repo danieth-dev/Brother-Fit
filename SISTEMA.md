@@ -34,7 +34,7 @@ Se toca en el mismo cambio que modifica el sistema. No es un diario de cada ajus
 
 ## Arquitectura
 
-Las vistas dibujan y escuchan. Los servicios deciden y calculan. `js/db.js` es el único módulo que abre IndexedDB. Las vistas no leen ni escriben tablas por su cuenta. Las claves y el proveedor de IA se leen y escriben con `getAgentConfig()` / `setAgentConfig()` de `js/services/agent.js`, y `js/services/meals.js` las reutiliza para el análisis de comidas.
+Las reglas completas de capas, patrones y calidad están en `AGENTS.md`; el sistema visual, en `DESIGN.md`. Las vistas dibujan y escuchan. Los servicios deciden y calculan. `js/db.js` es el único módulo que abre IndexedDB. Las vistas no leen ni escriben tablas por su cuenta. Las claves y el proveedor de IA se leen y escriben con `getAgentConfig()` / `setAgentConfig()` de `js/services/agent.js`, y `js/services/meals.js` las reutiliza para el análisis de comidas.
 
 ```
 index.html
@@ -302,10 +302,48 @@ Para Play Store la app tendrá que empaquetarse como app de Android (por ejemplo
 - Un archivo nuevo de la app se añade a `ASSETS` en `sw.js`, y cada publicación sube `VERSION`.
 - Este archivo se actualiza cuando cambia lo que está escrito arriba.
 
+## Deuda técnica
+
+Medida el 15 de noviembre de 2026 contra las reglas de `AGENTS.md`. No se añade deuda nueva; al tocar una de estas zonas, se corrige y se borra la fila. La deuda visual está en `DESIGN.md` → «Deuda conocida».
+
+**Capas**
+
+| Dónde | Problema |
+| --- | --- |
+| `js/views/settings.js` | Importa `db.js` y llama `db.clearAll()` para «Borrar todo». Debe pasar por `services/backup.js`. |
+| `js/views/agent.js` | Importa `db.js` sin usarlo. |
+| `js/views/settings.js` | Importa `showMemoriesPanel` y `showConnectionPanel` de otra vista (`views/agent.js`). Esos paneles deben vivir en `js/utils/`. |
+| `js/services/agent.js` | Toca el navegador: lanza `CustomEvent` en `document` para avisar a Entreno, crea el `<audio>` y usa `SpeechRecognition`. La conexión de voz (audio, micrófono, WebSocket/WebRTC) debe separarse de las herramientas y el prompt. |
+| `js/services/backup.js` | Crea un `<a>` para descargar. La descarga es de interfaz. |
+| `js/services/meals.js` | Comprime la foto con un `<canvas>`. Es de interfaz. |
+
+**Tamaño y responsabilidades**
+
+| Archivo | Líneas | Mezcla |
+| --- | --- | --- |
+| `js/services/agent.js` | 1 659 | Declaración de herramientas, su ejecución, prompt, contexto, perfil, rutina, claves, y la clase `FitAgent` con dos proveedores de voz. |
+| `js/views/agent.js` | 1 315 | Charla, panel de Recuerdos, panel de Conexión y escáner. |
+| `js/views/workout.js` | 851 | Pantalla de entreno completa. |
+| `js/utils/picker.js` | 847 | Hoja de listas, búsqueda, grupos y alta de ejercicio. |
+| `js/services/meals.js` | 790 | Metas, catálogo, guardado, compresión de imagen y dos proveedores de IA. |
+| `css/components.css` | 8 352 | Todos los componentes y todas las pantallas. |
+
+**Antes de Play Store**
+
+- Perfil y rutina de fábrica del autor (`DEFAULT_PROFILE`, `DEFAULT_ROUTINE` en `agent.js`) y 49 kg por defecto en `meals.js`.
+- Plato de demostración en el escáner (`getDemoPhotoResult`).
+- Las claves de IA viajan dentro del respaldo.
+- El deploy publica todo el repositorio, incluidos `.agents/`, `.cursor/` y el ejecutable de la skill.
+- Falta el empaquetado para Android.
+- No hay pruebas automáticas salvo `rpe-test.html`.
+
 ## Mapa de archivos
 
 | Ruta | Papel |
 | --- | --- |
+| `AGENTS.md` | Reglas de arquitectura, patrones, calidad y documentación para personas y agentes. `CLAUDE.md` lo importa. |
+| `DESIGN.md` | Sistema visual: tokens, tipografía, componentes, reglas y deuda de diseño. |
+| `PRODUCT.md` | Público, propósito y principios de producto. |
 | `index.html` | Cascarón, isla y arranque del módulo. |
 | `manifest.webmanifest` | Instalación como app. |
 | `sw.js` | Caché y versión publicada. |

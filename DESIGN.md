@@ -1,64 +1,74 @@
 ---
 name: Bía
-description: Sistema de diseño atlético de alto rendimiento en Negro Carbón y Amarillo Eléctrico
+description: Sistema visual de Bía. Negro OLED y amarillo eléctrico, una sola mano, números grandes, cero ruido.
 colors:
+  bg: "#0A0A0A"
+  surface: "#1E1E1E"
+  surface-2: "#262626"
+  surface-elevated: "#2F2F2F"
+  line: "#2A2A2A"
+  line-strong: "#3D3D3D"
+  line-accent: "rgba(255, 230, 0, 0.28)"
+  text: "#FFFFFF"
+  muted: "#A1A1A1"
+  text-dim: "#71717A"
   primary: "#FFE600"
-  primary-hover: "#E6CF00"
-  primary-ink: "#0A0B0E"
-  neutral-bg: "#0A0B0E"
-  surface: "#13151A"
-  surface-2: "#1C2028"
-  surface-elevated: "#252B37"
-  line: "#2A303D"
-  line-strong: "#3B4456"
-  text: "#F8FAFC"
-  muted: "#94A3B8"
-  text-dim: "#64748B"
-  yellow: "#FFE600"
+  primary-hover: "#F5DC00"
+  primary-active: "#D6C000"
+  primary-ink: "#07080A"
   yellow-dim: "rgba(255, 230, 0, 0.12)"
   green: "#10B981"
-  green-dim: "rgba(16, 185, 129, 0.3)"
   green-ink: "#022C22"
   red: "#F43F5E"
   blue: "#38BDF8"
   orange: "#FB923C"
+  purple: "#C084FC"
 typography:
   display:
-    fontFamily: 'ui-rounded, "SF Pro Rounded", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif'
+    fontFamily: '"Fugaz One", ui-rounded, "SF Pro Rounded", system-ui, sans-serif'
     fontSize: "2.25rem"
-    fontWeight: 800
-    lineHeight: 1.1
+    fontWeight: 400
+    lineHeight: 1.05
     letterSpacing: "-0.03em"
   headline:
-    fontFamily: 'ui-rounded, "SF Pro Rounded", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif'
+    fontFamily: '"Fugaz One", ui-rounded, "SF Pro Rounded", system-ui, sans-serif'
     fontSize: "1.25rem"
-    fontWeight: 700
-    lineHeight: 1.2
-    letterSpacing: "-0.015em"
+    fontWeight: 400
+    lineHeight: 1.15
+    letterSpacing: "-0.02em"
   body:
     fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif'
     fontSize: "1rem"
     fontWeight: 400
     lineHeight: 1.5
     letterSpacing: "normal"
+  label:
+    fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif'
+    fontSize: "0.75rem"
+    fontWeight: 600
+    lineHeight: 1.2
+    letterSpacing: "0.05em"
   numeric:
-    fontFamily: 'ui-rounded, "SF Pro Rounded", system-ui, sans-serif'
-    fontSize: "1.75rem"
+    fontFamily: 'ui-monospace, "SF Mono", "Roboto Mono", monospace'
+    fontSize: "2.75rem"
     fontWeight: 800
     lineHeight: 1
-    letterSpacing: "-0.025em"
+    letterSpacing: "-0.04em"
 rounded:
-  xs: "3px"
+  xs: "4px"
   sm: "8px"
   md: "12px"
   lg: "16px"
+  xl: "20px"
   full: "9999px"
 spacing:
   xs: "4px"
   sm: "8px"
-  md: "14px"
+  md: "12px"
+  base: "16px"
   lg: "20px"
-  xl: "28px"
+  xl: "24px"
+  2xl: "32px"
 components:
   button-primary:
     backgroundColor: "{colors.primary}"
@@ -66,130 +76,271 @@ components:
     rounded: "{rounded.md}"
     padding: "0 22px"
     height: "52px"
-  button-primary-hover:
-    backgroundColor: "{colors.primary-hover}"
-    textColor: "{colors.primary-ink}"
+  button-secondary:
+    backgroundColor: "{colors.surface-2}"
+    textColor: "{colors.text}"
+    rounded: "{rounded.md}"
+    padding: "0 22px"
+    height: "52px"
   button-quiet:
     backgroundColor: "transparent"
     textColor: "{colors.muted}"
     rounded: "{rounded.md}"
-    padding: "0 18px"
+    height: "52px"
+  button-danger:
+    backgroundColor: "transparent"
+    textColor: "{colors.red}"
+    rounded: "{rounded.md}"
+    height: "52px"
+  field:
+    backgroundColor: "{colors.surface-2}"
+    textColor: "{colors.text}"
+    rounded: "{rounded.sm}"
+    padding: "0 14px"
+    height: "48px"
   card:
     backgroundColor: "{colors.surface}"
-    rounded: "{rounded.lg}"
-    padding: "18px"
+    rounded: "{rounded.xl}"
+    padding: "20px"
+  row:
+    backgroundColor: "{colors.surface}"
+    rounded: "{rounded.xl}"
+    padding: "18px 20px"
+  sheet:
+    backgroundColor: "{colors.surface}"
+    rounded: "{rounded.xl} {rounded.xl} 0 0"
+    padding: "8px 16px 16px"
+  tabbar-island:
+    backgroundColor: "{colors.surface-elevated}"
+    rounded: "28px"
+    padding: "6px"
+  toast:
+    backgroundColor: "{colors.surface-elevated}"
+    textColor: "{colors.text}"
+    rounded: "{rounded.md}"
+    padding: "15px 18px"
 ---
 
-# Design System: Bía
+# Bía — sistema visual
 
-## Overview
+Este documento es la fuente de verdad del diseño de Bía. Lo leen las personas y los agentes (la skill `impeccable` lo carga junto con `PRODUCT.md`) antes de tocar cualquier pantalla. Si el CSS y este archivo no coinciden, uno de los dos está mal: se corrige en el mismo cambio.
 
-Bía es una herramienta atlética enfocada en la fuerza, la constancia y el rendimiento físico. Su diseño está inspirado en la estética industrial del gimnasio de alto rendimiento: pesas olímpicas calibradas, maquinaria negra mate y marcas de precisión en amarillo eléctrico.
+Fuente de los valores: `css/tokens.css` (tokens), `css/base.css` (página y tipografía base) y `css/components.css` (componentes). El frontmatter de arriba usa el formato de `DESIGN.md` que entiende la skill; los valores son los del **modo oscuro con acento amarillo**, que es el de fábrica.
 
-La combinación de **Negro Carbón (`#0A0B0E`)** y **Amarillo Eléctrico (`#FFE600`)** transmite dinamismo, energía y enfoque. Todo elemento en la pantalla tiene una función clara, máxima legibilidad a distancia y superficies táctiles generosas preparadas para el uso en medio de una sesión de entrenamiento intensa.
+Última revisión: 15 de noviembre de 2026 (caché `v185`).
 
-## Colors
+## 1. Idea
 
-### Paleta Principal (Dark Athletic Core)
+Bía se usa en el gimnasio, entre series, con una mano sudada y poco tiempo. El diseño responde a eso:
 
-- **Canvas Principal (`--bg` / `neutral-bg`):** `#0A0B0E` — Negro profundo con ligero matiz carbón, reduce el consumo de batería en pantallas OLED y minimiza reflejos bajo luces de gimnasio.
-- **Superficie Base (`--surface`):** `#13151A` — Nivel base para tarjetas, formularios y barra de navegación inferior.
-- **Superficie Secundaria (`--surface-2`):** `#1C2028` — Fondos de inputs, botones secundarios y selector segmentado.
-- **Superficie Elevada (`--surface-elevated`):** `#252B37` — Elementos flotantes como avisos (toasts) y menús.
-- **Bordes y Divisores (`--line`):** `#2A303D` — Separación nítida entre filas y tarjetas sin generar ruido visual.
-- **Bordes de Enfoque (`--line-strong`):** `#3B4456` — Contornos definidos para botones en hover e inputs activos.
+- **Negro OLED y un solo color de acción.** El fondo casi negro ahorra batería y no deslumbra bajo luces de sala. El amarillo eléctrico marca lo único que hay que tocar.
+- **Los números mandan.** Peso, reps, descanso y racha se leen a un brazo de distancia: grandes, en cifras tabulares, sin decoración alrededor.
+- **Plano y técnico.** Inspiración: discos calibrados, maquinaria negra mate, marcas de precisión. Sin degradados de color, sin brillos, sin emojis.
+- **Táctil antes que bonito.** Ningún control interactivo baja de 44 px; los principales tienen 48–52 px.
 
-### Color de Acción e Identidad (Electric Yellow)
+Modo de la skill: **Operate**. La app es una herramienta; la marca vive en los detalles precisos, no en la decoración.
 
-- **Primario de Acción (`--primary` / `yellow`):** `#FFE600` — Amarillo eléctrico de alta energía y visibilidad instantánea.
-- **Texto sobre Primario (`--primary-ink`):** `#0A0B0E` — Negro carbón sólido que garantiza un ratio de contraste superior a **13:1** (supera holgadamente el estándar WCAG AAA de 7:1).
-- **Primario Activo/Hover (`--primary-hover`):** `#E6CF00` — Variación con respuesta táctil inmediata.
-- **Tinte de Descanso (`--yellow-dim`):** `rgba(255, 230, 0, 0.14)` — Fondo suave para el banner del temporizador de descanso.
+## 2. Color
 
-### Tipografía y Jerarquía Textual
+Todo color sale de un token de `css/tokens.css`. Un componente nunca escribe un hex ni un `rgba()` del acento: usa `var(--primary)`, `var(--yellow-dim)`, `var(--line-accent)`, etc. Así los modos y acentos funcionan sin tocar el componente.
 
-- **Texto Principal (`--text`):** `#F3F5F9` — Blanco neutro suave para lectura descansada.
-- **Texto Secundario (`--muted`):** `#9EA7B5` — Gris plateado legible para etiquetas, fechas y notas.
-- **Texto Atenuado (`--text-dim`):** `#6B7688` — Indicadores inactivos o fechas futuras.
+### Modo oscuro (de fábrica)
 
-### Colores de Estado Semántico y Grupos Musculares
+| Token | Valor | Uso |
+| --- | --- | --- |
+| `--bg` | `#0a0a0a` | Lienzo de la página. |
+| `--surface` | `#1e1e1e` | Tarjetas, filas, hojas, segmentos. |
+| `--surface-2` | `#262626` | Campos, botón secundario, chips. |
+| `--surface-elevated` | `#2f2f2f` | Isla de navegación, avisos, hover de botón. |
+| `--line` | `#2a2a2a` | Bordes y divisores. |
+| `--line-strong` | `#3d3d3d` | Bordes en hover, borde de la isla y de las hojas, barrita de arrastre. |
+| `--line-accent` | acento al 28 % | Bordes que deben teñirse con el acento. |
+| `--text` | `#ffffff` | Texto principal. |
+| `--muted` | `#a1a1a1` | Etiquetas, fechas, texto secundario. |
+| `--text-dim` | `#71717a` | Placeholders, estados inactivos. |
+| `--primary` / `--yellow` | `#ffe600` | La acción principal, la pestaña activa, la pastilla del segmento, el foco. |
+| `--primary-hover` / `--primary-active` | `#f5dc00` / `#d6c000` | Respuesta al tocar. |
+| `--primary-ink` / `--yellow-ink` | `#07080a` | Texto e iconos **sobre** el acento. |
+| `--yellow-dim` | acento al 12 % | Fondo del descanso, chips de aviso, halos de foco. |
+| `--primary-glow` | `0 0 24px` acento al 22 % | Solo en el aviso (toast). |
 
-- **Éxito / Completado (`--green`):** `#22C55E` / Texto: `#052E16` (Series finalizadas, creatina tomada).
-- **Peligro / Alerta (`--red`):** `#EF4444` (Borrado de datos, cancelación de serie).
-- **Acento Piernas (`--blue`):** `#38BDF8` (Código de color por grupo muscular).
-- **Acento Brazos (`--orange`):** `#F97316` (Código de color por grupo muscular).
+### Colores de estado
 
-## Typography
+| Token | Valor | Uso |
+| --- | --- | --- |
+| `--green` / `--green-dim` / `--green-ink` | `#10b981` | Hecho: creatina tomada, serie efectiva, calorías de Comidas. |
+| `--red` / `--red-dim` / `--red-ink` | `#f43f5e` | Borrar, zona de riesgo, aviso de error. |
+| `--blue`, `--orange`, `--purple` (+ `-dim`) | `#38bdf8`, `#fb923c`, `#c084fc` | Acentos secundarios de datos. |
+| `--white` | `#f8fafc` | Punto de grupo muscular sin grupo. |
 
-El sistema tipográfico prioriza la **densidad numérica clara** y el **peso atlético contundente**:
+### Modo claro (`html[data-modo="claro"]`)
 
-- **Familia Display / Titulares:** `ui-rounded, "SF Pro Rounded", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif` para titulares, cronómetros y marcas numéricas.
-- **Familia Body:** `system-ui, -apple-system, "Segoe UI", Roboto, sans-serif` para formularios, etiquetas y descripciones.
-- **Números Tabulares (`font-variant-numeric: tabular-nums`):** Obligatorio en cronómetros, pesos, repeticiones y tablas.
+Fondo `#edf0f5`, superficies blancas, texto `#090b0f`, bordes `#cbd5e1`. El amarillo no se lee sobre blanco, así que el acento pasa a **ámbar `#b45309`** con texto blanco encima. Las sombras pasan a pizarra suave. `modo: "sistema"` sigue a `prefers-color-scheme`. `meta[name="theme-color"]` se sincroniza con el modo efectivo (`#07080a` o `#edf0f5`) desde `js/store.js`.
 
-### Escala Tipográfica Estandarizada
+### Acentos (`html[data-tema]`)
 
-| Token CSS | Valor | Uso Principal |
-|---|---|---|
-| `--fs-xs` | `0.75rem` (12px) | Etiquetas de la barra inferior, días de semana, stats |
-| `--fs-sm` | `0.875rem` (14px) | Subtítulos, encabezados de tabla, botones compactos, inputs |
-| `--fs-base` | `1.0rem` (16px) | Cuerpo de texto, filas de series, botones principales |
-| `--fs-md` | `1.125rem` (18px) | Títulos de sección, subtítulos destacados |
-| `--fs-lg` | `1.25rem` (20px) | Encabezados H2 |
-| `--fs-xl` | `1.5rem` (24px) | Disco de creatina, iconos de acción |
-| `--fs-2xl` | `1.75rem` (28px) | Estadísticas numéricas destacadas |
-| `--fs-3xl` | `2.25rem` (36px) | Título principal H1, récord 1RM |
-| `--fs-hero` | `2.6rem` (42px) | Cronómetro de descanso gigante |
+Solo cambian los tokens de acento (`--primary*`, `--yellow*`, `--line-accent`, `--primary-glow`):
 
-## Layout
+| Acento | Oscuro | Claro |
+| --- | --- | --- |
+| Amarillo (sin atributo) | `#ffe600`, tinta negra | `#b45309`, tinta blanca |
+| Azul (`azul`) | `#5ec4ff`, tinta negra | `#0369a1`, tinta blanca |
+| Rosado (`rosado`) | `#ff7ad1`, tinta negra | `#be185d`, tinta blanca |
 
-- **Estructura Móvil Centralizada:** La aplicación está concebida como PWA móvil con contenedor máximo centrado a `560px` en pantallas anchas.
-- **Zonas Seguras (`safe-area-inset`):** Integración nativa con notch y áreas de gestos táctiles.
-- **Barra de Navegación Inferior Fija:** Altura de `64px` con desenfoque de fondo (`backdrop-filter: blur(16px)`).
-- **Espaciado Modular:** Separaciones de `16px` entre campos y bloques secundarios; `24px` a `32px` entre secciones principales.
+Regla de contraste: sobre el acento siempre va `--primary-ink`. Nunca texto blanco sobre amarillo, azul claro o rosado claro.
 
-## Elevation & Depth
+### Grupos musculares
 
-- **Capa 0 (Canvas):** `#0A0B0E`.
-- **Capa 1 (Tarjetas y Tabbar):** `#13151A` con borde de `1px solid #2A303D`.
-- **Capa 2 (Inputs y Botones):** `#1C2028` con borde `1px solid #2A303D`.
-- **Sombra Tonal Elevada:** `0 4px 16px -2px rgba(0, 0, 0, 0.55)`.
-- **Resplandor Amarillo (`--primary-glow`):** `0 4px 18px -2px rgba(255, 230, 0, 0.25)`.
+Cada grupo tiene un color fijo, igual en los dos modos, para el punto (`.dot`, `.muscle-dot`) junto al nombre del ejercicio:
 
-## Shapes
+| Grupo | Color |
+| --- | --- |
+| Pecho | `#ff6b7a` |
+| Espalda | `#2ec4b6` |
+| Piernas | `#ffd166` |
+| Hombros | `#7ed957` |
+| Bíceps (y Brazos) | `#4d8dff` |
+| Tríceps | `#ff9f43` |
+| Core | `#b38cff` |
+| Cardio | `#00c49f` |
+| Otro | `#a8a8a8` (y no se muestra el nombre del grupo) |
 
-- **Micro-radios (`--r-xs`):** `3px` (Indicador activo de la barra inferior).
-- **Controles compactos (`--r-sm`):** `8px` (Inputs, celdas de calendario, botones pequeños).
-- **Botones y contenedores (`--r-md`):** `12px` (Botones de acción, tarjetas de descanso).
-- **Tarjetas y paneles (`--r-lg`):** `16px` (Formularios y paneles de estadísticas).
-- **Píldoras circulares (`--r-full`):** `9999px` (Chips de estado, scrollbars, disco olímpico).
+Hoy estos colores viven escritos en `components.css` y repetidos en la rutina semanal de `js/services/agent.js`. Ver «Deuda conocida».
 
-## Components
+## 3. Tipografía
 
-### 1. Botón de Acción Primaria (`.btn-primary`)
-- Fondo: `var(--primary)` (`#FFE600`).
-- Texto: `var(--primary-ink)` (`#0A0B0E`).
-- Altura táctil mínima: `52px`.
-- Elevación: `var(--shadow-primary)`.
+Tres voces, cada una con un trabajo:
 
-### 2. Disco de Creatina (`.plate`)
-- Elemento hero interactivo circular en la pantalla de Inicio.
-- Aros concéntricos amarillos y carbón en estado pendiente; esmeralda en estado confirmado.
+| Voz | Familia | Dónde |
+| --- | --- | --- |
+| **Display** | `--font-display`: Fugaz One (archivo local `fonts/FugazOne-Regular.ttf`, licencia OFL) | Solo `h1`, `h2`, `h3` y `.section-title`. |
+| **Interfaz** | `--font`: fuente del sistema | Cuerpo, etiquetas, botones, campos, números normales. |
+| **Reloj** | `--font-mono`: monoespaciada del sistema | Cronómetro de sesión (`.elapsed`), descanso, campos técnicos. |
 
-### 3. Temporizador de Descanso (`.rest`)
-- Superficie ámbar/amarillo atenuado (`var(--yellow-dim)`) con cronómetro gigante y controles para ajustar el tiempo sin interrumpir la respiración.
+Reglas de Fugaz One: un único peso real (400) y `font-synthesis: none`. Nunca se le pide 700/800: el navegador inventaría una negrita falsa. Nunca se usa para números, etiquetas ni párrafos.
 
-### 4. Navegación Inferior (`.tabbar`)
-- Barra translúcida fijada con indicador superior brillante en amarillo eléctrico para la sección en curso.
+Todo valor que cambia (peso, reps, tiempo, kcal, racha) lleva `font-variant-numeric: tabular-nums` (clase `.num`) para que no baile.
 
-## Do's and Don'ts
+### Escala
 
-### Do's
-- **Usar siempre texto negro sobre amarillo primario:** Mantiene un contraste insuperable de 13:1.
-- **Mantener siempre `tabular-nums` en valores dinámicos:** Previene saltos horizontales en números de repeticiones y temporizadores.
-- **Preservar botones con altura mínima de 48–52px:** Esencial para manejo con dedos cansados o temblorosos en el gimnasio.
+| Token | Valor | Uso |
+| --- | --- | --- |
+| `--fs-2xs` | 11 px | Etiquetas de la isla de navegación. |
+| `--fs-xs` | 12 px | Etiquetas de campo en mayúsculas, chips, metadatos. |
+| `--fs-sm` | 14 px | Texto secundario, botones compactos, avisos. |
+| `--fs-base` | 16 px | Cuerpo, campos, botones. |
+| `--fs-md` | 18 px | `h3`, títulos de sección. |
+| `--fs-lg` | 20 px | `h2`. |
+| `--fs-xl` | 24 px | Descanso, cifras de tarjeta. |
+| `--fs-2xl` | 30 px | Cifras destacadas. |
+| `--fs-3xl` | 36 px | `h1`, PR. |
+| `--fs-hero` | 44 px | Cronómetro de sesión. |
 
-### Don'ts
-- **No mezclar degradados multicolores:** La estética es plana, limpia y técnica.
-- **No usar sombras moradas o azules:** Todo relieve responde al color negro carbón con resplandor amarillo donde corresponda.
-- **No usar texto blanco sobre amarillo:** Incumpliría normas de accesibilidad de contraste.
+Etiquetas de campo y de sección: `--fs-xs`, peso 600–700, mayúsculas, `letter-spacing: 0.05em`, color `--muted`.
+
+## 4. Espacio y layout
+
+- **Columna única** de 560 px como máximo, centrada (`#app`). Márgenes laterales de 18 px o el área segura, lo que sea mayor.
+- **Áreas seguras**: arriba, abajo y a los lados se suma `env(safe-area-inset-*)`. El final de la página deja sitio para la isla (`--tabbar-h: 92px`) más 28 px.
+- **Ritmo**: 4, 8, 12, 16, 20, 24 y 32 px. 12 px entre filas de una lista, 16 px entre campos (`.stack`), 32 px antes de un título de sección. Hoy no hay tokens de espacio en CSS: se escribe el valor de esta escala, nunca uno fuera de ella.
+- **Sin zoom con dos dedos** y sin rebote de scroll en `html`/`body`. Las listas internas sí desplazan, con `overscroll-behavior: contain`.
+
+## 5. Forma y profundidad
+
+| Token | Valor | Uso |
+| --- | --- | --- |
+| `--r-xs` | 4 px | Detalles mínimos. |
+| `--r-sm` | 8 px | Campos, botón compacto, pastilla del segmento. |
+| `--r-md` | 12 px | Botones, segmentos, descanso, avisos. |
+| `--r-lg` | 16 px | Tarjetas de entreno reciente. |
+| `--r-xl` | 20 px | Tarjetas de formulario, filas, hojas inferiores. |
+| `--r-full` | 9999 px | Chips, barrita de arrastre, discos y anillos. |
+
+La isla de navegación usa 28 px por fuera y 22 px en cada pestaña.
+
+Profundidad con sombras neutras de contacto, nunca de color: `--shadow-sm` (filas y tarjetas), `--shadow-md` (descanso, hover del primario), `--shadow-lg` (isla, hojas, avisos). La única luz de color es `--primary-glow`, y solo en el aviso.
+
+## 6. Movimiento
+
+- Entrada de pantalla: fundido de 180 ms, `cubic-bezier(0.16, 1, 0.3, 1)`.
+- Respuesta al tocar: `transform: scale(0.98)` en botones, `0.92` en la isla; transiciones de color de 140–160 ms.
+- Hojas: suben en 250 ms con la misma curva; el fondo se oscurece a negro al 72 %. Se cierran arrastrando la barrita (`js/utils/sheet-drag.js`).
+- Pastilla del segmento: 200 ms; sigue al dedo mientras se arrastra (`js/utils/seg-swipe.js`).
+- `prefers-reduced-motion: reduce` deja todas las animaciones y transiciones en 0,01 ms.
+
+## 7. Iconos
+
+Un único juego propio en `js/utils/icons.js`: SVG de 24×24, trazo de 2 px, puntas y uniones redondeadas, `currentColor`, `aria-hidden="true"`. Se piden como `icons.nombre({ size })`. No se usan fuentes de iconos, emojis ni caracteres Unicode como icono. El ícono de la app (`icons/icon.svg`) es un disco: anillos amarillos sobre negro.
+
+## 8. Componentes
+
+Cada componente existe una vez en `components.css` y las pantallas lo reutilizan. Antes de crear una clase nueva, se busca la existente.
+
+| Componente | Clase | Especificación |
+| --- | --- | --- |
+| Botón | `.btn` | Alto mínimo 52 px, relleno horizontal 22 px, `--r-md`, peso 700, fondo `--surface-2`, borde `--line`. |
+| Primario | `.btn-primary` | Fondo `--primary`, texto `--primary-ink`. Uno por pantalla: la acción principal. |
+| Silencioso | `.btn-quiet` | Transparente, texto `--muted`, borde `--line`. |
+| Peligro | `.btn-danger` | Transparente con borde y texto `--red`; relleno rojo al confirmar. |
+| Compacto | `.btn-sm` | Alto 48 px, `--r-sm`, `--fs-sm`. |
+| Botón icono | `.btn-x`, `.head-link` | 48×48 (44 en cabecera), sin borde hasta el hover. |
+| Campo | `.field` | Etiqueta en mayúsculas `--fs-xs`; input de 48 px, `--surface-2`, `--r-sm`, cifras tabulares. Foco: borde `--primary` y halo del acento. |
+| Lista nativa | `.picker-*` | Los `<select>`, fechas y horas no abren el menú del sistema: abren una hoja propia (`js/utils/picker.js`, `calendar.js`, `time-sheet.js`). |
+| Hoja inferior | `.picker-sheet` y similares | Panel `--surface` de hasta 560 px, esquinas superiores `--r-xl`, barrita de 44×5 px, vive en `document.body`. Confirmaciones con `js/utils/confirm-sheet.js`. |
+| Segmento | `.seg` + `.seg-thumb` | Fondo `--surface`, padding 4 px, `--r-md`; la opción activa es una pastilla `--primary` que se arrastra. |
+| Isla de navegación | `.tabbar` | Flotante abajo, `--surface-elevated`, borde `--line-strong`, desenfoque 12 px. Pestaña activa en `--primary`. Se oculta dentro de la pantalla de la asistente. |
+| Aviso | `#toast` | Píldora `--surface-elevated` con borde `--primary` completo y `--primary-glow`. `tone: 'danger'` cambia el borde a `--red`. |
+| Fila y tarjeta | `.row`, `.form-card`, `.recent-workout-card` | `--surface`, `--r-xl` (16 px en recientes), `--shadow-sm`, sin borde salvo en recientes. |
+| Chip | `.chip`, `.chip-ok`, `.chip-warn` | Píldora de 12 px; verde para hecho, acento para aviso. |
+| Disco de creatina | `.plate` | Disco olímpico: aros concéntricos del acento (`--c`) sobre ranuras oscuras, hasta 248 px. `.plate.done` cambia `--c` a `--green`. Versión compacta en Inicio según ajuste. |
+| Descanso | `.rest` | Banda `--yellow-dim` con borde del acento, tiempo en mono `--fs-xl`. |
+| Punto muscular | `.dot`, `.muscle-dot` | 8–9 px con el color del grupo. |
+| Anillo de calorías | `.meal-ring-svg`, `.home-food-ring` | SVG con trazo verde sobre `--line`; cifra central en `--text`. |
+| Estado vacío | `.empty` y variantes | Texto `--muted` centrado y una sola acción primaria. |
+
+## 9. Accesibilidad
+
+- Contraste AA como mínimo; el texto sobre el acento usa siempre la tinta del acento.
+- Foco visible: contorno de 2 px en `--primary` (`:focus-visible`).
+- Objetivos táctiles de 44 px o más; los frecuentes, 48–52 px.
+- Todo botón de solo icono lleva `aria-label`. Los iconos son `aria-hidden`.
+- El menú de pulsación larga del navegador nunca aparece sobre botones ni vínculos (`base.css` y `main.js`).
+- Respeta `prefers-reduced-motion`.
+
+## 10. Sí y no
+
+**Sí**
+- Usar tokens para todo color, radio, tamaño de letra y sombra.
+- Una sola acción primaria amarilla por pantalla.
+- Cifras tabulares en todo valor que cambie.
+- Fugaz One solo en títulos y a peso 400.
+- Probar cada cambio en modo oscuro y claro y con los tres acentos.
+
+**No**
+- Hex o `rgba()` del acento dentro de un componente: rompe azul, rosado y modo claro.
+- `style="..."` en el HTML que generan las vistas: el estilo va en una clase.
+- `!important` para ganar a otra regla: se corrige la especificidad.
+- Degradados de color, sombras de color, emojis o iconos de otra librería.
+- Texto blanco sobre el acento en modo oscuro.
+
+## 11. Deuda conocida
+
+Medida el 15 de noviembre de 2026. Cada cambio que toque una de estas zonas la deja mejor, y esta lista se actualiza.
+
+| Problema | Hoy | Meta |
+| --- | --- | --- |
+| Amarillo escrito a mano (`rgba(255, 230, 0, …)` o `#ffe600`) en `components.css` | 22 usos: con acento azul o rosado quedan bordes y halos amarillos | 0, usando `--yellow-dim`, `--line-accent` o un token nuevo |
+| Otros hex y `rgba()` sueltos en `components.css` | ~100 hex y ~40 `rgba()` | Tokens o, si es propio de un componente, una variable local documentada |
+| `font-size` escrito en px/rem en vez de token | 230 frente a 109 con token | Todo con `--fs-*` |
+| `!important` en `components.css` | 156 | Solo en `[hidden]` y en movimiento reducido |
+| `style="…"` en HTML generado por JS | 89 (14 en `progress.js`) | 0 |
+| Colores de grupo muscular repetidos en CSS y en `DEFAULT_ROUTINE` (JS) | Dos fuentes | Tokens `--g-pecho`, etc., y el JS sin hex |
+| Verde de Comidas (`#10B981`) escrito en el SVG de `views/meals.js` | Literal | `var(--green)` |
+| `components.css` | 8 352 líneas en un archivo, con selectores repetidos (`.field`, `.compare-card`…) | Partido por componente o pantalla y sin duplicados |
+
+## 12. Cómo se mantiene
+
+- Un cambio visual (token, componente, pantalla nueva, modo, acento, icono, fuente) actualiza este archivo **en el mismo commit**.
+- Si se añade un token, va primero a `css/tokens.css` y después a la tabla de este archivo y al frontmatter si es de modo oscuro/amarillo.
+- La revisión de diseño se hace con la skill `impeccable` (`.agents/skills/impeccable/`), que lee este archivo y `PRODUCT.md`.
+- Se actualiza la fecha de «Última revisión».
