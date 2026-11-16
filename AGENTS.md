@@ -76,7 +76,7 @@ Las excepciones que existen hoy están listadas en `SISTEMA.md` → «Deuda téc
 
 ## Publicar
 
-- Archivo nuevo de la app → añadirlo a `ASSETS` en `sw.js`.
+- Archivo nuevo de la app → añadirlo a `ASSETS` en `sw.js`. Si está en la raíz (no en `css/`, `js/`, `fonts/` o `icons/`), también a la copia de `.github/workflows/deploy.yml`: solo se publica lo que esa lista copia.
 - Cada publicación sube `VERSION` en `sw.js` y la versión de caché que cita `SISTEMA.md`.
 - Push a `main` publica en GitHub Pages.
 

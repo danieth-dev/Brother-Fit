@@ -4241,11 +4241,18 @@ body.in-agent-view #app .view {
   height: 8px;
   border-radius: 4px;
   flex-shrink: 0;
+  background: var(--line-strong);
 }
 .agent-rec-day-text {
   font-size: 16px;
   font-weight: 600;
   color: var(--text);
+}
+/* Dato que el atleta todavía no dio: «Sin definir» o «Descanso». */
+.agent-rec-value.is-empty,
+.agent-rec-day-text.is-empty {
+  color: var(--text-dim);
+  font-weight: 500;
 }
 
 /* Entrenamientos fila enlace */

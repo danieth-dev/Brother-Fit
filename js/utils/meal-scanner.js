@@ -21,7 +21,6 @@ import {
   deleteMeal,
   getMealById,
   todayMealsSummary,
-  getDemoPhotoResult,
 } from '../services/meals.js';
 import { esc, fmtNum, toast } from './dom.js';
 import { compressImageFile } from './image.js';
@@ -105,10 +104,6 @@ export async function openMealResultSheet({
   } else if (initialResult) {
     items = (initialResult.items || []).map((i) => recalcItemGrams(i, i.gramos));
     customPlatoName = initialResult.plato || '';
-  } else if (!currentFile && !manualMode) {
-    const demo = getDemoPhotoResult();
-    items = demo.items;
-    customPlatoName = demo.plato;
   }
 
   const overlay = document.createElement('div');
@@ -433,6 +428,8 @@ export async function openMealResultSheet({
           if (parsed?.items?.length) {
             items = parsed.items.map((it) => recalcItemGrams(it, it.gramos));
             customPlatoName = parsed.plato || '';
+          } else {
+            toast('No reconocí esos alimentos. Añádelos desde la lista o escribe nombre y gramos.');
           }
           renderItemsAndTotals();
         }
@@ -527,6 +524,8 @@ export async function openMealResultSheet({
           customPlatoName = '';
           if (input) input.value = '';
           renderItemsAndTotals();
+        } else {
+          toast('No reconocí ese alimento. Prueba con otro nombre o elígelo de la lista.');
         }
       } finally {
         btn.disabled = false;

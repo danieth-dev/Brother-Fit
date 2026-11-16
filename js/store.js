@@ -9,11 +9,12 @@ export const DEFAULTS = {
   tema: 'amarillo',
   modo: 'oscuro',
   creatinaCompacta: false,
-  metaKcal: 2100,
-  metaProteina: 100,
-  metaCarbos: 270,
-  metaGrasa: 66,
-  metaObjetivo: 'ganar',
+  /* Metas de referencia generales hasta que el atleta registre su peso y elija objetivo. */
+  metaKcal: 2000,
+  metaProteina: 120,
+  metaCarbos: 235,
+  metaGrasa: 65,
+  metaObjetivo: 'mantener',
 };
 
 const TEMAS = new Set(['amarillo', 'azul', 'rosado']);

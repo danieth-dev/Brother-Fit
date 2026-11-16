@@ -38,10 +38,10 @@ export async function render(el) {
     todayMealsSummary(todayISO()),
     latestWeight().catch(() => null),
   ]);
-  const pesoActualKg = lastW?.peso || 49;
+  const pesoActualKg = lastW?.peso || null;
   const { meals, totals, targets, pct, remainingKcal, surplusKcal } = summary;
-  const objText = OBJETIVO_LABELS[targets.objetivo] || 'ganar masa';
-  let currentObj = targets.objetivo || 'ganar';
+  const objText = OBJETIVO_LABELS[targets.objetivo] || OBJETIVO_LABELS.mantener;
+  let currentObj = targets.objetivo || 'mantener';
 
   el.innerHTML = `
     <div class="meals-head">
@@ -199,11 +199,15 @@ export async function render(el) {
       if (goalForm) goalForm.hidden = !goalForm.hidden;
     },
     'pick-goal': (btn) => {
-      currentObj = btn.dataset.obj || 'ganar';
+      currentObj = btn.dataset.obj || 'mantener';
       el.querySelectorAll('.meal-goal-pill').forEach((p) => {
         p.setAttribute('aria-pressed', String(p.dataset.obj === currentObj));
       });
       const rec = calculateTargetsForGoal(currentObj, pesoActualKg);
+      if (!rec) {
+        toast('Registra tu peso en Progreso para calcular la meta. Mientras, puedes escribirla a mano.');
+        return;
+      }
       if (goalForm) {
         goalForm.elements.metaKcal.value = rec.kcal;
         goalForm.elements.metaProteina.value = rec.proteina;

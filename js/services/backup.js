@@ -6,12 +6,19 @@ import { todayISO } from '../utils/dates.js';
 const STALE_MS = 7 * 24 * 60 * 60 * 1000;
 const WORKOUTS_BEFORE_NUDGE = 5;
 
+/* Claves de IA: son del teléfono, no del atleta. No salen en el respaldo y un respaldo
+ * no las pisa al importarlo (aunque sea uno viejo que todavía las traiga). */
+const SECRET_META_KEYS = new Set(['geminiApiKey', 'openaiApiKey']);
+const withoutSecrets = (rows = []) => rows.filter((r) => !SECRET_META_KEYS.has(r?.key));
+
 async function buildPayload() {
+  const data = await db.dumpAll();
+  data.meta = withoutSecrets(data.meta);
   return {
     app: 'brother-ft',
     schema: 1,
     exportedAt: new Date().toISOString(),
-    data: await db.dumpAll(),
+    data,
   };
 }
 
@@ -33,10 +40,15 @@ export async function markLastBackup() {
 export async function importData(file) {
   let payload;
   try { payload = JSON.parse(await file.text()); } catch { throw new Error('El archivo no es un JSON válido.'); }
-  if (payload?.app !== 'brother-ft' || typeof payload.data !== 'object') {
+  if (payload?.app !== 'brother-ft' || !payload.data || typeof payload.data !== 'object') {
     throw new Error('Ese archivo no es un respaldo de Bía.');
   }
-  await db.restoreAll(payload.data); // atómico: si falla, queda todo como estaba
+  const keepSecrets = (await Promise.all([...SECRET_META_KEYS].map((key) => db.get('meta', key)))).filter(Boolean);
+  const data = {
+    ...payload.data,
+    meta: [...withoutSecrets(Array.isArray(payload.data.meta) ? payload.data.meta : []), ...keepSecrets],
+  };
+  await db.restoreAll(data); // atómico: si falla, queda todo como estaba
 }
 
 /** «Borrar todo»: restaurar un volcado vacío, en una sola transacción. */

@@ -1,6 +1,7 @@
 /* Lo que Bía recuerda del atleta: notas (agentMemory), perfil y rutina semanal (meta). */
 
 import { db } from '../../db.js';
+import { DOSE_G } from '../creatine.js';
 
 export async function loadAllMemories() {
   return db.getAll('agentMemory');
@@ -21,11 +22,12 @@ export async function clearAllMemories() {
   }
 }
 
+/* Un atleta nuevo empieza sin datos: nada se inventa. La creatina parte de la dosis de la app. */
 const DEFAULT_PROFILE = {
-  nombre: 'Daniel',
-  peso: '49 kg',
-  estatura: '1,63 m',
-  creatina: '5 g al día',
+  nombre: '',
+  peso: '',
+  estatura: '',
+  creatina: `${DOSE_G} g al día`,
 };
 
 export async function loadAthleteProfile() {
@@ -40,17 +42,12 @@ export async function saveAthleteProfile(patch) {
   return updated;
 }
 
-const DEFAULT_ROUTINE = [
-  { dia: 'LUN', grupo: 'Pecho', dot: '#FF6B7A' },
-  { dia: 'MAR', grupo: 'Pierna · cuádriceps', dot: '#FFD166' },
-  { dia: 'MIÉ', grupo: 'Espalda', dot: '#2EC4B6' },
-  { dia: 'JUE', grupo: 'Glúteo o cardio', dot: '#F78FB3' },
-  { dia: 'VIE', grupo: 'Brazo completo', dot: '#4D8DFF' },
-];
+/* Semana vacía: el atleta escribe qué entrena cada día. Un día sin grupo es descanso. */
+const WEEK_DAYS = ['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB', 'DOM'];
 
 export async function loadWeeklyRoutine() {
   const row = await db.get('meta', 'weeklyRoutine');
-  return row?.value || DEFAULT_ROUTINE;
+  return row?.value || WEEK_DAYS.map((dia) => ({ dia, grupo: '' }));
 }
 
 export async function saveWeeklyRoutine(routine) {

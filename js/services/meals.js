@@ -3,7 +3,7 @@
  * Soporta análisis por foto con Gemini / OpenAI Vision, análisis por texto/voz y catálogo local. */
 
 import { db } from '../db.js';
-import { state } from '../store.js';
+import { state, DEFAULTS } from '../store.js';
 import { todayISO, addDays } from '../utils/dates.js';
 import { getAgentConfig } from './bia/config.js';
 
@@ -42,9 +42,11 @@ export const COMMON_FOODS = [
   { nombre: 'Queso blanco / Mozzarella', porcion: 50, kcal100: 280, p100: 22.0, c100: 2.2, g100: 21.0 },
 ];
 
-/* Calcula metas recomendadas según el peso del atleta (por defecto 49 kg) y su objetivo. */
-export function calculateTargetsForGoal(objetivo = 'ganar', pesoKg = 49) {
-  const w = Math.max(35, Math.min(180, Number(pesoKg) || 49));
+/* Metas recomendadas según el peso corporal del atleta y su objetivo.
+ * Sin un peso registrado no hay recomendación: devuelve null y la pantalla lo pide. */
+export function calculateTargetsForGoal(objetivo, pesoKg) {
+  if (!(Number(pesoKg) > 0)) return null;
+  const w = Math.max(35, Math.min(180, Number(pesoKg)));
   if (objetivo === 'definir') {
     const kcal = Math.round((w * 30) / 10) * 10;
     const proteina = Math.round(w * 2.2);
@@ -174,11 +176,11 @@ export function buildMealTitle(items = [], fallback = 'Comida registrada') {
 export function getNutritionTargets() {
   const s = state.settings || {};
   return {
-    kcal: Number(s.metaKcal) || 2400,
-    proteina: Number(s.metaProteina) || 120,
-    carbos: Number(s.metaCarbos) || 300,
-    grasa: Number(s.metaGrasa) || 80,
-    objetivo: s.metaObjetivo || 'ganar',
+    kcal: Number(s.metaKcal) || DEFAULTS.metaKcal,
+    proteina: Number(s.metaProteina) || DEFAULTS.metaProteina,
+    carbos: Number(s.metaCarbos) || DEFAULTS.metaCarbos,
+    grasa: Number(s.metaGrasa) || DEFAULTS.metaGrasa,
+    objetivo: s.metaObjetivo || DEFAULTS.metaObjetivo,
   };
 }
 
@@ -506,20 +508,6 @@ async function callOpenAINutrition({ base64, mimeType, textPrompt, userHint }, a
   throw new Error('OpenAI no devolvió ingredientes válidos.');
 }
 
-/* Ejemplo por defecto cuando se abre en modo demostración sin foto. */
-export function getDemoPhotoResult() {
-  const items = [
-    normalizeMealItem({ nombre: 'Papas en air fryer', gramos: 180, kcal: 207, proteina: 4.5, carbos: 43.2, grasa: 2.2 }),
-    normalizeMealItem({ nombre: 'Huevo frito', gramos: 60, kcal: 118, proteina: 8.2, carbos: 0.5, grasa: 8.9 }),
-    normalizeMealItem({ nombre: 'Carne molida de res', gramos: 130, kcal: 280, proteina: 31.2, carbos: 0, grasa: 16.9 }),
-  ];
-  return {
-    plato: 'Papas en air fryer, huevo frito y carne molida',
-    items,
-    isDemo: true,
-  };
-}
-
 export async function analyzeMealImage({ base64, mimeType, userHint = '' }) {
   const cfg = await getAgentConfig();
   const geminiKey = (cfg.geminiKey || '').trim();
@@ -552,10 +540,11 @@ export async function analyzeMealImage({ base64, mimeType, userHint = '' }) {
   throw err;
 }
 
-/* Analiza una descripción escrita o hablada ("me comí dos huevos y una arepa") */
+/* Analiza una descripción escrita o hablada ("me comí dos huevos y una arepa").
+ * Si nada se reconoce, devuelve items vacíos: nunca se inventa un plato. */
 export async function analyzeMealText(text) {
   const clean = String(text || '').trim();
-  if (!clean) return getDemoPhotoResult();
+  if (!clean) return { plato: '', items: [] };
 
   const cfg = await getAgentConfig();
   const geminiKey = (cfg.geminiKey || '').trim();
@@ -620,7 +609,7 @@ export async function analyzeMealText(text) {
     };
   }
 
-  return getDemoPhotoResult();
+  return { plato: clean, items: [] };
 }
 
 /* Consulta histórica de comidas para la herramienta consultar_comidas de Bía ('hoy', 'ayer', 'semana' o 'YYYY-MM-DD'). */

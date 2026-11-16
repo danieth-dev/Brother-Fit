@@ -2,7 +2,7 @@
 
 Documento vivo del producto. Describe cómo está armado, dónde vive cada dato y qué no se puede romper. Cuando cambie el comportamiento, el esquema, una pantalla o la forma de publicar, este archivo se actualiza en el mismo cambio.
 
-Última revisión: 15 de noviembre de 2026. Base de datos versión 3. Caché de la app `v188`.
+Última revisión: 15 de noviembre de 2026. Base de datos versión 3. Caché de la app `v189`.
 
 ## Qué es
 
@@ -140,11 +140,11 @@ Claves de `meta`:
 | `lastBackup` | Marca de tiempo del último respaldo compartido o descargado. |
 | `backupNudgeDay` | Día ISO en que ya se mostró el aviso «Asegura tus PRs». Como máximo una vez al día. |
 | `voiceProvider` | `gemini` (de fábrica) u `openai`. Elige el proveedor de Bía y el primero que se intenta al analizar comidas. |
-| `geminiApiKey` | Clave de Gemini. Solo en este teléfono. No va al repositorio, pero **sí viaja dentro del respaldo**, porque el respaldo vuelca `meta` completo. |
+| `geminiApiKey` | Clave de Gemini. Solo en este teléfono. No va al repositorio ni al respaldo, y un respaldo importado no la pisa. |
 | `openaiApiKey` | Clave de OpenAI. Mismo trato que la de Gemini. |
 | `openaiModel` | Modelo de OpenAI Realtime. De fábrica `gpt-4o-mini-realtime-preview`. |
-| `athleteProfile` | `{ nombre, peso, estatura, creatina }` en texto libre, editable en Recuerdos. Hoy tiene valores de fábrica del autor en `services/bia/memory.js` (`DEFAULT_PROFILE`): hay que quitarlos antes de publicar. |
-| `weeklyRoutine` | `[{ dia, grupo, dot }]`. Rutina semanal que Bía conoce. Hoy también tiene una rutina de fábrica (`DEFAULT_ROUTINE`). |
+| `athleteProfile` | `{ nombre, peso, estatura, creatina }` en texto libre, editable en Recuerdos. De fábrica está vacío salvo la creatina (`5 g al día`); la pantalla muestra «Sin definir» y Bía recibe «sin dato» y no lo inventa. |
+| `weeklyRoutine` | `[{ dia, grupo, dot? }]`. Rutina semanal que Bía conoce. De fábrica son los siete días sin grupo; un día vacío es «Descanso» y se puede volver a vaciar. Si ningún día tiene grupo, Bía recibe «sin definir» y no supone qué toca. |
 | `fitChat` | `{ messages: [{ role, text, ts }], updatedAt }`. Charla visible de Bía. Tope 60 mensajes. No son recuerdos. Se borra solo con Nuevo chat. |
 
 Ajustes de fábrica: descanso manual de 90 s, modo automático, unidad `kg`, recordatorios de agua activos. La creatina del botón es 5 g fijos.
@@ -155,7 +155,7 @@ Los pesos de series y peso corporal se guardan siempre en **kg**. En Entreno y e
 
 Los controles segmentados (`.seg`: tipo de serie, kg/lb, métricas, tipo en historial) se pueden pulsar o arrastrar: la pastilla amarilla se mueve con el dedo y al soltar encaja en la opción más cercana (`js/utils/seg-swipe.js`). Si el `.seg` tiene varias filas (métricas en Progreso), el gesto es libre en 2D. En Progreso, cambiar kg/lb o la métrica del gráfico actualiza números y charts sin remount del `.seg` (si no, parpadea la pastilla). El segmento de unidad no va dentro del `<label>` del input de peso, para no liar el gesto.
 
-El respaldo es un JSON `{ app: "brother-ft", schema: 1, exportedAt, data }`. Al asegurar PRs se intenta `navigator.share` con el archivo; si el teléfono no puede, se descarga como antes. Cancelar la hoja de compartir no actualiza `lastBackup`. Importar reemplaza todas las tablas en una sola transacción: si falla, no queda a medias. Borrar todo es restaurar un volcado vacío.
+El respaldo es un JSON `{ app: "brother-ft", schema: 1, exportedAt, data }`. Al asegurar PRs se intenta `navigator.share` con el archivo; si el teléfono no puede, se descarga como antes. Cancelar la hoja de compartir no actualiza `lastBackup`. Las claves de IA (`geminiApiKey`, `openaiApiKey`) no salen en el respaldo; al importar, se descartan las que traiga el archivo y se conservan las del teléfono. Importar reemplaza todas las tablas en una sola transacción: si falla, no queda a medias. Borrar todo es restaurar un volcado vacío.
 
 Aviso de respaldo (`js/utils/backup-nudge.js`): al abrir Inicio o al terminar un entreno, si hay al menos un entreno cerrado y nunca respaldó, o el último respaldo tiene ≥7 días, o hay ≥5 entrenos cerrados desde entonces. Copy: «Asegura tus PRs». No más de una vez al día (`backupNudgeDay`).
 
@@ -216,11 +216,11 @@ La ciencia que la pantalla explica, y que no hay que contradecir en los textos: 
 
 Cada comida es una fila de `meals` con sus alimentos. La foto se comprime en el teléfono (JPEG de 800 px como máximo, unos 50 KB), se manda a la IA y se descarta: no se guarda en ninguna tabla.
 
-El análisis vive en `js/services/meals.js`. Se usa el proveedor elegido en Bía (`voiceProvider`). Si falla, se prueba el otro si tiene clave. Sin ninguna clave, la pantalla avisa «Configura tu API Key en Fit» y deja añadir los alimentos a mano. Queda un plato de demostración (`getDemoPhotoResult`: papas, huevo y carne molida) que sale si la hoja se abre sin foto ni modo manual, o si se analiza un texto vacío; hay que quitarlo antes de publicar. Con Gemini, la app pregunta a la cuenta qué modelos con `generateContent` tiene y prueba hasta cinco por orden de preferencia (Flash primero); si esa consulta falla, usa una lista fija. Con OpenAI usa `gpt-4o-mini`. La respuesta es JSON con alimentos y macros. Si la foto no es comida, el error `NOT_FOOD` se muestra tal cual y no se prueba otro proveedor.
+El análisis vive en `js/services/meals.js`. Se usa el proveedor elegido en Bía (`voiceProvider`). Si falla, se prueba el otro si tiene clave. Sin ninguna clave, la pantalla avisa «Configura tu API Key en Bía › Conexión» y deja añadir los alimentos a mano. Si un texto no se reconoce, no se inventa nada: la lista queda vacía y un aviso pide añadir los alimentos a mano. Con Gemini, la app pregunta a la cuenta qué modelos con `generateContent` tiene y prueba hasta cinco por orden de preferencia (Flash primero); si esa consulta falla, usa una lista fija. Con OpenAI usa `gpt-4o-mini`. La respuesta es JSON con alimentos y macros. Si la foto no es comida, el error `NOT_FOOD` se muestra tal cual y no se prueba otro proveedor.
 
 El atleta puede añadir una aclaración antes de analizar (por ejemplo «air fryer, sin aceite») o describir el plato por texto o voz (`analyzeMealText`). En la hoja de resultado (`js/utils/meal-scanner.js`) cada alimento se ajusta con − / + en pasos de 5, 10 o 20 g según su tamaño, y kcal y macros se recalculan con los valores por 100 g que guarda el alimento. Faltantes se añaden desde el catálogo local (`COMMON_FOODS`, unos 30 alimentos con porción típica) o por nombre y gramos. El tipo de comida sale de la hora si no se elige: Desayuno hasta 11:30, Almuerzo hasta 16:00, Merienda hasta 19:30, luego Cena.
 
-Las metas por defecto son 2100 kcal, 100 g de proteína, 270 g de carbos y 66 g de grasa. Al cambiar el objetivo se recalculan con el último peso corporal (49 kg si no hay ninguno, acotado entre 35 y 180):
+Las metas de fábrica son una referencia general: 2000 kcal, 120 g de proteína, 235 g de carbos y 65 g de grasa, con objetivo «mantener». Al elegir un objetivo se recalculan con el último peso corporal (acotado entre 35 y 180 kg). Sin peso registrado no se calcula nada: un aviso pide registrarlo en Progreso y las metas se pueden escribir a mano.
 
 | Objetivo | kcal por kg | Proteína por kg | Grasa por kg |
 | --- | --- | --- | --- |
@@ -281,7 +281,7 @@ La isla de navegación sustituye una barra de borde a borde. El zoom con dos ded
 
 ## Publicación
 
-Cada push a `main` dispara `.github/workflows/deploy.yml` y publica la carpeta entera en GitHub Pages. No hay build. «Entera» incluye lo que está en git y no es la app: `.agents/`, `.cursor/` (con `impeccable.exe`), los documentos `.md` y `rpe-test.html`. `fixtures/` y `capturas/` están fuera de git y no se publican.
+Cada push a `main` dispara `.github/workflows/deploy.yml`, que copia solo la app a `_site/` (`index.html`, `manifest.webmanifest`, `sw.js`, `.nojekyll`, `css/`, `js/`, `fonts/`, `icons/`) y publica eso en GitHub Pages. No se publican los documentos, `rpe-test.html` ni las carpetas de agentes. Un archivo nuevo en la raíz se añade a esa lista; uno dentro de esas carpetas ya va incluido (y siempre se añade a `ASSETS` de `sw.js`).
 
 Para Play Store la app tendrá que empaquetarse como app de Android (por ejemplo, una Trusted Web Activity sobre la URL publicada). La forma está por decidir y ese paso todavía no existe en el repositorio.
 
@@ -329,11 +329,16 @@ Resuelto en la `v187`: «Borrar todo» pasa por `clearAllData()` del servicio de
 
 **Antes de Play Store**
 
-- Perfil y rutina de fábrica del autor (`DEFAULT_PROFILE`, `DEFAULT_ROUTINE` en `services/bia/memory.js`) y 49 kg por defecto en `meals.js`.
-- Plato de demostración en el escáner (`getDemoPhotoResult`).
-- Las claves de IA viajan dentro del respaldo.
-- El deploy publica todo el repositorio, incluidos `.agents/`, `.cursor/` y el ejecutable de la skill.
-- Falta el empaquetado para Android.
+Resuelto en la `v189`: perfil, rutina y metas de fábrica ya no traen datos del autor; el plato de demostración desapareció; las claves de IA no viajan en el respaldo; el deploy publica solo la app.
+
+Pendiente:
+
+- **Empaquetado para Android.** Trusted Web Activity (Bubblewrap) u otra vía. Necesita un nombre de paquete definitivo, una clave de firma y `/.well-known/assetlinks.json` en la **raíz del dominio**: con GitHub Pages de proyecto (`/Brother-Fit/`) eso exige un dominio propio o el repositorio de usuario.
+- **Modelo de la IA.** Hoy cada atleta pega su propia clave de Gemini u OpenAI. Para un público general eso es una barrera; la alternativa es un servidor propio que guarde la clave. Decisión de producto pendiente.
+- **Política de privacidad** pública (URL obligatoria en Play): qué se guarda en el teléfono, qué se manda a Google u OpenAI (voz transcrita, fotos de comida, contexto), micrófono y notificaciones.
+- **Formularios de Play Console:** seguridad de los datos (Data safety), declaración de apps de salud y fitness, clasificación de contenido.
+- **Contenido generado por IA:** la política de Play pide una forma de reportar respuestas ofensivas dentro de la app.
+- **Ficha de la tienda:** capturas, ícono de 512 px, gráfico destacado de 1024×500, textos.
 - No hay pruebas automáticas salvo `rpe-test.html`.
 
 ## Mapa de archivos

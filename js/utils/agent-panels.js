@@ -13,6 +13,13 @@ import { toast, esc, go } from './dom.js';
 import { askConfirm } from './confirm-sheet.js';
 import { bindSheetDrag } from './sheet-drag.js';
 
+/* Valor del perfil, o «Sin definir» atenuado cuando el atleta todavía no lo dio. */
+function profileValue(value, id) {
+  return value
+    ? `<span class="agent-rec-value" id="${id}">${esc(value)}</span>`
+    : `<span class="agent-rec-value is-empty" id="${id}">Sin definir</span>`;
+}
+
 /* --- Drawer de Recuerdos (Nuevo diseño agrupado) --- */
 export async function showMemoriesPanel(agent, { onChange } = {}) {
   const [profile, routine, summaries, rawMemories] = await Promise.all([
@@ -57,7 +64,7 @@ export async function showMemoriesPanel(agent, { onChange } = {}) {
           <div class="agent-rec-row" data-field="nombre">
             <span class="agent-rec-label">Nombre</span>
             <div class="agent-rec-val-wrap">
-              <span class="agent-rec-value" id="val-nombre">${esc(profile.nombre || 'Daniel')}</span>
+              ${profileValue(profile.nombre, 'val-nombre')}
               <button class="agent-rec-icon-btn" data-action="edit-profile" data-field="nombre" type="button" aria-label="Editar Nombre">
                 ${icons.pencil({ size: 18 })}
               </button>
@@ -66,7 +73,7 @@ export async function showMemoriesPanel(agent, { onChange } = {}) {
           <div class="agent-rec-row" data-field="peso">
             <span class="agent-rec-label">Peso</span>
             <div class="agent-rec-val-wrap">
-              <span class="agent-rec-value" id="val-peso">${esc(profile.peso || '49 kg')}</span>
+              ${profileValue(profile.peso, 'val-peso')}
               <button class="agent-rec-icon-btn" data-action="edit-profile" data-field="peso" type="button" aria-label="Editar Peso">
                 ${icons.pencil({ size: 18 })}
               </button>
@@ -75,7 +82,7 @@ export async function showMemoriesPanel(agent, { onChange } = {}) {
           <div class="agent-rec-row" data-field="estatura">
             <span class="agent-rec-label">Estatura</span>
             <div class="agent-rec-val-wrap">
-              <span class="agent-rec-value" id="val-estatura">${esc(profile.estatura || '1,63 m')}</span>
+              ${profileValue(profile.estatura, 'val-estatura')}
               <button class="agent-rec-icon-btn" data-action="edit-profile" data-field="estatura" type="button" aria-label="Editar Estatura">
                 ${icons.pencil({ size: 18 })}
               </button>
@@ -84,7 +91,7 @@ export async function showMemoriesPanel(agent, { onChange } = {}) {
           <div class="agent-rec-row" data-field="creatina">
             <span class="agent-rec-label">Creatina</span>
             <div class="agent-rec-val-wrap">
-              <span class="agent-rec-value" id="val-creatina">${esc(profile.creatina || '5 g al día')}</span>
+              ${profileValue(profile.creatina, 'val-creatina')}
               <button class="agent-rec-icon-btn" data-action="edit-profile" data-field="creatina" type="button" aria-label="Editar Creatina">
                 ${icons.pencil({ size: 18 })}
               </button>
@@ -106,8 +113,8 @@ export async function showMemoriesPanel(agent, { onChange } = {}) {
             <div class="agent-rec-row" data-index="${i}">
               <div style="display:flex;align-items:center;gap:12px">
                 <span class="agent-rec-day">${esc(r.dia)}</span>
-                <span class="agent-rec-day-dot" style="background:${r.dot || '#FFD166'}"></span>
-                <span class="agent-rec-day-text" id="val-routine-${i}">${esc(r.grupo)}</span>
+                <span class="agent-rec-day-dot"${r.dot && r.grupo ? ` style="background:${esc(r.dot)}"` : ''}></span>
+                <span class="agent-rec-day-text${r.grupo ? '' : ' is-empty'}" id="val-routine-${i}">${esc(r.grupo || 'Descanso')}</span>
               </div>
               <button class="agent-rec-icon-btn" data-action="edit-routine" data-index="${i}" type="button" aria-label="Editar ${r.dia}">
                 ${icons.pencil({ size: 18 })}
@@ -265,7 +272,7 @@ export async function showMemoriesPanel(agent, { onChange } = {}) {
       const row = editProfBtn.closest('.agent-rec-row');
       const wrap = row.querySelector('.agent-rec-val-wrap');
       const valSpan = row.querySelector('.agent-rec-value');
-      const currVal = profile[field] || valSpan.textContent.trim();
+      const currVal = profile[field] || '';
 
       wrap.style.display = 'none';
       const form = document.createElement('div');
@@ -287,6 +294,7 @@ export async function showMemoriesPanel(agent, { onChange } = {}) {
             profile[field] = newVal;
             await saveAthleteProfile({ [field]: newVal });
             valSpan.textContent = newVal;
+            valSpan.classList.remove('is-empty');
             toast(`${field.charAt(0).toUpperCase() + field.slice(1)} actualizado`);
           }
         }
@@ -329,12 +337,11 @@ export async function showMemoriesPanel(agent, { onChange } = {}) {
       const finishRout = async (save) => {
         if (save) {
           const newVal = input.value.trim();
-          if (newVal) {
-            routine[idx].grupo = newVal;
-            await saveWeeklyRoutine(routine);
-            textSpan.textContent = newVal;
-            toast('Rutina actualizada');
-          }
+          routine[idx].grupo = newVal;
+          await saveWeeklyRoutine(routine);
+          textSpan.textContent = newVal || 'Descanso';
+          textSpan.classList.toggle('is-empty', !newVal);
+          toast(newVal ? 'Rutina actualizada' : 'Día marcado como descanso');
         }
         form.remove();
         textSpan.style.display = '';

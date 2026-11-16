@@ -27,10 +27,17 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
+      # Solo se publica la app. Quedan fuera documentos, pruebas y carpetas de agentes
+      # (.agents/, .cursor/…, con un ejecutable). Un archivo nuevo de la app va aquí y en ASSETS de sw.js.
+      - name: Build site
+        run: |
+          mkdir _site
+          cp -r index.html manifest.webmanifest sw.js .nojekyll css js fonts icons _site/
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: '.'
+          path: '_site'
 
       - name: Deploy to GitHub Pages
         id: deployment

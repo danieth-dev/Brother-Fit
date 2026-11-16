@@ -21,10 +21,14 @@ export async function buildSystemInstruction() {
 
   const latestW = await latestWeight().catch(() => null);
   const pesoActualStr = latestW ? `${latestW.peso} kg (${latestW.fecha})` : profile.peso;
+  const dato = (valor) => valor || 'sin dato (no lo inventes; pregúntalo solo si hace falta)';
+  const rutinaStr = routine.some((r) => r.grupo)
+    ? `${routine.map((r) => `${r.dia}: ${r.grupo || 'descanso'}`).join(', ')}.`
+    : 'sin definir. No supongas qué toca hoy.';
 
   const profileBlock =
-    `\n\nPERFIL DEL ATLETA: Nombre: ${profile.nombre}, Peso actual: ${pesoActualStr}, Estatura: ${profile.estatura}, Creatina: ${profile.creatina}.\n` +
-    `RUTINA SEMANAL DEL ATLETA: ${routine.map((r) => `${r.dia}: ${r.grupo}`).join(', ')}.\n` +
+    `\n\nPERFIL DEL ATLETA: Nombre: ${dato(profile.nombre)}, Peso actual: ${dato(pesoActualStr)}, Estatura: ${dato(profile.estatura)}, Creatina: ${dato(profile.creatina)}.\n` +
+    `RUTINA SEMANAL DEL ATLETA: ${rutinaStr}\n` +
     `SESIÓN DE ENTRENAMIENTO ACTIVA EN ESTE MOMENTO: ${activeWorkout ? `Sí (iniciada hoy ${activeWorkout.fecha})` : 'No (se iniciará automáticamente si el atleta dicta una serie o pide iniciar)'}.\n`;
 
   const memBlock =

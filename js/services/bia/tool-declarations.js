@@ -92,7 +92,7 @@ export const TOOL_DECLARATIONS = [
       properties: {
         peso: {
           type: 'NUMBER',
-          description: 'Peso corporal en la unidad activa del atleta (ej. 49.6).',
+          description: 'Peso corporal en la unidad activa del atleta (ej. 72.4).',
         },
         fecha: {
           type: 'STRING',

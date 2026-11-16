@@ -127,7 +127,7 @@ Este documento es la fuente de verdad del diseño de Bía. Lo leen las personas 
 
 Fuente de los valores: `css/tokens.css` (tokens), `css/base.css` (página y tipografía base) y `css/components.css` (componentes). El frontmatter de arriba usa el formato de `DESIGN.md` que entiende la skill; los valores son los del **modo oscuro con acento amarillo**, que es el de fábrica.
 
-Última revisión: 15 de noviembre de 2026 (caché `v186`).
+Última revisión: 15 de noviembre de 2026 (caché `v189`).
 
 ## 1. Idea
 
@@ -212,7 +212,7 @@ Cada grupo tiene un color fijo, igual en los dos modos, para el punto (`.dot`, `
 | Cardio | `#00c49f` |
 | Otro | `#a8a8a8` (y no se muestra el nombre del grupo) |
 
-Hoy estos colores viven escritos en `components.css` y repetidos en la rutina semanal de `js/services/bia/memory.js`. Ver «Deuda conocida».
+Hoy estos colores viven escritos en `components.css`. Las rutinas semanales guardadas antes de la `v189` traen además un `dot` con su hex; las nuevas no, y su punto usa `--line-strong`. Ver «Deuda conocida».
 
 ## 3. Tipografía
 
@@ -304,6 +304,7 @@ Cada componente existe una vez en `components.css` y las pantallas lo reutilizan
 | Punto muscular | `.dot`, `.muscle-dot` | 8–9 px con el color del grupo. |
 | Anillo de calorías | `.meal-ring-svg`, `.home-food-ring` | SVG con trazo verde sobre `--line`; cifra central en `--text`. |
 | Estado vacío | `.empty` y variantes | Texto `--muted` centrado y una sola acción primaria. |
+| Dato sin definir | `.agent-rec-value.is-empty`, `.agent-rec-day-text.is-empty` | «Sin definir» o «Descanso» en `--text-dim`, peso 500: el atleta ve que falta y nada se inventa. |
 
 ## 9. Accesibilidad
 
@@ -342,7 +343,7 @@ Resuelto: el amarillo escrito a mano en `components.css` (22 usos que dejaban bo
 | `font-size` escrito en px/rem en vez de token | 230 frente a 109 con token | Todo con `--fs-*` |
 | `!important` en `components.css` | 156 | Solo en `[hidden]` y en movimiento reducido |
 | `style="…"` en HTML generado por JS | 89 (14 en `progress.js`) | 0 |
-| Colores de grupo muscular repetidos en CSS y en `DEFAULT_ROUTINE` (JS) | Dos fuentes | Tokens `--g-pecho`, etc., y el JS sin hex |
+| Colores de grupo muscular escritos en CSS, y `dot` con hex en rutinas guardadas antes de la `v189` | Literales | Tokens `--g-pecho`, etc., y la rutina coloreada por grupo, sin hex guardado |
 | Verde de Comidas (`#10B981`) escrito en el SVG de `views/meals.js` | Literal | `var(--green)` |
 | `components.css` | 8 352 líneas en un archivo, con selectores repetidos (`.field`, `.compare-card`…) | Partido por componente o pantalla y sin duplicados |
 
