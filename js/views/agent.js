@@ -17,6 +17,8 @@ import { askConfirm } from '../utils/confirm-sheet.js';
 import { showMemoriesPanel, showConnectionPanel } from '../utils/agent-panels.js';
 import { triggerPhotoPicker, openMealResultSheet } from '../utils/meal-scanner.js';
 import { analyzeMealText } from '../services/meals.js';
+import { saveAiReport, reportMailtoUrl } from '../services/bia/reports.js';
+import { openReportSheet } from '../utils/report-sheet.js';
 
 export async function render(el) {
   const config = await getAgentConfig();
@@ -249,6 +251,10 @@ async function renderLiveChat(el, config) {
     const div = document.createElement('div');
     div.className = `agent-bubble agent-bubble-${role}`;
     if (id) div.id = id;
+    if (role === 'bot') {
+      div.tabIndex = 0;
+      div.title = 'Toca para reportar esta respuesta';
+    }
     div.textContent = text;
     msgsEl.appendChild(div);
     msgsEl.scrollTop = msgsEl.scrollHeight;
@@ -425,6 +431,7 @@ async function renderLiveChat(el, config) {
       if (shown) {
         persist('bot', shown);
       }
+      botBubble?.removeAttribute('id');
       botBubble = null;
       currentBotText = '';
     })
@@ -576,8 +583,60 @@ async function renderLiveChat(el, config) {
     setTimeout(() => inputEl.focus(), 80);
   }
 
+  /* Reportar una respuesta de Bía. Tocarla muestra «Reportar respuesta»: la política de Play
+   * pide poder marcar contenido de IA ofensivo o dañino sin salir de la app. */
+  async function reportBubble(bubble) {
+    const choice = await openReportSheet();
+    if (!choice) return;
+    try {
+      const report = await saveAiReport({ text: bubble.textContent, ...choice });
+      bubble.classList.add('is-reported');
+      const next = bubble.nextElementSibling;
+      if (next?.classList.contains('agent-bubble-actions')) next.remove();
+      const mailto = reportMailtoUrl(report);
+      toast(mailto ? 'Reporte guardado. Se abrirá tu correo para enviarlo.' : 'Reporte guardado. Gracias por avisar.');
+      if (mailto) setTimeout(() => { window.location.href = mailto; }, 600);
+    } catch (err) {
+      toast(err.message || 'No se pudo guardar el reporte.', { tone: 'danger' });
+    }
+  }
+
+  function toggleBubbleActions(bubble) {
+    const next = bubble.nextElementSibling;
+    if (next?.classList.contains('agent-bubble-actions')) {
+      next.remove();
+      return;
+    }
+    msgsEl.querySelectorAll('.agent-bubble-actions').forEach((n) => n.remove());
+    if (bubble.classList.contains('is-reported')) return;
+    const actions = document.createElement('div');
+    actions.className = 'agent-bubble-actions';
+    actions.innerHTML = `<button type="button" class="agent-bubble-report" data-action="report-bubble">${icons.flag({ size: 16 })} Reportar respuesta</button>`;
+    bubble.after(actions);
+  }
+
+  msgsEl.addEventListener('keydown', (e) => {
+    const bubble = e.target.closest?.('.agent-bubble-bot');
+    if (bubble && (e.key === 'Enter' || e.key === ' ')) {
+      e.preventDefault();
+      toggleBubbleActions(bubble);
+    }
+  });
+
   /* Interacción con tarjetas dentro del chat */
   msgsEl.addEventListener('click', async (e) => {
+    const reportBtn = e.target.closest('[data-action="report-bubble"]');
+    if (reportBtn) {
+      const bubble = reportBtn.parentElement.previousElementSibling;
+      if (bubble?.classList.contains('agent-bubble-bot')) await reportBubble(bubble);
+      return;
+    }
+    const tappedBubble = e.target.closest('.agent-bubble-bot');
+    if (tappedBubble && tappedBubble !== botBubble) {
+      toggleBubbleActions(tappedBubble);
+      return;
+    }
+
     const undoBtn = e.target.closest('.agent-card-memory-undo');
     if (undoBtn) {
       const id = Number(undoBtn.dataset.id);

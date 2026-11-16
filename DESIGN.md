@@ -127,7 +127,7 @@ Este documento es la fuente de verdad del diseño de Bía. Lo leen las personas 
 
 Fuente de los valores: `css/tokens.css` (tokens), `css/base.css` (página y tipografía base) y `css/components.css` (componentes). El frontmatter de arriba usa el formato de `DESIGN.md` que entiende la skill; los valores son los del **modo oscuro con acento amarillo**, que es el de fábrica.
 
-Última revisión: 15 de noviembre de 2026 (caché `v189`).
+Última revisión: 15 de noviembre de 2026 (caché `v190`).
 
 ## 1. Idea
 
@@ -304,6 +304,7 @@ Cada componente existe una vez en `components.css` y las pantallas lo reutilizan
 | Punto muscular | `.dot`, `.muscle-dot` | 8–9 px con el color del grupo. |
 | Anillo de calorías | `.meal-ring-svg`, `.home-food-ring` | SVG con trazo verde sobre `--line`; cifra central en `--text`. |
 | Estado vacío | `.empty` y variantes | Texto `--muted` centrado y una sola acción primaria. |
+| Reportar respuesta | `.agent-bubble-actions`, `.agent-bubble-report`, `.agent-bubble-bot.is-reported` | Al tocar una burbuja de Bía aparece una píldora de 44 px con bandera; una burbuja reportada queda con borde discontinuo y texto `--muted`. La hoja usa las clases `.picker-*`. |
 | Dato sin definir | `.agent-rec-value.is-empty`, `.agent-rec-day-text.is-empty` | «Sin definir» o «Descanso» en `--text-dim`, peso 500: el atleta ve que falta y nada se inventa. |
 
 ## 9. Accesibilidad

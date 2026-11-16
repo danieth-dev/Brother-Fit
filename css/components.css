@@ -3752,6 +3752,45 @@ body.in-agent-view #app .view {
   font-style: italic;
 }
 
+/* Reportar una respuesta de Bía: la acción aparece al tocar la burbuja. */
+.agent-bubble-bot {
+  cursor: pointer;
+}
+.agent-bubble-bot.is-reported {
+  border-style: dashed;
+  color: var(--muted);
+}
+.agent-bubble-actions {
+  align-self: flex-start;
+  margin-top: -4px;
+}
+.agent-bubble-report {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-full);
+  background: transparent;
+  color: var(--muted);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+.agent-bubble-report:active {
+  color: var(--red);
+  border-color: var(--red);
+}
+.report-sheet-intro {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: var(--fs-sm);
+}
+.report-sheet-note {
+  margin: 12px 0 16px;
+}
+
 /* Tarjetas interactivas en el chat */
 .agent-card-memory {
   align-self: flex-start;

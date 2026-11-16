@@ -2,7 +2,7 @@
 
 Documento vivo del producto. Describe cómo está armado, dónde vive cada dato y qué no se puede romper. Cuando cambie el comportamiento, el esquema, una pantalla o la forma de publicar, este archivo se actualiza en el mismo cambio.
 
-Última revisión: 15 de noviembre de 2026. Base de datos versión 3. Caché de la app `v189`.
+Última revisión: 15 de noviembre de 2026. Base de datos versión 3. Caché de la app `v190`.
 
 ## Qué es
 
@@ -145,6 +145,7 @@ Claves de `meta`:
 | `openaiModel` | Modelo de OpenAI Realtime. De fábrica `gpt-4o-mini-realtime-preview`. |
 | `athleteProfile` | `{ nombre, peso, estatura, creatina }` en texto libre, editable en Recuerdos. De fábrica está vacío salvo la creatina (`5 g al día`); la pantalla muestra «Sin definir» y Bía recibe «sin dato» y no lo inventa. |
 | `weeklyRoutine` | `[{ dia, grupo, dot? }]`. Rutina semanal que Bía conoce. De fábrica son los siete días sin grupo; un día vacío es «Descanso» y se puede volver a vaciar. Si ningún día tiene grupo, Bía recibe «sin definir» y no supone qué toca. |
+| `aiReports` | `[{ ts, reason, note, text }]`, como mucho 50. Respuestas de Bía que el atleta reportó. `reason` es `ofensiva`, `peligrosa`, `incorrecta` u `otra`. |
 | `fitChat` | `{ messages: [{ role, text, ts }], updatedAt }`. Charla visible de Bía. Tope 60 mensajes. No son recuerdos. Se borra solo con Nuevo chat. |
 
 Ajustes de fábrica: descanso manual de 90 s, modo automático, unidad `kg`, recordatorios de agua activos. La creatina del botón es 5 g fijos.
@@ -271,6 +272,8 @@ Además de los recuerdos, el contexto de Bía incluye el perfil, la rutina seman
 
 El nombre lo resuelve la app: ignora mayúsculas y acentos, y acepta el singular si solo hay un ejercicio. Si el atleta añade el grupo muscular al final («aperturas de pecho», «copa de tríceps»), la app reconoce el ejercicio base siempre que lo sobrante sea únicamente un músculo; si empatan varios, Bía pregunta cuál. Nombrarlo, aunque todavía no haya serie, deja Entreno en ese ejercicio. Un acierto al anotar también lo cambia, aunque el atleta esté en Bía. Cero aciertos o varios no escriben nada y no crean el ejercicio. El peso, si no lo dice, sale de la última serie de ese ejercicio. Bía no pregunta el peso antes de la serie ni dice «lastre». Una segunda llamada igual, de Bía o de la pantalla, sobre la misma serie y el mismo ejercicio dentro de 8 segundos, no escribe otra fila ni abre otra marca. La pantalla lo dice en un aviso. Su criterio de fondo son cuatro pilares: dormir bien, comer bien, hacer ejercicio y no estresarse. Solo los usa si el atleta saca el tema o propone algo que los rompe. No los recita ni los pone por delante de anotar la serie. Durante el descanso Bía no habla por su cuenta, ni de creatina. Al cerrar una sesión con series, si hoy sigue sin toma, lo dice una sola vez junto al resumen. El micrófono se abre de uno en uno: un silencio no dispara dos aperturas, y si el teléfono lo rechaza varias veces seguidas, Bía lo suelta en vez de dejarlo en bucle. Si la pregunta está abierta y el atleta dice 0, cero o ninguna, la app lo anota y ese turno no se lo manda a Bía, para que no lea una nota interna. Pregunta el esfuerzo con las mismas palabras que la pantalla. No sugiere pesos ni cambia el descanso. Los turnos van en español, cortos, sin markdown y sin el razonamiento en inglés. El resumen de la sesión incluye el esfuerzo de cada serie.
 
+**Reportar una respuesta.** La política de Play para IA generativa pide que el atleta pueda marcar una respuesta ofensiva o dañina sin salir de la app. Tocar una burbuja de Bía muestra «Reportar respuesta»; la hoja pide un motivo y un comentario opcional (`js/utils/report-sheet.js`). El reporte se guarda en `meta.aiReports` y la burbuja queda con borde discontinuo. Si `APP_INFO.supportEmail` (`js/app-info.js`) tiene un correo, se abre el correo del teléfono con el reporte ya escrito; si está vacío, solo se guarda.
+
 Las claves se escriben en «Conexión y API key» y quedan en `meta.geminiApiKey` y `meta.openaiApiKey`. Sin la clave del proveedor activo no hay sesión. La charla visible vive en `meta.fitChat`. Al cambiar de pestaña, si la sesión sigue abierta, solo se redibuja. Si se cortó, al reconectar se inyecta el historial una vez como contexto y Bía no lo repite. Nuevo chat (icono +) pide confirmación, borra solo esa charla y abre sesión limpia. Los recuerdos no se tocan.
 
 ## Interfaz
@@ -337,7 +340,7 @@ Pendiente:
 - **Modelo de la IA.** Hoy cada atleta pega su propia clave de Gemini u OpenAI. Para un público general eso es una barrera; la alternativa es un servidor propio que guarde la clave. Decisión de producto pendiente.
 - **Política de privacidad** pública (URL obligatoria en Play): qué se guarda en el teléfono, qué se manda a Google u OpenAI (voz transcrita, fotos de comida, contexto), micrófono y notificaciones.
 - **Formularios de Play Console:** seguridad de los datos (Data safety), declaración de apps de salud y fitness, clasificación de contenido.
-- **Contenido generado por IA:** la política de Play pide una forma de reportar respuestas ofensivas dentro de la app.
+- **Correo de soporte** en `js/app-info.js` (`supportEmail`). Sin él, los reportes de respuestas de Bía solo quedan en el teléfono y no te llegan.
 - **Ficha de la tienda:** capturas, ícono de 512 px, gráfico destacado de 1024×500, textos.
 - No hay pruebas automáticas salvo `rpe-test.html`.
 
@@ -382,6 +385,9 @@ Pendiente:
 | `js/utils/seg-swipe.js` | Controles `.seg` que se pulsan o arrastran. |
 | `js/utils/units.js` | Conversión kg / lb. |
 | `js/utils/dom.js`, `dates.js`, `icons.js`, `components.js` | Eventos, avisos, fechas, iconos SVG y piezas de interfaz compartidas. |
+| `js/app-info.js` | Datos públicos del editor: correo de soporte y URL de la política de privacidad. |
+| `js/services/bia/reports.js` | Reportes de respuestas de Bía (`meta.aiReports`) y el correo para enviarlos. |
+| `js/utils/report-sheet.js` | Hoja para reportar una respuesta: motivo y comentario. |
 | `js/utils/backup-nudge.js` | Aviso «Asegura tus PRs». |
 | `js/utils/backup-export.js` | Compartir o descargar el respaldo y marcar `lastBackup`. |
 | `js/utils/agent-panels.js` | Paneles Recuerdos y Conexión de Bía; se abren desde Bía y desde Ajustes. |
