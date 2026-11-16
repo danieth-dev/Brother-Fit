@@ -1,8 +1,10 @@
 # Brother Fit
 
-Registro personal de entrenamiento y creatina. PWA en HTML, CSS y JavaScript puro:
-sin frameworks, sin dependencias y sin paso de compilación. Funciona offline y guarda
-todo en el teléfono (IndexedDB).
+Registro personal de entrenamiento, creatina, peso corporal y comidas, con un asistente de voz (Fit).
+PWA en HTML, CSS y JavaScript puro: sin frameworks, sin dependencias y sin paso de compilación.
+Funciona offline y guarda todo en el teléfono (IndexedDB). Objetivo: publicarla en Google Play Store.
+
+La descripción completa y al día del sistema (pantallas, datos, reglas, Fit) está en [SISTEMA.md](SISTEMA.md).
 
 ## Qué incluye
 
@@ -26,8 +28,8 @@ js/
   router.js           router por hash (#/workout, #/progress/3, ...)
   db.js               ÚNICO archivo que conoce IndexedDB (esquema y migraciones)
   store.js            ajustes del usuario
-  services/           lógica de negocio: workouts, creatine, body, seed, backup
-  views/              una pantalla por archivo: home, workout, history, progress, creatine, settings
+  services/           lógica de negocio: workouts, effort, creatine, body, meals, seed, backup, agent (Fit), fit-chat, water-reminders
+  views/              una pantalla por archivo: home, workout, history, progress, creatine, meals, agent, settings, appearance
   utils/              dates, dom (eventos, avisos), chart (gráfico SVG)
 ```
 
@@ -38,7 +40,7 @@ Flujo de dependencias (nunca al revés): `views → services → db`.
 El service worker solo funciona en `localhost` o con HTTPS (abrir el archivo con doble clic no sirve):
 
 ```
-cd brother-ft
+cd "Brother Fit"
 python3 -m http.server 8000
 ```
 
@@ -57,8 +59,8 @@ Quedará en la pantalla de inicio, a pantalla completa y funcionando sin interne
 
 ## Actualizar la app
 
-Edita los archivos y súbelos de nuevo. El service worker usa *stale-while-revalidate*: la app abre al instante
-con la copia guardada y descarga la nueva en segundo plano, que se usa en la siguiente apertura.
+Edita los archivos y súbelos de nuevo. El service worker va a la red primero: con conexión sirve lo publicado
+y guarda una copia; sin conexión usa esa copia.
 Si añades archivos nuevos, agrégalos a `ASSETS` en `sw.js` y sube `VERSION`.
 
 ## Tus datos
