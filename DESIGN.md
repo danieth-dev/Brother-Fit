@@ -1,5 +1,5 @@
 ---
-name: Brother Fit
+name: Bía
 description: Sistema de diseño atlético de alto rendimiento en Negro Carbón y Amarillo Eléctrico
 colors:
   primary: "#FFE600"
@@ -80,11 +80,11 @@ components:
     padding: "18px"
 ---
 
-# Design System: Brother Fit
+# Design System: Bía
 
 ## Overview
 
-Brother Fit es una herramienta atlética enfocada en la fuerza, la constancia y el rendimiento físico. Su diseño está inspirado en la estética industrial del gimnasio de alto rendimiento: pesas olímpicas calibradas, maquinaria negra mate y marcas de precisión en amarillo eléctrico.
+Bía es una herramienta atlética enfocada en la fuerza, la constancia y el rendimiento físico. Su diseño está inspirado en la estética industrial del gimnasio de alto rendimiento: pesas olímpicas calibradas, maquinaria negra mate y marcas de precisión en amarillo eléctrico.
 
 La combinación de **Negro Carbón (`#0A0B0E`)** y **Amarillo Eléctrico (`#FFE600`)** transmite dinamismo, energía y enfoque. Todo elemento en la pantalla tiene una función clara, máxima legibilidad a distancia y superficies táctiles generosas preparadas para el uso en medio de una sesión de entrenamiento intensa.
 

@@ -20,12 +20,12 @@ Ofrecer un compañero de entrenamiento ultra rápido, libre de fricción y con f
 1. Registrar la dosis diaria de creatina con un solo toque y mantener la racha de suplementación.
 2. Gestionar sesiones activas de entrenamiento con cronómetro, autocompletado inteligente de la última serie y temporizador de descanso con vibración háptica.
 3. Analizar la progresión mediante gráficos de 1RM estimado (fórmula de Epley), volumen acumulado y peso corporal.
-4. Consultar al asistente atlético personalizado (Fit AI) con voz y memoria persistente que aprende objetivos y contexto del usuario sin costos mensuales.
+4. Consultar a Bía, la asistente atlética personalizada (mismo nombre que la app), con voz y memoria persistente que aprende objetivos y contexto del usuario sin costos mensuales.
 5. Funcionar 100% offline y conservar todos los datos en el dispositivo del usuario.
 
 ## Positioning
 
-A diferencia de las aplicaciones de fitness convencionales (que exigen cuentas en la nube, suscripciones premium mensuales, anuncios molestos y cargan lentamente en sótanos o zonas de gimnasio con mala cobertura), **Brother Fit** arranca al instante, almacena los datos de forma local, garantiza privacidad absoluta y está optimizada para la interacción táctil inmediata bajo esfuerzo físico.
+A diferencia de las aplicaciones de fitness convencionales (que exigen cuentas en la nube, suscripciones premium mensuales, anuncios molestos y cargan lentamente en sótanos o zonas de gimnasio con mala cobertura), **Bía** arranca al instante, almacena los datos de forma local, garantiza privacidad absoluta y está optimizada para la interacción táctil inmediata bajo esfuerzo físico.
 
 ## Operating Context
 
@@ -39,12 +39,12 @@ A diferencia de las aplicaciones de fitness convencionales (que exigen cuentas e
 - **Gestión local y respaldo:** Exportación e importación segura de respaldos atómicos en formato JSON.
 - **Temporizador activo:** Cuenta regresiva de descanso configurable por ejercicio con alarma visual y vibración háptica.
 - **Cálculo analítico:** Estimación de 1RM en tiempo real mediante la ecuación Epley: `peso × (1 + reps / 30)`.
-- **Asistente de voz y memoria persistente (Fit AI):** Conexión en tiempo real con Gemini Multimodal Live API mediante WebSockets y memoria a largo plazo en IndexedDB (`agentMemory`), con llamadas a herramientas automáticas (`guardar_recuerdo`, `listar_recuerdos`, `borrar_recuerdo`).
+- **Asistente de voz y memoria persistente (Bía):** Conexión en tiempo real con Gemini Multimodal Live API mediante WebSockets y memoria a largo plazo en IndexedDB (`agentMemory`), con llamadas a herramientas automáticas (`guardar_recuerdo`, `listar_recuerdos`, `borrar_recuerdo`).
 - **Restricción técnica:** No depende de backend ni autenticación remota; la persistencia depende del almacenamiento del navegador/dispositivo, por lo que se prioriza la retención persistente del sistema de archivos (`navigator.storage.persist()`).
 
 ## Brand Commitments
 
-- **Identidad:** "Brother Fit" — Energía deportiva de alto rendimiento, disciplina, potencia y precisión.
+- **Identidad:** "Bía" — Energía deportiva de alto rendimiento, disciplina, potencia y precisión.
 - **Paleta visual vinculante:** Negro carbón profundo y Amarillo eléctrico de alta energía (*Black & Electric Yellow*), evocando el equipamiento de fuerza profesional, discos de calibración y estética de alto impacto.
 - **Tono de voz:** Directo, conciso, motivador y claro. Sin rodeos ni jerga publicitaria superflua.
 

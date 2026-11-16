@@ -99,7 +99,7 @@ export async function render(el) {
   el.innerHTML = `
     <header class="page-head">
       <div class="page-head-row">
-        <h1>Brother Fit</h1>
+        <h1>Bía</h1>
         <a class="head-link" href="#/settings" aria-label="Ajustes">${icons.sliders({ size: 22 })}</a>
       </div>
     </header>

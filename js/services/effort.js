@@ -1,4 +1,4 @@
-/* Esfuerzo de la serie. La pantalla y Fit pasan por aquí.
+/* Esfuerzo de la serie. La pantalla y Bía pasan por aquí.
  * Se guarda rpe = 10 - rir. Un rir de 4 o más queda en 4, o sea rpe 6: es un piso, no un punto medio. */
 import { db } from '../db.js';
 import { now } from '../utils/clock.js';
@@ -58,7 +58,7 @@ function foldAnswer(value) {
   return String(value || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[¿?¡!.,]+/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
-/* La app lee el 0. Fit no elige la serie ni tiene que llamar la herramienta. */
+/* La app lee el 0. Bía no elige la serie ni tiene que llamar la herramienta. */
 export function effortAnswerFromText(text) {
   const t = foldAnswer(text);
   if (!t) return null;
@@ -99,7 +99,7 @@ export function releasePending() {
   return db.remove('meta', PENDING_KEY);
 }
 
-/* Fit puede repetir la misma llamada en 8 s. La pantalla no usa este candado: dos series iguales siguen siendo dos. */
+/* Bía puede repetir la misma llamada en 8 s. La pantalla no usa este candado: dos series iguales siguen siendo dos. */
 function sameCall(workoutId, exerciseId, peso, reps, t) {
   return lastCall
     && lastCall.workoutId === workoutId
@@ -133,7 +133,7 @@ async function duplicateResponse(setId) {
 
 /* restEnd es el fin del reloj, si hay. El plazo queda escrito en la pregunta y no se mueve al recargar.
  * Sin reloj: cinco minutos. Con reloj: el fin más un minuto, sea el descanso corto o largo.
- * abrirPregunta es de Fit. La pantalla guarda sin abrir pregunta: nadie preguntó en voz alta. */
+ * abrirPregunta es de Bía. La pantalla guarda sin abrir pregunta: nadie preguntó en voz alta. */
 export async function registerSet(input, { guard = false, abrirPregunta = true } = {}) {
   const t = now();
   const workoutId = input.workoutId;
@@ -282,7 +282,7 @@ export function anotarRpe({ rir, mark, omitir = false } = {}) {
   });
 }
 
-/* Los botones de la pantalla sí pueden corregir un esfuerzo ya guardado. Fit no. */
+/* Los botones de la pantalla sí pueden corregir un esfuerzo ya guardado. Bía no. */
 export function setEffort(setId, rir) {
   const kind = classifyRir(rir);
   const rpe = kind === 'ok' ? rpeFromRir(Number(rir)) : null;

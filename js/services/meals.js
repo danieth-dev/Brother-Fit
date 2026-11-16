@@ -1,4 +1,4 @@
-/* Servicio de Nutrición y Escaneo de Comidas (Cal AI para Brother Fit).
+/* Servicio de Nutrición y Escaneo de Comidas (Cal AI para Bía).
  * Guarda únicamente datos numéricos y desglose de alimentos en IndexedDB (cero fotos persistidas).
  * Soporta análisis por foto con Gemini / OpenAI Vision, análisis por texto/voz y catálogo local. */
 
@@ -293,7 +293,7 @@ export function compressImageFile(file, maxDim = 800, quality = 0.72) {
   });
 }
 
-const NUTRITION_PROMPT = `Eres el nutricionista deportivo de Brother Fit.
+const NUTRITION_PROMPT = `Eres el nutricionista deportivo de la app Bía.
 Analiza la imagen o texto y devuelve ÚNICAMENTE un objeto JSON válido (sin markdown adicional) con esta estructura exacta:
 {
   "esComida": true,
@@ -403,10 +403,10 @@ function formatApiError(provider, status, rawText) {
     msg = String(rawText || '').slice(0, 140);
   }
   if (status === 400 && /api_key_invalid|key not valid/i.test(msg)) {
-    return `Tu API Key de ${provider} no es válida. Revísala en el panel de Fit.`;
+    return `Tu API Key de ${provider} no es válida. Revísala en Bía › Conexión.`;
   }
   if (status === 401 || status === 403) {
-    return `Tu API Key de ${provider} fue rechazada (${status}). Verifica que esté activa en Fit.`;
+    return `Tu API Key de ${provider} fue rechazada (${status}). Verifica que esté activa en Bía › Conexión.`;
   }
   if (status === 429) {
     return `Se alcanzó el límite de cuota gratuita de ${provider} (429). Espera unos segundos y pulsa Reintentar.`;
@@ -586,7 +586,7 @@ export async function analyzeMealImage({ base64, mimeType, userHint = '' }) {
     return callOpenAINutrition({ base64, mimeType, userHint }, openaiKey);
   }
 
-  const err = new Error('Configura tu API Key en Fit para analizar fotos con IA.');
+  const err = new Error('Configura tu API Key en Bía › Conexión para analizar fotos con IA.');
   err.code = 'NO_API_KEY';
   throw err;
 }
@@ -662,7 +662,7 @@ export async function analyzeMealText(text) {
   return getDemoPhotoResult();
 }
 
-/* Consulta histórica de comidas para la herramienta consultar_comidas de Fit ('hoy', 'ayer', 'semana' o 'YYYY-MM-DD'). */
+/* Consulta histórica de comidas para la herramienta consultar_comidas de Bía ('hoy', 'ayer', 'semana' o 'YYYY-MM-DD'). */
 export async function getMealsHistoryForFit(periodo = 'hoy') {
   const q = String(periodo || 'hoy').trim().toLowerCase();
   const today = todayISO();
@@ -752,7 +752,7 @@ export async function getMealsHistoryForFit(periodo = 'hoy') {
   };
 }
 
-/* Devuelve un bloque de texto estructurado con el diario de comidas de hoy y ayer para Fit. */
+/* Devuelve un bloque de texto estructurado con el diario de comidas de hoy y ayer para Bía. */
 export async function getMealsContextForFit() {
   try {
     const today = todayISO();

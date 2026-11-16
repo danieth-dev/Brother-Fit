@@ -1,4 +1,4 @@
-/* Conversación visible de Fit. Vive en meta; no es recuerdo ni serie. */
+/* Conversación visible de Bía. Vive en meta; no es recuerdo ni serie. */
 import { db } from '../db.js';
 import { now } from '../utils/clock.js';
 
@@ -42,6 +42,6 @@ export async function clearFitChat() {
 
 export function formatChatForContext(messages) {
   return normalize(messages)
-    .map((m) => (m.role === 'user' ? `Atleta: ${m.text}` : `Fit: ${m.text}`))
+    .map((m) => (m.role === 'user' ? `Atleta: ${m.text}` : `Bía: ${m.text}`))
     .join('\n');
 }

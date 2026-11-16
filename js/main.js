@@ -9,7 +9,7 @@ import { watchTimes } from './utils/time-sheet.js';
 import { watchSegs } from './utils/seg-swipe.js';
 import { resumeWaterReminders } from './services/water-reminders.js';
 
-/* Pulsación larga: el navegador muestra menú de vínculo/compartir. En Brother Fit no debe salir nunca. */
+/* Pulsación larga: el navegador muestra menú de vínculo/compartir. En Bía no debe salir nunca. */
 function blockBrowserChrome() {
   const editable = 'input, textarea, [contenteditable="true"]';
   document.addEventListener('contextmenu', (e) => {

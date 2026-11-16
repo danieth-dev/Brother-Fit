@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Brother Fit - Componentes UI: High-Tech Athletic Core
+   Bía - Componentes UI: High-Tech Athletic Core
    Estética de Alto Rendimiento (Negro OLED Carbón & Amarillo Eléctrico)
    Conforme a la especificación Impeccable (Craft Floor v4.5.2)
    ========================================================================== */
@@ -3507,7 +3507,7 @@ html[data-modo="claro"] .seg.metric-seg:not(:has(.seg-thumb)) button[aria-presse
 }
 
 /* ==========================================================================
-   Asistente Fit AI & Memoria Persistente
+   Asistente Bía & Memoria Persistente
    ========================================================================== */
 /* Agent Viewport & Layout */
 body.in-agent-view,
@@ -7379,7 +7379,7 @@ html[data-modo="claro"] .seg.progress-tabs:not(:has(.seg-thumb)) .progress-tab-b
 }
 
 /* ==========================================================================
-   17 · Nutrición y Escaneo IA (Tableros 19, 20 y 21: Cal AI en Brother Fit)
+   17 · Nutrición y Escaneo IA (Tableros 19, 20 y 21: Cal AI en Bía)
    ========================================================================== */
 
 /* --- Tablero 19: Tarjeta "Comida de hoy" en Inicio --- */
@@ -8327,7 +8327,7 @@ html[data-modo="claro"] .meal-goal-pill[aria-pressed="true"] {
   cursor: not-allowed;
 }
 
-/* --- Botón de cámara en la barra de mensaje de Fit --- */
+/* --- Botón de cámara en la barra de mensaje de Bía --- */
 .agent-camera-btn {
   width: 48px;
   height: 48px;

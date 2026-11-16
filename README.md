@@ -1,10 +1,10 @@
-# Brother Fit
+# Bía
 
-Registro personal de entrenamiento, creatina, peso corporal y comidas, con un asistente de voz (Fit).
+Registro personal de entrenamiento, creatina, peso corporal y comidas, con una asistente de voz que también se llama Bía.
 PWA en HTML, CSS y JavaScript puro: sin frameworks, sin dependencias y sin paso de compilación.
 Funciona offline y guarda todo en el teléfono (IndexedDB). Objetivo: publicarla en Google Play Store.
 
-La descripción completa y al día del sistema (pantallas, datos, reglas, Fit) está en [SISTEMA.md](SISTEMA.md).
+La descripción completa y al día del sistema (pantallas, datos, reglas, Bía) está en [SISTEMA.md](SISTEMA.md).
 
 ## Qué incluye
 
@@ -28,7 +28,7 @@ js/
   router.js           router por hash (#/workout, #/progress/3, ...)
   db.js               ÚNICO archivo que conoce IndexedDB (esquema y migraciones)
   store.js            ajustes del usuario
-  services/           lógica de negocio: workouts, effort, creatine, body, meals, seed, backup, agent (Fit), fit-chat, water-reminders
+  services/           lógica de negocio: workouts, effort, creatine, body, meals, seed, backup, agent (Bía), fit-chat, water-reminders
   views/              una pantalla por archivo: home, workout, history, progress, creatine, meals, agent, settings, appearance
   utils/              dates, dom (eventos, avisos), chart (gráfico SVG)
 ```
@@ -40,7 +40,7 @@ Flujo de dependencias (nunca al revés): `views → services → db`.
 El service worker solo funciona en `localhost` o con HTTPS (abrir el archivo con doble clic no sirve):
 
 ```
-cd "Brother Fit"
+cd "Bía"
 python3 -m http.server 8000
 ```
 

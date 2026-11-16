@@ -1,6 +1,6 @@
 /**
- * settings view — High-Tech Athletic Settings Panel for Brother Fit.
- * Groups: Preferencias, Asistente Fit, Datos y respaldo, Zona de riesgo.
+ * settings view — High-Tech Athletic Settings Panel for Bía.
+ * Groups: Preferencias, Asistente Bía, Datos y respaldo, Zona de riesgo.
  */
 
 import { state, saveSettings } from '../store.js';
@@ -210,12 +210,12 @@ export async function render(el) {
 
       <!-- 2. ASISTENTE FIT -->
       <section class="settings-section">
-        <h2 class="settings-section-title">Asistente Fit</h2>
+        <h2 class="settings-section-title">Asistente Bía</h2>
         <div class="settings-card">
           <button class="settings-row" type="button" id="btn-open-memories">
             <div class="settings-row-main">
               <span class="settings-row-label">Recuerdos</span>
-              <span class="settings-row-sub">Lo que Fit recuerda de ti entre charlas</span>
+              <span class="settings-row-sub">Lo que Bía recuerda de ti entre charlas</span>
             </div>
             <div class="settings-row-val">
               ${icons.chevronRight({ size: 18 })}

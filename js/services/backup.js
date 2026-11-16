@@ -48,8 +48,8 @@ export async function exportData() {
     try {
       await navigator.share({
         files: [file],
-        title: 'Brother Fit',
-        text: 'Respaldo de Brother Fit — asegura tus PRs',
+        title: 'Bía',
+        text: 'Respaldo de Bía — asegura tus PRs',
       });
       await markLastBackup();
       return { mode: 'share' };
@@ -68,7 +68,7 @@ export async function importData(file) {
   let payload;
   try { payload = JSON.parse(await file.text()); } catch { throw new Error('El archivo no es un JSON válido.'); }
   if (payload?.app !== 'brother-ft' || typeof payload.data !== 'object') {
-    throw new Error('Ese archivo no es un respaldo de Brother Fit.');
+    throw new Error('Ese archivo no es un respaldo de Bía.');
   }
   await db.restoreAll(payload.data); // atómico: si falla, queda todo como estaba
 }

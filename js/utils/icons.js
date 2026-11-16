@@ -1,5 +1,5 @@
 /**
- * Brother Fit - Iconografía High-Tech Athletic SVG
+ * Bía - Iconografía High-Tech Athletic SVG
  * Trazado unificado a 24x24 con stroke-width 2, sin dependencias de fuentes externas.
  * Cumple estrictamente con la regla Craft Floor de Impeccable (cero emojis / cero unicode).
  */
@@ -42,7 +42,7 @@ export const icons = {
   bot: (opts) => svg('<rect x="4" y="9" width="16" height="11" rx="3"/><path d="M12 9V5M12 5h.01M9 14v1M15 14v1"/>', opts),
   repeat: (opts) => svg('<path d="M4 12a8 8 0 0 1 14-5l2 2M20 4v5h-5M20 12a8 8 0 0 1-14 5l-2-2M4 20v-5h5"/>', opts),
   sliders: (opts) => svg('<line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/>', opts),
-  /* Premio PR Brother Fit (original): estrella, laureles y pedestal. */
+  /* Premio PR Bía (original): estrella, laureles y pedestal. */
   trophy: (opts) => svg(
     '<path d="M12 1.4l1.2 3.14 3.37.18-2.62 2.11.87 3.25L12 8.25l-2.82 1.83.87-3.25-2.62-2.11 3.37-.18z"/>' +
     '<path d="M6.4 12.2c-2-1.4-2.5-4-1.1-6"/>' +

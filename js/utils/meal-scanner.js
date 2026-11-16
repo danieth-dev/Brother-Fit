@@ -133,7 +133,7 @@ export async function openMealResultSheet({
           ${isAnalyzing ? `
             <div class="meal-photo-scanning">
               <div class="meal-scan-spinner"></div>
-              <span>Fit está analizando tu plato…</span>
+              <span>Bía está analizando tu plato…</span>
             </div>
           ` : ''}
         </div>
@@ -150,7 +150,7 @@ export async function openMealResultSheet({
         ${isAnalyzing ? `
           <div class="meal-photo-scanning">
             <div class="meal-scan-spinner"></div>
-            <span>Fit está analizando tu plato…</span>
+            <span>Bía está analizando tu plato…</span>
           </div>
         ` : ''}
       </div>
@@ -264,13 +264,13 @@ export async function openMealResultSheet({
               `).join('')}
             </div>
 
-            <!-- Barra rápida para aclarar método de cocción (ej. Air Fryer) o ingredientes a Fit -->
+            <!-- Barra rápida para aclarar método de cocción (ej. Air Fryer) o ingredientes a Bía -->
             <div class="meal-hint-row">
               <input
                 type="text"
                 id="meal-hint-input"
                 class="meal-custom-input"
-                placeholder="Aclarar a Fit: ej. papas en air fryer, huevo y carne…"
+                placeholder="Aclarar a Bía: ej. papas en air fryer, huevo y carne…"
                 autocomplete="off"
               />
               <button type="button" class="meal-custom-add-btn" id="btn-recalc-hint" data-action="recalc-hint">
@@ -362,8 +362,8 @@ export async function openMealResultSheet({
         analysisError = 'No veo comida ni bebida en esta foto. Toma otra foto del plato o añade los alimentos abajo.';
         toast('No se detectó comida en la foto');
       } else if (err?.code === 'NO_API_KEY') {
-        analysisError = 'Configura tu API Key en Fit para que la IA reconozca la foto, o añade los alimentos abajo.';
-        toast('Configura tu API Key en Fit');
+        analysisError = 'Configura tu API Key en Bía › Conexión para que la IA reconozca la foto, o añade los alimentos abajo.';
+        toast('Configura tu API Key en Bía › Conexión');
       } else {
         const detail = err?.userMessage || err?.message || '';
         analysisError = detail

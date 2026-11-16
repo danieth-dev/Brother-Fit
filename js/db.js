@@ -31,7 +31,7 @@ export function openDB() {
       resolve(conn);
     };
     req.onerror = () => { dbPromise = null; reject(req.error); };
-    req.onblocked = () => reject(new Error('Cierra otras pestañas de Brother fit y vuelve a abrir.'));
+    req.onblocked = () => reject(new Error('Cierra otras pestañas de Bía y vuelve a abrir.'));
   });
   return dbPromise;
 }

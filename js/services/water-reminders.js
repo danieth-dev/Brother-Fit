@@ -63,7 +63,7 @@ async function swRegistration() {
 
 async function showLocal(body, tag) {
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
-  const title = 'Brother Fit';
+  const title = 'Bía';
   const opts = {
     body,
     tag,

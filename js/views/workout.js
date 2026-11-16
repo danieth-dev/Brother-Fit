@@ -249,7 +249,7 @@ export async function render(el) {
             <h1>Entreno</h1>
             <p class="workout-status-idle">Sin entrenamiento en curso</p>
           </div>
-          <a class="head-link" href="#/agent" aria-label="Fit">${icons.bot({ size: 22 })}</a>
+          <a class="head-link" href="#/agent" aria-label="Bía">${icons.bot({ size: 22 })}</a>
         </div>
       </header>
 
@@ -391,7 +391,7 @@ export async function render(el) {
     <header class="page-head">
       <div class="page-head-row">
         <h1>Entreno</h1>
-        <a class="head-link" href="#/agent" aria-label="Fit">${icons.bot({ size: 22 })}</a>
+        <a class="head-link" href="#/agent" aria-label="Bía">${icons.bot({ size: 22 })}</a>
       </div>
       <p class="workout-status"><span class="status-dot" aria-hidden="true"></span>En curso · <span class="elapsed" id="elapsed">${formatDuration(now() - w.startedAt)}</span></p>
     </header>

@@ -1,5 +1,5 @@
 /**
- * appearance view — High-Tech Athletic Theme & Accent Customizer for Brother Fit.
+ * appearance view — High-Tech Athletic Theme & Accent Customizer for Bía.
  * Modes: Oscuro / Claro / Sistema.
  * Accents: Amarillo / Azul / Rosado with high-contrast dynamic previews.
  */

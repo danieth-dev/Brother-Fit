@@ -1,5 +1,5 @@
 /**
- * agent view — Gemini 3.8 Live Interface for Brother Fit.
+ * agent view — Gemini 3.8 Live Interface for Bía.
  * Real-time voice conversation with precision transcription + live voice playback + long-term memory.
  * Athletic Dark Chat with Interactive Action Cards & Prompt Chips.
  */
@@ -38,7 +38,7 @@ function renderKeyPrompt(el, config = {}) {
 
   el.innerHTML = `
     <header class="page-head">
-      <h1>Fit AI · Voz en vivo</h1>
+      <h1>Bía · Voz en vivo</h1>
       <p>Compañera técnica por voz. Elige tu motor de inteligencia artificial.</p>
     </header>
 
@@ -165,7 +165,7 @@ async function renderLiveChat(el, config) {
             ${icons.chevronLeft({ size: 24 })}
           </button>
           <div class="agent-chat-head-title">
-            <h1>Fit</h1>
+            <h1>Bía</h1>
             <p class="agent-chat-status" id="agent-status" data-ok="${isExisting ? '1' : '0'}">
               <span class="agent-chat-status-dot" aria-hidden="true"></span>
               <span id="agent-status-text">${isExisting ? 'En línea' : `Conectando con ${agent.provider === 'openai' ? 'OpenAI Realtime' : 'Gemini Live'}...`}</span>
@@ -203,8 +203,8 @@ async function renderLiveChat(el, config) {
           <button class="agent-camera-btn" id="btn-agent-camera" type="button" aria-label="Escanear comida con foto" title="Escanear comida">
             ${icons.camera({ size: 22 })}
           </button>
-          <input id="agent-input" class="agent-input-pill" type="text" placeholder="Escribe a Fit…" autocomplete="off" aria-label="Escribe a Fit" disabled>
-          <button class="agent-action-btn" id="btn-action-trigger" type="button" aria-label="Hablar con Fit" disabled>
+          <input id="agent-input" class="agent-input-pill" type="text" placeholder="Escribe a Bía…" autocomplete="off" aria-label="Escribe a Bía" disabled>
+          <button class="agent-action-btn" id="btn-action-trigger" type="button" aria-label="Hablar con Bía" disabled>
             ${icons.waveform({ size: 24 })}
           </button>
         </div>
@@ -242,7 +242,7 @@ async function renderLiveChat(el, config) {
       } else {
         actionBtn.classList.remove('active-live');
         actionBtn.innerHTML = icons.waveform({ size: 24 });
-        actionBtn.setAttribute('aria-label', 'Hablar con Fit');
+        actionBtn.setAttribute('aria-label', 'Hablar con Bía');
       }
     }
   }
@@ -399,7 +399,7 @@ async function renderLiveChat(el, config) {
     })
     .on('speaking_start', () => {
       if (agent.isLiveMode) {
-        setStatus('Fit habla...', true);
+        setStatus('Bía habla...', true);
       }
     })
     .on('speaking_end', () => {
@@ -541,7 +541,7 @@ async function renderLiveChat(el, config) {
     }
   });
 
-  /* Botón Cámara (Escanear comida desde Fit) */
+  /* Botón Cámara (Escanear comida desde Bía) */
   const cameraBtn = el.querySelector('#btn-agent-camera');
   if (cameraBtn) {
     cameraBtn.addEventListener('click', () => {
@@ -687,7 +687,7 @@ export async function showMemoriesPanel(parentEl, agent) {
       <div class="agent-sheet-head">
         <div class="agent-sheet-head-titles">
           <h2>Recuerdos</h2>
-          <p>Lo que Fit recuerda de ti entre conversaciones. Edítalo o bórralo cuando quieras.</p>
+          <p>Lo que Bía recuerda de ti entre conversaciones. Edítalo o bórralo cuando quieras.</p>
         </div>
         <button class="agent-sheet-close" id="agent-sheet-close" type="button" aria-label="Cerrar">
           ${icons.close({ size: 22 })}
@@ -804,7 +804,7 @@ export async function showMemoriesPanel(parentEl, agent) {
         <button class="agent-rec-workout-card" id="btn-go-history" type="button">
           <div>
             <span class="agent-rec-workout-title">${sessionCount} sesiones guardadas</span>
-            <span class="agent-rec-workout-sub">Ya están en tu Historial. Fit puede consultarlas.</span>
+            <span class="agent-rec-workout-sub">Ya están en tu Historial. Bía puede consultarlas.</span>
           </div>
           ${icons.chevronRight({ size: 20, stroke: '#8A8A8A' })}
         </button>
@@ -1078,7 +1078,7 @@ export async function showConnectionPanel(parentEl, agent) {
             <span style="width: 10px; height: 10px; border-radius: 50%; background: ${isOnline ? '#00FF66' : '#FF4D4D'}; box-shadow: 0 0 10px ${isOnline ? 'rgba(0,255,102,0.45)' : 'rgba(255,77,77,0.45)'}"></span>
             <div>
               <span style="display: block; font-size: 15px; font-weight: 700; color: var(--text);">
-                ${isOnline ? `Fit en línea (${activeProviderName})` : 'Desconectado'}
+                ${isOnline ? `Bía en línea (${activeProviderName})` : 'Desconectado'}
               </span>
               <span style="display: block; font-size: 12px; color: var(--muted);">
                 Voz activa: <b>${activeVoiceName}</b> · Bidireccional
@@ -1201,7 +1201,7 @@ export async function showConnectionPanel(parentEl, agent) {
       <!-- Desconectar -->
       <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; padding-top: 6px; padding-bottom: 24px;">
         <button class="agent-rec-danger-btn" id="btn-disconnect-key" type="button">
-          Desconectar Fit
+          Desconectar Bía
         </button>
       </div>
     </div>
@@ -1297,7 +1297,7 @@ export async function showConnectionPanel(parentEl, agent) {
   // Desconectar
   sheet.querySelector('#btn-disconnect-key').addEventListener('click', async () => {
     const ok = await askConfirm({
-      title: 'Desconectar Fit',
+      title: 'Desconectar Bía',
       body: 'Se desconectará el asistente de voz hasta que vuelvas a activar una clave.',
       confirmLabel: 'Desconectar',
       danger: true,

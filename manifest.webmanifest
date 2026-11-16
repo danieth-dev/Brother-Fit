@@ -1,7 +1,7 @@
 {
-  "name": "Brother Fit",
-  "short_name": "Brother Fit",
-  "description": "Registro personal de entrenamiento y creatina",
+  "name": "Bía",
+  "short_name": "Bía",
+  "description": "Entreno, creatina y comidas con tu asistente de voz",
   "lang": "es",
   "start_url": "./",
   "scope": "./",

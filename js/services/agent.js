@@ -1,11 +1,11 @@
 /**
- * agent.js — Gemini 3.8 Live Engine for Brother Fit.
+ * agent.js — Gemini 3.8 Live Engine for Bía.
  * High-accuracy Real-Time Voice Conversation:
  * 1. Precision Speech Recognition (zero hallucinations, high noise tolerance in gym).
  * 2. Ultra low-latency bidirectional WebSocket connection with models/gemini-3.8-live.
  * 3. Real-time natural voice streaming playback (Aoede voice, 24kHz PCM16).
  * 4. Autonomous tool calling: guardar_recuerdo persisted to IndexedDB (agentMemory).
- * 5. Hands-free loop: User speaks -> Fit speaks -> User speaks.
+ * 5. Hands-free loop: User speaks -> Bía speaks -> User speaks.
  */
 
 import { db } from '../db.js';
@@ -318,7 +318,7 @@ async function resolveSpokenExercise(spoken) {
   return { ok: true, exercise: ex };
 }
 
-/* Lo que Fit dice. Un comentario interno no se muestra. */
+/* Lo que Bía dice. Un comentario interno no se muestra. */
 export function visibleFitText(raw) {
   const text = String(raw || '');
   if (text.includes('<!--') && !text.includes('-->')) return '';
@@ -586,7 +586,7 @@ export async function executeToolCall(name, args) {
   if (name === 'registrar_comida') {
     const { saveMeal, todayMealsSummary } = await import('./meals.js');
     const id = await saveMeal({
-      nombre: args.plato || 'Comida registrada por Fit',
+      nombre: args.plato || 'Comida registrada por Bía',
       tipo: args.tipo,
       kcal: Number(args.kcal) || 0,
       proteina: Number(args.proteina) || 0,
@@ -819,9 +819,9 @@ async function buildSystemInstruction() {
     : '';
 
   return (
-    'Eres la compañera de entrenamiento y asesora técnica de Brother Fit. ' +
-    'El atleta puede llamarte Fit o Bía: respondes igual a ambos; eres un solo personaje, no dos asistentes. ' +
-    'Si te preguntan el nombre, di que pueden llamarte Fit o Bía. No te presentes ni digas tu nombre en cada turno. ' +
+    'Eres Bía, la compañera de entrenamiento y asesora técnica de la app Bía. Tu único nombre es Bía. ' +
+    'Si el atleta te llama Fit (tu nombre anterior), respondes igual, sin corregirlo. Si te preguntan el nombre, di que te llamas Bía. ' +
+    'No te presentes ni digas tu nombre en cada turno. ' +
     'Estás conversando por voz en directo con él en el gimnasio. ' +
     'Trato de igual a igual: cercano, sobrio, técnico y a un ritmo tranquilo. ' +
     'No eres una porrista ni una profesora escolar: cero halagos vacíos, cero frases motivacionales clichés y cero emojis. ' +
@@ -1343,7 +1343,7 @@ export class FitAgent {
 
   /* --- Text Turn in Live Session --- */
   sendText(text) {
-    if (!this.connected) throw new Error('Fit no está conectado');
+    if (!this.connected) throw new Error('Bía no está conectado');
     this.#stopCurrentAudio();
     this.#emit('user_message', text);
     this.#deliverText(text);
@@ -1604,7 +1604,7 @@ export class FitAgent {
       if (this.#activeSources.length === 0) {
         this.#isSpeaking = false;
         this.#emit('speaking_end');
-        // Cuando Fit termina de hablar, reactivamos automáticamente el micrófono para responderle
+        // Cuando Bía termina de hablar, reactivamos automáticamente el micrófono para responderle
         if (this.#isLiveMode) {
           setTimeout(() => this.#listenCycle(), 400);
         }
@@ -1622,7 +1622,7 @@ export class FitAgent {
           if (part.inlineData?.data) {
             this.#queueAudioChunk(part.inlineData.data);
           }
-          // part.text en modo audio es pensamiento o una llamada escrita, no lo que Fit dice.
+          // part.text en modo audio es pensamiento o una llamada escrita, no lo que Bía dice.
         }
       }
 

@@ -1,6 +1,6 @@
 /* Vista Tablero 20 · Comida de hoy (#/meals).
  * Diario completo de calorías y macronutrientes con anillo circular de progreso,
- * escáner IA por foto, integración con Fit y edición por comida. */
+ * escáner IA por foto, integración con Bía y edición por comida. */
 
 import { todayMealsSummary, getMealById, calculateTargetsForGoal } from '../services/meals.js';
 import { latestWeight } from '../services/body.js';
@@ -144,7 +144,7 @@ export async function render(el) {
       <div class="meals-secondary-actions">
         <button type="button" class="meals-sec-btn" data-action="ask-fit">
           ${icons.message({ size: 20 })}
-          Decírselo a Fit
+          Decírselo a Bía
         </button>
         <button type="button" class="meals-sec-btn" data-action="add-manual">
           ${icons.plus({ size: 20 })}
@@ -172,7 +172,7 @@ export async function render(el) {
         ` : `
           <div class="meals-empty-card">
             <p class="meals-empty-title">Todavía no has registrado comidas hoy</p>
-            <p class="meals-empty-sub">Escanea tu plato con una foto, díselo a Fit o añade alimentos manualmente.</p>
+            <p class="meals-empty-sub">Escanea tu plato con una foto, díselo a Bía o añade alimentos manualmente.</p>
           </div>
         `}
       </section>

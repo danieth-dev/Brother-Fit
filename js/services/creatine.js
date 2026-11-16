@@ -176,7 +176,7 @@ const FASE_FRASE = {
   mantenimiento: 'en mantenimiento',
 };
 
-/* Lo que Fit puede decir. Sin la lista cruda de tomas. */
+/* Lo que Bía puede decir. Sin la lista cruda de tomas. */
 export async function creatineForFit() {
   const cr = await creatineSummary();
   const today = todayISO();
