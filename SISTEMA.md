@@ -338,7 +338,7 @@ Pendiente:
 
 - **Empaquetado para Android.** Trusted Web Activity (Bubblewrap) u otra vía. Necesita un nombre de paquete definitivo, una clave de firma y `/.well-known/assetlinks.json` en la **raíz del dominio**: con GitHub Pages de proyecto (`/Brother-Fit/`) eso exige un dominio propio o el repositorio de usuario.
 - **Modelo de la IA.** Hoy cada atleta pega su propia clave de Gemini u OpenAI. Para un público general eso es una barrera; la alternativa es un servidor propio que guarde la clave. Decisión de producto pendiente.
-- **Política de privacidad** pública (URL obligatoria en Play): qué se guarda en el teléfono, qué se manda a Google u OpenAI (voz transcrita, fotos de comida, contexto), micrófono y notificaciones.
+- **Política de privacidad**: hay un borrador en `docs/politica-privacidad.md`, con el anexo para el formulario de seguridad de los datos. Faltan los datos del editor, elegir la sección 4A o 4B y publicarla en una URL fija (`APP_INFO.privacyUrl`).
 - **Formularios de Play Console:** seguridad de los datos (Data safety), declaración de apps de salud y fitness, clasificación de contenido.
 - **Correo de soporte** en `js/app-info.js` (`supportEmail`). Sin él, los reportes de respuestas de Bía solo quedan en el teléfono y no te llegan.
 - **Ficha de la tienda:** capturas, ícono de 512 px, gráfico destacado de 1024×500, textos.
@@ -348,6 +348,7 @@ Pendiente:
 
 | Ruta | Papel |
 | --- | --- |
+| `docs/politica-privacidad.md` | Borrador de la política de privacidad y del formulario de seguridad de los datos de Play. |
 | `AGENTS.md` | Reglas de arquitectura, patrones, calidad y documentación para personas y agentes. `CLAUDE.md` lo importa. |
 | `DESIGN.md` | Sistema visual: tokens, tipografía, componentes, reglas y deuda de diseño. |
 | `PRODUCT.md` | Público, propósito y principios de producto. |

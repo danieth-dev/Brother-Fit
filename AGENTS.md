@@ -12,6 +12,7 @@ Bía es una PWA local-first (HTML, CSS y JavaScript puro, sin build) para regist
 | `DESIGN.md` | El sistema visual: tokens, tipografía, componentes, reglas y deuda de diseño. | Cambia un token, un componente, un modo o acento, un icono, una fuente o el aspecto de una pantalla. |
 | `PRODUCT.md` | Para quién es, propósito, principios de producto. | Cambia el público, el posicionamiento o un principio. |
 | `README.md` | Cómo correrla y publicarla, en corto. | Cambia cómo se instala, prueba o publica. |
+| `docs/politica-privacidad.md` | Qué datos se guardan, qué se envía y a quién, permisos y borrado. | Cambia lo que se guarda, lo que sale del teléfono (contexto de Bía, fotos, voz), un permiso o un proveedor de IA. |
 
 **La documentación se actualiza en el mismo commit que el código.** Un cambio sin su documentación no está terminado. Antes de cerrar una tarea, revisa si alguna fila de la tabla aplica.
 
