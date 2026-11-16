@@ -296,6 +296,12 @@
   height: 4px;
   border-radius: var(--r-full);
   background: var(--line-strong);
+  transition: background-color 0.15s ease, width 0.15s ease;
+}
+.confirm-sheet--rich .confirm-grabber:active span,
+.confirm-sheet--rich .is-sheet-dragging .confirm-grabber span {
+  background: var(--primary);
+  width: 48px;
 }
 .confirm-sheet--rich .picker-panel {
   padding: 10px 20px calc(env(safe-area-inset-bottom, 0px) + 28px);

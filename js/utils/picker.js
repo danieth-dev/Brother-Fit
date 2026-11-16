@@ -256,9 +256,10 @@ function bindDragToClose() {
     startY = lastY = e.clientY;
     lastT = e.timeStamp;
     velocity = 0;
-    e.currentTarget.setPointerCapture(pointerId);
+    try { e.currentTarget.setPointerCapture(pointerId); } catch { /* puntero ya liberado */ }
     panel.style.transition = 'none';
     backdrop.style.transition = 'none';
+    panel.classList.add('is-sheet-dragging'); // enciende la barrita, como en sheet-drag.js
   };
 
   const onMove = (e) => {
@@ -278,6 +279,7 @@ function bindDragToClose() {
   const onUp = (e) => {
     if (!dragging || e.pointerId !== pointerId) return;
     dragging = false;
+    panel.classList.remove('is-sheet-dragging');
     const dy = e.clientY - startY;
     const h = panel.offsetHeight || 1;
     const shouldClose = dy > Math.min(140, h * 0.35) || (velocity > 0.65 && dy > 40);

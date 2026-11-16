@@ -627,7 +627,8 @@ body.in-agent-view #app .view {
   background: var(--line-strong);
   transition: background 0.15s ease, width 0.15s ease;
 }
-.agent-sheet-drag:active::after {
+.agent-sheet-drag:active::after,
+.is-sheet-dragging .agent-sheet-drag::after {
   background: var(--primary);
   width: 50px;
 }

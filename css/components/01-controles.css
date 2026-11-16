@@ -671,6 +671,14 @@ body.picker-open {
   height: 5px;
   border-radius: var(--r-full);
   background: var(--line-strong);
+  transition: background-color 0.15s ease, width 0.15s ease;
+}
+/* Al agarrar la hoja, la barrita se enciende con el acento y se ensancha; al soltar, vuelve.
+ * .is-sheet-dragging lo pone sheet-drag.js mientras dura el gesto. */
+.picker-grabber:active span,
+.is-sheet-dragging .picker-grabber span {
+  background: var(--primary);
+  width: 52px;
 }
 .picker-sheet .picker-head {
   touch-action: none;

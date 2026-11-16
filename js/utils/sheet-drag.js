@@ -33,6 +33,8 @@ export function bindSheetDrag({ sheet, panel, backdrop, zones, onClose }) {
     } catch (_) {}
     panel.style.transition = 'none';
     if (backdrop) backdrop.style.transition = 'none';
+    // Enciende la barrita mientras dura el gesto, también si se arrastra desde el título.
+    panel.classList.add('is-sheet-dragging');
   };
 
   const onMove = (e) => {
@@ -55,6 +57,7 @@ export function bindSheetDrag({ sheet, panel, backdrop, zones, onClose }) {
   const onUp = (e) => {
     if (!dragging || (pointerId != null && e.pointerId !== pointerId)) return;
     dragging = false;
+    panel.classList.remove('is-sheet-dragging');
     const dy = e.clientY - startY;
     const h = panel.offsetHeight || 1;
     const shouldClose = dy > Math.min(130, h * 0.28) || (velocity > 0.45 && dy > 25);
