@@ -119,7 +119,7 @@
 /* Botón de Acción Primaria (Amarillo Eléctrico) */
 .btn-primary {
   background: var(--primary);
-  border: 1px solid rgba(255, 230, 0, 0.4);
+  border: 1px solid var(--line-accent-strong);
   color: var(--primary-ink);
   box-shadow: var(--shadow-primary);
 }
@@ -264,7 +264,7 @@
   outline: none;
   border-color: var(--primary);
   background: var(--surface);
-  box-shadow: 0 0 0 3px rgba(255, 230, 0, 0.12);
+  box-shadow: var(--focus-ring);
 }
 .field input::placeholder {
   color: var(--text-dim);
@@ -587,7 +587,7 @@
   outline: none;
   border-color: var(--primary);
   background: var(--surface);
-  box-shadow: 0 0 0 3px rgba(255, 230, 0, 0.12);
+  box-shadow: var(--focus-ring);
 }
 .picker-value {
   min-width: 0;
@@ -703,7 +703,7 @@ body.picker-open {
 .time-step button:focus-visible,
 .time-period button:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(255, 230, 0, 0.28);
+  box-shadow: var(--focus-ring);
 }
 .time-period {
   display: grid;
@@ -755,7 +755,7 @@ body.picker-open {
 }
 .picker-close:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(255, 230, 0, 0.2);
+  box-shadow: var(--focus-ring);
 }
 .picker-find {
   display: flex;
@@ -899,7 +899,7 @@ body.picker-open {
   padding: 12px 14px;
   border: 1px dashed var(--line-strong);
   border-radius: var(--r-md);
-  background: rgba(255, 230, 0, 0.04);
+  background: var(--accent-faint);
   color: var(--text);
   font-family: inherit;
   font-size: var(--fs-sm);
@@ -912,7 +912,7 @@ body.picker-open {
 
 .picker-create-btn:hover,
 .picker-create-btn:active {
-  background: rgba(255, 230, 0, 0.1);
+  background: var(--yellow-dim);
   border-color: var(--primary);
   border-style: solid;
 }
@@ -1238,7 +1238,7 @@ body.picker-open {
 }
 .picker-edit:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(255, 230, 0, 0.2);
+  box-shadow: var(--focus-ring);
 }
 .picker-row > .picker-mark {
   margin-right: 12px;
@@ -1263,7 +1263,7 @@ body.picker-open {
 }
 .editor-delete:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(255, 230, 0, 0.2);
+  box-shadow: var(--focus-ring);
 }
 .editor-delete:active {
   background: var(--red-dim);
@@ -1324,7 +1324,7 @@ body.picker-open {
 }
 .cal-step:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(255, 230, 0, 0.2);
+  box-shadow: var(--focus-ring);
 }
 .cal-grid {
   display: grid;
@@ -1574,7 +1574,7 @@ body.picker-open {
 }
 .chip-warn {
   background: var(--yellow-dim);
-  border-color: rgba(255, 230, 0, 0.3);
+  border-color: var(--line-accent);
   color: var(--primary);
 }
 
@@ -1803,7 +1803,7 @@ html[data-modo="claro"] .plate {
   font-size: 12px;
   font-weight: 700;
   color: var(--primary);
-  background: rgba(255, 230, 0, 0.08);
+  background: var(--accent-faint);
 }
 .home-workout-card-body {
   display: flex;
@@ -2065,7 +2065,7 @@ html[data-modo="claro"] .plate {
   font-size: 11px;
   font-weight: 700;
   color: var(--primary);
-  background: rgba(255, 230, 0, 0.1);
+  background: var(--yellow-dim);
   padding: 2px 8px;
   border-radius: var(--r-full);
   text-transform: uppercase;
@@ -2107,7 +2107,7 @@ html[data-modo="claro"] .plate {
 
 .set-ref-card.is-target {
   border-color: var(--primary);
-  background: rgba(255, 230, 0, 0.06);
+  background: var(--accent-faint);
 }
 
 .ref-card-num {
@@ -2354,7 +2354,7 @@ html[data-modo="claro"] .plate {
 }
 .effort-miss {
   width: 100%;
-  border-color: rgba(255, 230, 0, 0.55);
+  border-color: var(--line-accent-strong);
   color: var(--primary);
 }
 .effort-change {
@@ -2401,7 +2401,7 @@ html[data-modo="claro"] .plate {
   padding: 12px 14px 12px 18px;
   border-radius: var(--r-md);
   background: var(--yellow-dim);
-  border: 1px solid rgba(255, 230, 0, 0.35);
+  border: 1px solid var(--line-accent);
   color: var(--text);
   box-shadow: var(--shadow-md);
 }
@@ -2423,7 +2423,7 @@ html[data-modo="claro"] .plate {
 }
 .rest .btn {
   background: var(--surface);
-  border: 1px solid rgba(255, 230, 0, 0.4);
+  border: 1px solid var(--line-accent-strong);
   color: var(--primary);
   font-weight: 700;
 }
@@ -2499,31 +2499,6 @@ html[data-modo="claro"] .plate {
   color: var(--primary-ink);
   box-shadow: var(--shadow-sm);
 }
-.tema-pick {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-}
-.tema-pick button {
-  min-height: 48px;
-  border: 1px solid var(--line);
-  border-radius: var(--r-md);
-  background: transparent;
-  color: var(--text);
-  font-weight: 800;
-  font-size: var(--fs-xs);
-  text-transform: capitalize;
-  -webkit-touch-callout: none;
-}
-.tema-pick button[data-tema="amarillo"] { color: #ffe600; border-color: #ffe600; }
-.tema-pick button[data-tema="azul"] { color: #5ec4ff; border-color: #5ec4ff; }
-.tema-pick button[data-tema="rosado"] { color: #ff7ad1; border-color: #ff7ad1; }
-.tema-pick button[aria-pressed="true"] {
-  color: #07080a;
-}
-.tema-pick button[data-tema="amarillo"][aria-pressed="true"] { background: #ffe600; }
-.tema-pick button[data-tema="azul"][aria-pressed="true"] { background: #5ec4ff; }
-.tema-pick button[data-tema="rosado"][aria-pressed="true"] { background: #ff7ad1; }
 .seg.seg--swipeable button[aria-pressed="true"] {
   background: transparent;
   box-shadow: none;
@@ -2998,7 +2973,7 @@ html[data-modo="claro"] .seg.metric-seg:not(:has(.seg-thumb)) button[aria-presse
 }
 .creatine-retro-btn:hover {
   border-color: var(--primary);
-  background: rgba(255, 230, 0, 0.04);
+  background: var(--accent-faint);
 }
 .creatine-retro-plus {
   color: var(--muted);
@@ -4702,7 +4677,7 @@ body.in-agent-view #app .view {
   font-size: 0.72rem;
   color: var(--primary);
   background: rgba(0, 0, 0, 0.25);
-  border: 1px solid rgba(255, 230, 0, 0.3);
+  border: 1px solid var(--line-accent);
   padding: 3px 9px;
   border-radius: var(--r-full);
   font-weight: 700;
@@ -6749,9 +6724,9 @@ html[data-modo="claro"] .history-workout-card:hover {
   justify-content: center;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
-.aspecto-swatch-circle.is-amarillo { background: #FFE600; }
-.aspecto-swatch-circle.is-azul { background: #5EC4FF; }
-.aspecto-swatch-circle.is-rosado { background: #FF7AD1; }
+.aspecto-swatch-circle.is-amarillo { background: var(--swatch-amarillo); }
+.aspecto-swatch-circle.is-azul { background: var(--swatch-azul); }
+.aspecto-swatch-circle.is-rosado { background: var(--swatch-rosado); }
 
 .aspecto-swatch-check {
   color: #07080A;

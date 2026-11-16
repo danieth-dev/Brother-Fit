@@ -127,7 +127,7 @@ Este documento es la fuente de verdad del diseño de Bía. Lo leen las personas 
 
 Fuente de los valores: `css/tokens.css` (tokens), `css/base.css` (página y tipografía base) y `css/components.css` (componentes). El frontmatter de arriba usa el formato de `DESIGN.md` que entiende la skill; los valores son los del **modo oscuro con acento amarillo**, que es el de fábrica.
 
-Última revisión: 15 de noviembre de 2026 (caché `v185`).
+Última revisión: 15 de noviembre de 2026 (caché `v186`).
 
 ## 1. Idea
 
@@ -163,6 +163,13 @@ Todo color sale de un token de `css/tokens.css`. Un componente nunca escribe un 
 | `--primary-ink` / `--yellow-ink` | `#07080a` | Texto e iconos **sobre** el acento. |
 | `--yellow-dim` | acento al 12 % | Fondo del descanso, chips de aviso, halos de foco. |
 | `--primary-glow` | `0 0 24px` acento al 22 % | Solo en el aviso (toast). |
+| `--accent-faint` | acento al 6 % (`color-mix`) | Fondos muy suaves: hover de botones discontinuos, tarjeta objetivo. |
+| `--line-accent-strong` | acento al 45 % (`color-mix`) | Borde del primario y bordes de aviso marcados. |
+| `--focus-ring` | `0 0 0 3px` acento al 22 % | Halo de foco de campos y botones de hoja. |
+
+Los tres últimos se calculan desde `--primary` en `:root`, así que siguen solos al modo claro y a los acentos sin redefinirse. Para un tinte nuevo del acento se usa uno de estos tokens o se añade otro con `color-mix(in srgb, var(--primary) N%, transparent)`; nunca un `rgba()` con el color escrito.
+
+`--swatch-amarillo`, `--swatch-azul` y `--swatch-rosado` son los colores fijos de las muestras en Aspecto: enseñan cada opción, no el acento activo, y no deben usarse en otro sitio.
 
 ### Colores de estado
 
@@ -327,10 +334,11 @@ Cada componente existe una vez en `components.css` y las pantallas lo reutilizan
 
 Medida el 15 de noviembre de 2026. Cada cambio que toque una de estas zonas la deja mejor, y esta lista se actualiza.
 
+Resuelto: el amarillo escrito a mano en `components.css` (22 usos que dejaban bordes y halos amarillos con acento azul o rosado) pasó a tokens del acento en la `v186`, y se borró el bloque `.tema-pick`, que no se usaba.
+
 | Problema | Hoy | Meta |
 | --- | --- | --- |
-| Amarillo escrito a mano (`rgba(255, 230, 0, …)` o `#ffe600`) en `components.css` | 22 usos: con acento azul o rosado quedan bordes y halos amarillos | 0, usando `--yellow-dim`, `--line-accent` o un token nuevo |
-| Otros hex y `rgba()` sueltos en `components.css` | ~100 hex y ~40 `rgba()` | Tokens o, si es propio de un componente, una variable local documentada |
+| Otros hex y `rgba()` sueltos en `components.css` | ~95 hex y ~40 `rgba()` | Tokens o, si es propio de un componente, una variable local documentada |
 | `font-size` escrito en px/rem en vez de token | 230 frente a 109 con token | Todo con `--fs-*` |
 | `!important` en `components.css` | 156 | Solo en `[hidden]` y en movimiento reducido |
 | `style="…"` en HTML generado por JS | 89 (14 en `progress.js`) | 0 |

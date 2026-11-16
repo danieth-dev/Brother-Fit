@@ -50,6 +50,17 @@
   --yellow-dim: rgba(255, 230, 0, 0.12);
   --yellow-ink: #07080a;
 
+  /* Derivados del acento. Se calculan desde --primary, así que siguen solos
+   * al modo claro y a los acentos azul y rosado: no hace falta repetirlos abajo. */
+  --accent-faint: color-mix(in srgb, var(--primary) 6%, transparent);
+  --line-accent-strong: color-mix(in srgb, var(--primary) 45%, transparent);
+  --focus-ring: 0 0 0 3px color-mix(in srgb, var(--primary) 22%, transparent);
+
+  /* Muestras fijas de cada acento en Aspecto: enseñan la opción, no el acento activo. */
+  --swatch-amarillo: #ffe600;
+  --swatch-azul: #5ec4ff;
+  --swatch-rosado: #ff7ad1;
+
   /* Semántica y Grupos Musculares */
   --green: #10b981;
   --green-hover: #059669;
