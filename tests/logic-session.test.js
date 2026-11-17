@@ -1,15 +1,39 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { restZone, restSeconds, workoutTitle, orderExercises, nextRoutineStep, routineComplete, ROUTINE_DONE } from '../js/services/session-plan.js';
+import { restZone, restSeconds, restLabel, effortBonus, workoutTitle, orderExercises, nextRoutineStep, routineComplete, ROUTINE_DONE } from '../js/services/session-plan.js';
 import { formatWeekdayShort, formatCountdown } from '../js/utils/dates.js';
 
 test('descanso automático por repeticiones; el fijo sale de Ajustes', () => {
   assert.equal(restZone(5).secs, 180);
   assert.equal(restZone(8).secs, 120);
   assert.equal(restZone(12).secs, 90);
-  assert.equal(restZone(20).secs, 60);
+  assert.equal(restZone(20).secs, 90);
   assert.equal(restSeconds(6, { descansoMode: 'auto', descanso: 75 }), 120);
   assert.equal(restSeconds(6, { descansoMode: 'fijo', descanso: 75 }), 75);
+});
+
+test('cerca del fallo se descansa un poco más', () => {
+  const auto = { descansoMode: 'auto', descanso: 90 };
+  assert.equal(restSeconds(10, auto, { rir: 0 }), 120);
+  assert.equal(restSeconds(10, auto, { rir: 1 }), 105);
+  assert.equal(restSeconds(10, auto, { rir: 2 }), 90);
+  assert.equal(restSeconds(10, auto, { rir: 4 }), 90);
+  assert.equal(restSeconds(10, auto, { rir: null }), 90);
+  assert.equal(restSeconds(15, auto, { rir: 3 }), 90);
+});
+
+test('calentamiento y modo manual no se ajustan por esfuerzo', () => {
+  assert.equal(effortBonus(0, 'calentamiento'), 0);
+  assert.equal(effortBonus(1.5), 0);
+  assert.equal(restSeconds(10, { descansoMode: 'auto', descanso: 90 }, { rir: 0, tipo: 'calentamiento' }), 90);
+  assert.equal(restSeconds(10, { descansoMode: 'manual', descanso: 90 }, { rir: 0 }), 90);
+});
+
+test('la etiqueta del descanso dice por qué se alargó', () => {
+  assert.equal(restLabel(10, { rir: 0 }), 'Hipertrofia · 1:30 + 30 s por llegar al fallo');
+  assert.equal(restLabel(10, { rir: 1 }), 'Hipertrofia · 1:30 + 15 s por quedarte a 1');
+  assert.equal(restLabel(10, { rir: 3 }), 'Hipertrofia · 1:30');
+  assert.equal(restLabel(10), 'Hipertrofia · 1:30');
 });
 
 test('título de una sesión por sus grupos', () => {

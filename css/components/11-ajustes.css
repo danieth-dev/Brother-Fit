@@ -217,6 +217,14 @@
   font-style: italic;
 }
 
+.settings-rest-note {
+  margin: -6px 0 0;
+  padding: 0 16px 14px;
+  font-size: var(--fs-xs);
+  line-height: 1.45;
+  color: var(--muted);
+}
+
 .settings-switch {
   width: 52px;
   height: 32px;

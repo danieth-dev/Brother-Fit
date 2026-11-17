@@ -273,6 +273,7 @@ export function anotarRpe({ rir, mark, omitir = false } = {}) {
         sets.put(set);
         meta.delete(PENDING_KEY);
         box.preguntar = false;
+        box.rir = Number(rir);
         box.mensaje = 'Esfuerzo guardado. No preguntes otra vez.';
       };
     };

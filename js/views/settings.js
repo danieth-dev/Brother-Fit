@@ -8,6 +8,8 @@ import { importData, lastBackup, clearAllData } from '../services/backup.js';
 import { ensureNotifyPermission, cancelWaterReminders, resumeWaterReminders } from '../services/water-reminders.js';
 import { getActiveAgent } from '../voice/fit-agent.js';
 import { toast, esc, num } from '../utils/dom.js';
+import { formatCountdown } from '../utils/dates.js';
+import { REST_ZONES, RIR_BONUS } from '../services/session-plan.js';
 import { icons } from '../utils/icons.js';
 import { askConfirm } from '../utils/confirm-sheet.js';
 import { showMemoriesPanel } from '../utils/memories-panel.js';
@@ -100,7 +102,7 @@ export async function render(el) {
           <button class="settings-row" type="button" id="row-rest-toggle">
             <div class="settings-row-main">
               <span class="settings-row-label">Descanso entre series</span>
-              <span class="settings-row-sub">${s.descansoMode === 'auto' ? 'Se ajusta solo según tus repeticiones' : 'Tiempo fijo por serie'}</span>
+              <span class="settings-row-sub">${s.descansoMode === 'auto' ? 'Se ajusta según tus repeticiones y tu esfuerzo' : 'Tiempo fijo por serie'}</span>
             </div>
             <div class="settings-row-val">
               <span>${s.descansoMode === 'auto' ? 'Automático' : `${s.descanso || 90}s fijo`}</span>
@@ -113,23 +115,13 @@ export async function render(el) {
             s.descansoMode === 'auto'
               ? `
             <div class="settings-rest-grid">
+              ${REST_ZONES.map((z) => `
               <div class="settings-rest-box">
-                <p>1–5 reps</p>
-                <p class="val">3:00</p>
-              </div>
-              <div class="settings-rest-box">
-                <p>6–8 reps</p>
-                <p class="val">2:00</p>
-              </div>
-              <div class="settings-rest-box">
-                <p>9–12 reps</p>
-                <p class="val">1:30</p>
-              </div>
-              <div class="settings-rest-box">
-                <p>13+ reps</p>
-                <p class="val">1:00</p>
-              </div>
+                <p>${z.range} reps</p>
+                <p class="val">${formatCountdown(z.secs)}</p>
+              </div>`).join('')}
             </div>
+            <p class="settings-rest-note">Al fallo, +${RIR_BONUS[0]} s. A 1 del fallo, +${RIR_BONUS[1]} s. Los calentamientos no se alargan.</p>
           `
               : `
             <div class="settings-inline-form">

@@ -7,6 +7,8 @@ export const session = {
   selectedEx: null,
   restEnd: 0,
   lastReps: 0,
+  /* Esfuerzo de la última serie: explica un descanso alargado. */
+  lastRir: null,
   draftTipo: 'trabajo',
   draftRir: null,
   openEffortId: null,
@@ -34,6 +36,8 @@ on(EVENTS.SET_LOGGED, (detail) => {
 /* La hoja del descanso puede alargarlo o acortarlo; el reloj de Entreno sigue ese fin. */
 on(EVENTS.REST_CHANGED, (detail) => {
   session.restEnd = detail?.restEnd || 0;
+  if (detail?.lastReps) session.lastReps = detail.lastReps;
+  if (detail?.lastReps || detail?.rir != null) session.lastRir = detail.rir ?? null;
 });
 
 on(EVENTS.EXERCISE_SELECTED, (detail) => {

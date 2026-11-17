@@ -1,21 +1,44 @@
 /* Reglas del entreno en curso que no tocan la base: descanso sugerido, título de una sesión,
  * orden de la lista de ejercicios y el siguiente paso de una rutina repetida. */
 
-/* Descanso automático según las repeticiones de la última serie (fuerza descansa más). */
-const REST_ZONES = [
-  { maxReps: 5, secs: 180, label: 'Fuerza · 3 min' },
-  { maxReps: 8, secs: 120, label: 'Fuerza-Hipertrofia · 2 min' },
-  { maxReps: 12, secs: 90, label: 'Hipertrofia · 1:30' },
-  { maxReps: Infinity, secs: 60, label: 'Resistencia · 1 min' },
+/* Descanso automático según las repeticiones de la última serie (fuerza descansa más). Nunca menos
+ * de 1:30: por debajo de un minuto el rendimiento de la serie siguiente cae, y una serie larga
+ * también cansa. Ajustes dibuja esta misma tabla. */
+export const REST_ZONES = [
+  { maxReps: 5, range: '1–5', secs: 180, label: 'Fuerza · 3 min' },
+  { maxReps: 8, range: '6–8', secs: 120, label: 'Fuerza-Hipertrofia · 2 min' },
+  { maxReps: 12, range: '9–12', secs: 90, label: 'Hipertrofia · 1:30' },
+  { maxReps: Infinity, range: '13+', secs: 90, label: 'Resistencia · 1:30' },
 ];
+
+/* Segundos extra según cuántas repeticiones más podía hacer (RIR). Al fallo la fatiga es mayor y
+ * tarda más en pasar; con 2 o más en reserva no hace falta. Es un ajuste moderado: los estudios
+ * dan rangos, no una cifra exacta. */
+export const RIR_BONUS = { 0: 30, 1: 15 };
+
+const RIR_REASON = { 0: 'por llegar al fallo', 1: 'por quedarte a 1' };
 
 export function restZone(reps) {
   return REST_ZONES.find((z) => reps <= z.maxReps);
 }
 
-/** Segundos de descanso: los del modo automático o los fijos de Ajustes. */
-export function restSeconds(reps, { descansoMode, descanso }) {
-  return descansoMode === 'auto' ? restZone(reps).secs : descanso;
+/** Segundos extra por el esfuerzo de una serie de trabajo; 0 en calentamiento o sin esfuerzo. */
+export function effortBonus(rir, tipo = 'trabajo') {
+  if (tipo === 'calentamiento' || !Number.isInteger(rir)) return 0;
+  return RIR_BONUS[rir] ?? 0;
+}
+
+/** Segundos de descanso: en automático, la zona más el esfuerzo; en manual, los fijos de Ajustes. */
+export function restSeconds(reps, { descansoMode, descanso }, { rir = null, tipo = 'trabajo' } = {}) {
+  if (descansoMode !== 'auto') return descanso;
+  return restZone(reps).secs + effortBonus(rir, tipo);
+}
+
+/** «Hipertrofia · 1:30 + 30 s por llegar al fallo», o solo la zona si no hay ajuste. */
+export function restLabel(reps, { rir = null, tipo = 'trabajo' } = {}) {
+  const zone = restZone(reps).label;
+  const bonus = effortBonus(rir, tipo);
+  return bonus ? `${zone} + ${bonus} s ${RIR_REASON[rir]}` : zone;
 }
 
 /** «Pecho», «Pecho y Espalda», «Pecho, Espalda y Hombros» o «Pecho, Espalda (+2)». */

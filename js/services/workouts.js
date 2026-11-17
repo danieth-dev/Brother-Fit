@@ -351,10 +351,11 @@ export async function loadActiveRest() {
   return value;
 }
 
-/* start sirve para dibujar cuánto queda; los descansos guardados antes no lo traen. */
-export async function saveActiveRest(restEnd, lastReps, start = now()) {
-  await db.put('meta', { key: REST_KEY, value: { restEnd, lastReps, start } });
-  emit(EVENTS.REST_CHANGED, { restEnd, start });
+/* start sirve para dibujar cuánto queda y rir para explicar un descanso alargado por esfuerzo;
+ * los descansos guardados antes no los traen. */
+export async function saveActiveRest(restEnd, lastReps, { start = now(), rir = null } = {}) {
+  await db.put('meta', { key: REST_KEY, value: { restEnd, lastReps, start, rir } });
+  emit(EVENTS.REST_CHANGED, { restEnd, start, lastReps, rir });
 }
 
 export async function clearActiveRest() {
@@ -362,8 +363,9 @@ export async function clearActiveRest() {
   emit(EVENTS.REST_CHANGED, { restEnd: 0, start: 0 });
 }
 
-/** Alarga o acorta el descanso en curso. Devuelve el nuevo fin, o 0 si ya no queda descanso. */
-export async function shiftActiveRest(deltaMs) {
+/** Alarga o acorta el descanso en curso. rir, si llega, es el esfuerzo que explica el cambio.
+ * Devuelve el nuevo fin, o 0 si ya no queda descanso. */
+export async function shiftActiveRest(deltaMs, { rir } = {}) {
   const rest = await loadActiveRest();
   if (!rest) return 0;
   const restEnd = rest.restEnd + deltaMs;
@@ -371,7 +373,7 @@ export async function shiftActiveRest(deltaMs) {
     await clearActiveRest();
     return 0;
   }
-  await saveActiveRest(restEnd, rest.lastReps, rest.start ?? now());
+  await saveActiveRest(restEnd, rest.lastReps, { start: rest.start ?? now(), rir: rir ?? rest.rir ?? null });
   return restEnd;
 }
 

@@ -9,19 +9,19 @@ import { addBodyWeight, latestWeight } from '../body.js';
 import { DOSE_G, clearIntakesOn, creatineForFit, intakesForDate, logIntake } from '../creatine.js';
 import { anotarRpe, registerSet } from '../effort.js';
 import { deleteMeal, getMealsHistoryForFit, listMealsByDate, saveMeal, todayMealsSummary } from '../meals.js';
-import { finishWorkout, finishWorkoutSummary, getActiveWorkout, lastSessionSetsFor, lastSetFor, listExercises, matchExercise, prByExercise, progressForExercise, saveActiveRest, startWorkout } from '../workouts.js';
+import { finishWorkout, finishWorkoutSummary, getActiveWorkout, lastSessionSetsFor, lastSetFor, listExercises, matchExercise, prByExercise, progressForExercise, saveActiveRest, shiftActiveRest, startWorkout } from '../workouts.js';
+import { restSeconds, effortBonus } from '../session-plan.js';
 import { now } from '../../utils/clock.js';
 import { todayISO } from '../../utils/dates.js';
 import { EVENTS, emit } from '../../utils/events.js';
 import { toKg } from '../../utils/units.js';
 import { isBodyweight, loadWords } from '../bodyweight.js';
 
-function restSeconds(reps) {
-  if (state.settings.descansoMode !== 'auto') return state.settings.descanso || 90;
-  if (reps <= 5) return 180;
-  if (reps <= 8) return 120;
-  if (reps <= 12) return 90;
-  return 60;
+/* El esfuerzo dicho en voz: un entero desde 0, o null si no lo dijo o no se entiende. */
+function spokenRir(value) {
+  if (value == null || value === '') return null;
+  const n = Number(value);
+  return Number.isInteger(n) && n >= 0 ? n : null;
 }
 
 async function resolveSpokenExercise(spoken) {
@@ -81,7 +81,9 @@ export async function executeToolCall(name, args) {
     state.activeExercise = { id: ex.id, nombre: ex.nombre, grupo: ex.grupo };
     emit(EVENTS.EXERCISE_SELECTED, { id: ex.id });
 
-    const restEnd = now() + restSeconds(reps) * 1000;
+    const tipo = args.tipo === 'calentamiento' ? 'calentamiento' : 'trabajo';
+    const rir = spokenRir(args.rir);
+    const restEnd = now() + restSeconds(reps, state.settings, { rir, tipo }) * 1000;
     const res = await registerSet({
       workoutId: active.id,
       exerciseId: ex.id,
@@ -96,7 +98,7 @@ export async function executeToolCall(name, args) {
       res.sesionIniciadaAutomaticamente = autoStarted;
     }
     if (!res?.duplicada) {
-      await saveActiveRest(restEnd, reps);
+      await saveActiveRest(restEnd, reps, { rir: tipo === 'trabajo' ? rir : null });
       emit(EVENTS.SET_LOGGED, { restEnd, lastReps: reps });
     }
     return res;
@@ -115,7 +117,11 @@ export async function executeToolCall(name, args) {
     };
   }
   if (name === 'anotar_rpe') {
-    return anotarRpe({ rir: args.rir, mark: args.marca, omitir: args.omitir === true });
+    const res = await anotarRpe({ rir: args.rir, mark: args.marca, omitir: args.omitir === true });
+    // El esfuerzo llegó con el descanso ya corriendo: si fue al fallo o casi, se alarga.
+    const bonus = effortBonus(res?.rir);
+    if (bonus && state.settings.descansoMode === 'auto') await shiftActiveRest(bonus * 1000, { rir: res.rir });
+    return res;
   }
   if (name === 'consultar_creatina') {
     return creatineForFit();

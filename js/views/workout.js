@@ -6,7 +6,7 @@ import {
   loadActiveRest, saveActiveRest, clearActiveRest, listWorkoutSummaries, getWorkoutExerciseSets,
 } from '../services/workouts.js';
 import { registerSet, setEffort, setTipo, skipRestClock } from '../services/effort.js';
-import { restSeconds, restZone, orderExercises, nextRoutineStep, routineComplete, ROUTINE_DONE } from '../services/session-plan.js';
+import { restSeconds, restLabel, orderExercises, nextRoutineStep, routineComplete, ROUTINE_DONE } from '../services/session-plan.js';
 import { getActiveAgent } from '../voice/fit-agent.js';
 import { saveMemory } from '../services/bia/memory.js';
 import { creatineSummary } from '../services/creatine.js';
@@ -64,7 +64,10 @@ async function restoreRest() {
   if (session.restEnd > now()) return;
   const saved = await loadActiveRest();
   session.restEnd = saved?.restEnd || 0;
-  if (saved) session.lastReps = saved.lastReps || 0;
+  if (saved) {
+    session.lastReps = saved.lastReps || 0;
+    session.lastRir = saved.rir ?? null;
+  }
 }
 
 /* Qué ejercicio queda abierto: el primero de la rutina si aún no hay series, el que eligió Bía
@@ -189,7 +192,10 @@ function restControls(el, d) {
   if (session.routineDone) action = { kind: 'finish', label: 'Terminar sesión' };
   else if (session.isExCompleted && session.nextExObj) action = { kind: 'next', label: session.nextExObj.nombre };
   return {
-    zone: state.settings.descansoMode === 'auto' && session.lastReps ? restZone(session.lastReps).label : '',
+    // Se lee al abrir la hoja: Bía puede alargar el descanso después de pintar Entreno.
+    get zone() {
+      return state.settings.descansoMode === 'auto' && session.lastReps ? restLabel(session.lastReps, { rir: session.lastRir }) : '';
+    },
     action,
     onSkip: () => skipRest(el, d.exs),
     onAction: () => (action?.kind === 'finish' ? finishFlow(d.w) : advanceTo(el, d.exs, session.nextExObj.id)),
@@ -407,21 +413,23 @@ async function saveSetNow(el, f, d) {
     return;
   }
 
-  const restEnd = now() + restSeconds(reps, state.settings) * 1000;
+  const rir = working ? session.draftRir : null;
+  const restEnd = now() + restSeconds(reps, state.settings, { rir, tipo: session.draftTipo }) * 1000;
   const saved = await registerSet({
     workoutId: d.w.id,
     exerciseId,
     peso,
     reps,
     tipo: session.draftTipo,
-    rir: working ? session.draftRir : undefined,
+    rir: working ? rir : undefined,
     restEnd,
   }, { abrirPregunta: false });
 
   session.restEnd = restEnd;
   session.selectedEx = exerciseId;
   session.lastReps = reps;
-  await saveActiveRest(restEnd, reps);
+  session.lastRir = rir;
+  await saveActiveRest(restEnd, reps, { rir });
   session.pendingNextEx = nextRoutineStep(d.w.routineExercises, exerciseId, d.prevSets.length, d.curExSets.length + 1);
   session.draftTipo = 'trabajo';
   session.draftRir = null;
