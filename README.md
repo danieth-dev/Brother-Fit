@@ -53,7 +53,7 @@ aunque la instalación y el modo offline requieren HTTPS (siguiente sección).
 npm test
 ```
 
-Corre las pruebas de lógica de `tests/` con Node (sin instalar nada). Las que usan base de datos (esfuerzo, Bía y respaldo) están en `rpe-test.html`: ábrelo con el servidor local.
+Corre las pruebas de lógica de `tests/` con Node (sin instalar nada), incluidas las reglas del código de `AGENTS.md` (`tests/rules.test.js`). Las que usan base de datos (esfuerzo, Bía y respaldo) están en `rpe-test.html`: ábrelo con el servidor local.
 
 ## Publicarlo y usarlo en el teléfono
 

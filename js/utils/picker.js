@@ -3,6 +3,7 @@
  * de ejercicio en picker-creator.js; las tres comparten el estado `ui`. */
 import { icons } from './icons.js';
 import { toast } from './dom.js';
+import { muscleLineHtml } from './components.js';
 import { fold } from './text-match.js';
 import { bindSheetDrag } from './sheet-drag.js';
 import { normalizeGrupo } from '../services/workouts.js';
@@ -162,22 +163,9 @@ function focusOf(opt) {
 }
 
 function muscleNode(grupo, foco) {
-  const meta = document.createElement('span');
-  meta.className = 'muscle';
-  const dot = document.createElement('i');
-  dot.className = 'muscle-dot';
-  dot.dataset.g = grupo;
-  dot.setAttribute('aria-hidden', 'true');
-  const strong = document.createElement('strong');
-  strong.textContent = grupo;
-  meta.append(dot, strong);
-  if (foco) {
-    const spec = document.createElement('span');
-    spec.className = 'muscle-focus';
-    spec.textContent = foco;
-    meta.append(spec);
-  }
-  return meta;
+  const tpl = document.createElement('template');
+  tpl.innerHTML = muscleLineHtml(grupo, foco);
+  return tpl.content.firstElementChild;
 }
 
 /* ---------- Alto visible real (el teclado en Android no achica la página) ---------- */

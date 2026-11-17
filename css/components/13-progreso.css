@@ -214,20 +214,6 @@ html[data-modo="claro"] .seg.progress-tabs:not(:has(.seg-thumb)) .progress-tab-b
   font-weight: 700;
   margin: 2px 0 4px;
 }
-.progress-ex-card-sub {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: var(--fs-xs-plus);
-  color: var(--muted);
-}
-.progress-ex-card-dot {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 4px;
-  background: var(--primary);
-}
 /* Etiqueta de sección en Progreso: «Última sesión vs anterior», «Evolución»… */
 .progress-section-label {
   margin: 0 4px 10px;
@@ -245,21 +231,15 @@ html[data-modo="claro"] .seg.progress-tabs:not(:has(.seg-thumb)) .progress-tab-b
   opacity: 0;
   pointer-events: none;
 }
-.progress-ex-card-sub strong {
-  flex-shrink: 0;
-  color: var(--text);
-  font-weight: 600;
-}
-/* Grupo y músculos en una sola línea, como en Entreno: lo que no cabe acaba en «…». */
+/* La línea de músculos es `.muscle` (components.js); aquí solo se deja encoger. */
 .progress-ex-card-body {
   min-width: 0;
 }
-.progress-ex-card-focus {
+.progress-ex-card-sub {
+  display: flex;
   min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
 }
+
 .progress-ex-card-icon {
   width: 44px;
   height: 44px;

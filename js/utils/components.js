@@ -4,6 +4,27 @@
  */
 import { icons } from './icons.js';
 import { fmtNum, esc } from './dom.js';
+import { weightUnit } from './units.js';
+
+/** Conmutador kg / lb. */
+export function unitSegHtml(unit = weightUnit(), action = 'unidad') {
+  return `<div class="seg unit-seg" role="group" aria-label="Unidad de peso">
+    <button type="button" data-action="${action}" data-unidad="kg" aria-pressed="${unit === 'kg'}">kg</button>
+    <button type="button" data-action="${action}" data-unidad="lb" aria-pressed="${unit === 'lb'}">lb</button>
+  </div>`;
+}
+
+/**
+ * La línea «● Grupo · músculos» de un ejercicio. Es el único sitio que la escribe: Entreno,
+ * Progreso y la lista de ejercicios la comparten, y siempre ocupa una línea («…» si no cabe).
+ * @param {{ dot?: boolean, bold?: boolean }} [opts] dot: punto de color; bold: grupo en negrita.
+ */
+export function muscleLineHtml(grupo, foco, { dot = true, bold = true } = {}) {
+  const dotHtml = dot ? `<i class="muscle-dot" data-g="${esc(grupo)}" aria-hidden="true"></i>` : '';
+  const name = bold ? `<strong>${esc(grupo)}</strong>` : esc(grupo);
+  const focus = foco ? `<span class="muscle-focus">${esc(foco)}</span>` : '';
+  return `<span class="muscle">${dotHtml}${name}${focus}</span>`;
+}
 
 /**
  * Renderiza el disco olimpico de creatina (reutilizado en home y creatine).

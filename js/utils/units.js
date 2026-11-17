@@ -1,6 +1,12 @@
 /* Pesos en IndexedDB siempre en kg. La unidad de pantalla solo convierte al mostrar o al escribir. */
 import { state } from '../store.js';
-import { fmtNum } from './dom.js';
+
+export const fmtNum = (n) => {
+  const num = typeof n === 'number' ? n : parseFloat(String(n ?? '').replace(',', '.'));
+  if (!Number.isFinite(num)) return String(n ?? '');
+  // Coma decimal, como se escribe en español: «17,5». Los campos la leen con num().
+  return Number.isInteger(num) ? String(num) : num.toFixed(1).replace(/\.0$/, '').replace('.', ',');
+};
 
 export const LB_PER_KG = 2.2046226218;
 
@@ -33,11 +39,4 @@ export function fmtVolume(volKg, unit = weightUnit()) {
   const v = fromKg(volKg, unit);
   if (!Number.isFinite(v)) return '';
   return fmtNum(Math.round(v));
-}
-
-export function unitSegHtml(unit = weightUnit(), action = 'unidad') {
-  return `<div class="seg unit-seg" role="group" aria-label="Unidad de peso">
-    <button type="button" data-action="${action}" data-unidad="kg" aria-pressed="${unit === 'kg'}">kg</button>
-    <button type="button" data-action="${action}" data-unidad="lb" aria-pressed="${unit === 'lb'}">lb</button>
-  </div>`;
 }

@@ -2,7 +2,7 @@
 
 Documento vivo del producto. Describe cómo está armado, dónde vive cada dato y qué no se puede romper. Cuando cambie el comportamiento, el esquema, una pantalla o la forma de publicar, este archivo se actualiza en el mismo cambio.
 
-Última revisión: 16 de noviembre de 2026. Base de datos versión 3. Caché de la app `v215`.
+Última revisión: 16 de noviembre de 2026. Base de datos versión 3. Caché de la app `v216`.
 
 ## Qué es
 
@@ -342,7 +342,11 @@ Medida el 15 de noviembre de 2026 contra las reglas de `AGENTS.md`. No se añade
 
 **Capas**
 
-Sin deuda abierta: las vistas no abren IndexedDB y ningún servicio toca el DOM.
+Las vistas no abren IndexedDB y ningún servicio toca el DOM; `tests/rules.test.js` lo comprueba en cada `npm test`.
+
+- `js/utils/units.js` es una utilidad pura pero lee la unidad elegida de `store.js` (`weightUnit()`), que a su vez abre la base. Corregirlo exige pasar la unidad a cada llamada. Es la única excepción que admite la prueba de capas.
+
+Resuelto en la `v216`: `units.js` ya no importa `dom.js` (`fmtNum` vive en `units.js` y `dom.js` lo reexporta) y el conmutador kg / lb (`unitSegHtml`) pasó a `utils/components.js`. La línea «grupo · músculos» sale solo de `muscleLineHtml()` en `components.js`: Entreno, la lista de ejercicios y Progreso la comparten (antes Progreso tenía su copia y no recibió el arreglo de una sola línea).
 
 Resuelto en la `v188`: `js/services/agent.js` (1 660 líneas) se partió en `js/services/bia/` (configuración, memoria, texto, declaraciones de herramientas, herramientas, contexto e instrucciones) y la sesión de voz `FitAgent` pasó a `js/voice/fit-agent.js`, fuera de los servicios. En la `v200` `views/agent.js` (718 líneas) se partió en la pantalla (319) y `js/views/agent/`, y `utils/agent-panels.js` (673) en `memories-panel.js`, `connection-panel.js` y la hoja común `agent-sheet.js`; las tarjetas de herramientas son una tabla y los modelos de OpenAI viven en `bia/config.js`. De paso: «Registrar serie 1» abre Entreno con ese ejercicio (antes escribía un campo que nadie leía), se borró un oyente de «change-key» que nunca se activaba y el recuerdo deshecho se apaga con una clase, no con estilo en el JS. En la `v199` `services/meals.js` (740 líneas) se partió en diario (`meals.js`), cálculos (`nutrition.js`), catálogo con lector local (`food-catalog.js`) e IA (`meal-ai.js`), con pruebas; el lector local se comparó con el viejo y da lo mismo. De paso: «anteayer» ya no se lee como «ayer», una clave de Gemini inválida deja de probar los otros modelos y la descripción escrita también usa el proveedor de respaldo antes del catálogo local. En la `v198` `workout.js` (854 líneas) se partió en la pantalla (488) y `js/views/workout/` (estado, plantillas y reloj); las reglas sin DOM pasaron a `services/session-plan.js` con pruebas. De paso: al acabar el descanso de una rutina ya se pasa de verdad al siguiente ejercicio (antes el repintado volvía al anterior), el aviso de ejercicio creado ya no se acumula con cada repintado y se quitaron los emojis. En la `v197` `picker.js` (849 líneas) se partió en hoja, buscador (`picker-find.js`) y alta de ejercicio (`picker-creator.js`); la regla del grupo muscular pasó a `services/muscle-groups.js` y la búsqueda sin tildes a `utils/text-match.js`, las dos con pruebas; su arrastre propio se borró y usa `sheet-drag.js` (mismos umbrales que las demás hojas). En la `v195` `fit-agent.js` (777 líneas) se partió en un archivo por proveedor (`gemini-live.js`, `openai-realtime.js`) y la cola de audio (`pcm-player.js`); de paso, las respuestas de Bía con OpenAI ya se escriben en el chat (antes solo se oían). Las importaciones dinámicas de `meals.js` desaparecieron: ya no hay ciclo entre comidas y la asistente.
 
@@ -449,5 +453,6 @@ Pendiente:
 | `js/utils/set-line.js` | Botones de esfuerzo en la serie ya hecha. |
 | `rpe-test.html` | Casos del esfuerzo, las herramientas de Bía y el respaldo sobre una base temporal. |
 | `tests/*.test.js` | Pruebas de lógica pura con `node:test`. `npm test`. |
+| `tests/rules.test.js` | Reglas de `AGENTS.md` comprobadas leyendo el código: capas, estilo, publicación y piezas únicas. |
 | `package.json` | Solo para las pruebas: `type: module` y el script `test`. Sin dependencias; no se publica. |
 | `fonts/FugazOne-Regular.ttf` | Títulos. Licencia en `fonts/OFL.txt`. |

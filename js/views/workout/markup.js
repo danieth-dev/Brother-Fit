@@ -8,7 +8,8 @@ import { esc } from '../../utils/dom.js';
 import { formatShort, formatWeekdayShort } from '../../utils/dates.js';
 import { icons } from '../../utils/icons.js';
 import { effortTag, effortExtra, rirButtons } from '../../utils/set-line.js';
-import { fmtWeight, fmtVolume, unitSegHtml } from '../../utils/units.js';
+import { fmtWeight, fmtVolume } from '../../utils/units.js';
+import { unitSegHtml, muscleLineHtml } from '../../utils/components.js';
 
 export const weightStep = (unidad) => (unidad === 'lb' ? '5' : '2,5');
 
@@ -117,9 +118,7 @@ export function setRefMarkup(prev, curSets, unidad, corporal = false) {
 function exerciseHeading(ex) {
   const grupo = muscleName(ex.grupo);
   const foco = muscleFocus(ex.nombre);
-  const muscle = grupo
-    ? `<span class="muscle">${esc(grupo)}${foco ? `<span class="muscle-focus">${esc(foco)}</span>` : ''}</span>`
-    : '';
+  const muscle = grupo ? muscleLineHtml(grupo, foco, { dot: false, bold: false }) : '';
   return `<h3><i class="dot" data-g="${esc(grupo || ex.grupo)}"></i>${esc(ex.nombre)}${muscle}</h3>`;
 }
 

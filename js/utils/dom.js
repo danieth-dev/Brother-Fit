@@ -7,12 +7,8 @@ export const num = (v) => {
   const n = parseFloat(String(v ?? '').replace(',', '.'));
   return Number.isFinite(n) ? n : NaN;
 };
-export const fmtNum = (n) => {
-  const num = typeof n === 'number' ? n : parseFloat(String(n ?? '').replace(',', '.'));
-  if (!Number.isFinite(num)) return String(n ?? '');
-  // Coma decimal, como se escribe en español: «17,5». Los campos la leen con num().
-  return Number.isInteger(num) ? String(num) : num.toFixed(1).replace(/\.0$/, '').replace('.', ',');
-};
+/* fmtNum vive en units.js (utilidad pura); se reexporta para no cambiar a quien lo usa. */
+export { fmtNum } from './units.js';
 export const go = (path) => { location.hash = '#' + path; };
 
 /* Un solo listener por tipo de evento y elemento: re-renderizar no los acumula. */

@@ -100,3 +100,7 @@ Dos juegos de pruebas, y los dos deben pasar antes de cerrar un cambio:
 - **Lógica con base de datos** en el navegador: abrir `http://localhost:8123/rpe-test.html` (esfuerzo, series, herramientas de Bía y respaldo sobre la base aparte `brother-fit-rpe-test`).
 
 Una regla nueva o un error corregido en una función pura llega con su prueba en `tests/`. Las funciones de `services/` que no tocan IndexedDB se prueban ahí; las que sí, en `rpe-test.html`.
+
+**Un error se corrige una sola vez.** `tests/rules.test.js` lee el código y hace cumplir las reglas de este archivo: capas e importaciones, sin `console.log`, sin hex ni `!important` nuevos, sin `style="…"` salvo variables, `hidden` en vez de `style.display`, cada archivo en `ASSETS` y en `index.html`, la versión de caché igual en `sw.js`, `SISTEMA.md` y `DESIGN.md`, y una sola pieza que escribe la línea «grupo · músculos». Cuando un error se pueda detectar leyendo archivos, su arreglo llega con una regla nueva ahí, no con otra línea en este documento. Una excepción a una regla se nombra en la prueba y en `SISTEMA.md` → «Deuda técnica».
+
+**Revisión visual.** Un cambio de interfaz se mira en el navegador a 360 y 390 px en **cada pantalla que muestra esa pieza**, no solo en la que se tocó (busca su clase o su función en `js/`). Antes de dar por hecho un cambio, se deja captura de lo que se vio.
