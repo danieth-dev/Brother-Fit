@@ -308,6 +308,18 @@ html[data-modo="claro"] .seg.progress-tabs:not(:has(.seg-thumb)) .progress-tab-b
   line-height: 1.2;
 }
 
+/* Peso corporal sin lastre ni carga estimable: dos récords, no tres. */
+.pr-grid--2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+/* Cómo se estima la carga en peso corporal: debajo de los récords, pegada a ellos. */
+.pr-note {
+  margin: -10px 2px 18px;
+  font-size: var(--fs-xs);
+  line-height: 1.45;
+  color: var(--muted);
+}
+
 /* Tarjeta comparativa (Última sesión vs anterior) */
 .compare-card {
   background: var(--surface);

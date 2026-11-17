@@ -2,7 +2,7 @@
 
 Documento vivo del producto. Describe cómo está armado, dónde vive cada dato y qué no se puede romper. Cuando cambie el comportamiento, el esquema, una pantalla o la forma de publicar, este archivo se actualiza en el mismo cambio.
 
-Última revisión: 16 de noviembre de 2026. Base de datos versión 3. Caché de la app `v209`.
+Última revisión: 16 de noviembre de 2026. Base de datos versión 3. Caché de la app `v210`.
 
 ## Qué es
 
@@ -118,7 +118,7 @@ Base `brother-fit`, versión 3 (la 3 añadió `meals`). Para una tabla o un índ
 
 | Tabla | Qué guarda |
 | --- | --- |
-| `exercises` | `{ id, nombre, grupo }`. El nombre es único. No hay campo de dueño: es del atleta si el nombre no está en el catálogo. |
+| `exercises` | `{ id, nombre, grupo, corporal? }`. El nombre es único. No hay campo de dueño: es del atleta si el nombre no está en el catálogo. `corporal: true` marca un ejercicio propio de peso corporal (campo «Carga» del editor); los del catálogo (Flexiones, Dominadas, Fondos, Plancha) lo son por su nombre (`isBodyweight()`), sin guardar nada. |
 | `workouts` | `{ id, fecha, startedAt, finishedAt, duracion, notas }`. `fecha` es índice. |
 | `sets` | `{ id, workoutId, exerciseId, peso, reps, tipo?, rpe?, ts }`. `tipo` es `trabajo` o `calentamiento`. Índices por entreno y por ejercicio. Una serie vieja sin `tipo` sigue contando en el volumen y en el 1RM estimado, y no pide esfuerzo. |
 | `supplements` | `{ id, tipo, fecha, hora, cantidad, ts }`. Hoy `tipo` es `creatina`. |
@@ -245,6 +245,13 @@ Con un entreno en curso, `#/progress` sin id abre el ejercicio que está abierto
 **Lo habitual** (`js/services/habitual.js`, consultado con `habitualForExercise()`): de cada sesión terminada se toma la mejor serie de trabajo (más peso; a igual peso, más reps; los calentamientos no cuentan) y se usa la mediana de las últimas 4. Un día malo o muy bueno no la mueve. Con menos de 3 sesiones terminadas no hay habitual (`MIN_SESSIONS`) y no sale nada. La franja bajo el ejercicio muestra «Tu habitual», salvo que todavía no haya series de hoy y coincida con el récord (de peso, o de repeticiones si es sin peso), que ya está en la tarjeta de al lado; con series de hoy en el entreno abierto, «Hoy» al lado. Solo si hoy queda más de un 10 % por debajo (`DROP_THRESHOLD`) añade «Hoy vas por debajo de tu habitual. Un día flojo no borra tu progreso.». En ejercicios sin peso se comparan las repeticiones. En la gráfica de «Peso máx.» una línea punteada marca lo habitual y, con series de hoy, el último punto va hueco porque la sesión sigue.
 
 El peso corporal es independiente del entreno. Se guarda por fecha y se dibuja con la misma gráfica.
+
+**Ejercicios de peso corporal** (`js/services/bodyweight.js`, puras con pruebas; `bodyweightProgress()` en `services/bodyweight-progress.js`). En la serie, `peso` sigue siendo el peso **añadido**: 0 kg es solo el cuerpo y 10 kg es lastre. No cambia nada de la base. Lo que cambia es cómo se dice:
+
+- Entreno conserva su diseño; solo cambia el texto. «A superar: peso corporal × 8» (o «peso corporal + 10 kg × 8»), «Peso corporal» o «+10 kg» en las tarjetas de la vez anterior y en las series de hoy. Historial dice «Peso corporal × 10» o «Peso corporal + 10 kg × 6». Bía y los resúmenes dicen «peso corporal» (`loadWords()`), nunca «0 kg».
+- Progreso mide en repeticiones, que son exactas: récords «Más reps en una serie», «Más reps en una sesión» (o «Peso añadido máx.» si hubo lastre) y «Carga estimada»; comparativa en reps máx., reps totales y series (más peso añadido y carga si los hay); gráfica en Reps máx., Reps totales, Añadido (si hubo lastre) y Carga est. (si se puede estimar); historial en reps. Las series de calentamiento no cuentan.
+- **Carga estimada** = peso corporal de esa fecha (o el último anterior) × fracción + lastre. Solo en Dominadas y Fondos, donde sube el cuerpo entero (fracción 1). En flexiones depende de la postura y no se estima. Sin peso corporal registrado no aparece. Siempre dice «estimada».
+- Lo habitual compara repeticiones. Con más lastre que de costumbre, menos repeticiones no cuentan como bajada (`carriesMore()`): la franja dice «Hoy cargas más que de costumbre. Menos repeticiones con lastre no es bajar.».
 
 ## Bía, la asistente
 
@@ -391,6 +398,9 @@ Pendiente:
 | `js/views/*.js` | Una pantalla por archivo: home, workout, history, progress, creatine, meals, agent, settings, appearance. |
 | `js/views/agent/` | Partes de la pantalla Bía: alta de la clave (`key-setup.js`), plantilla (`chat-markup.js`), lista de mensajes y reportes (`messages.js`) y tarjetas de herramientas (`chat-cards.js`). |
 | `js/views/workout/` | Partes de la pantalla Entreno que solo usa `workout.js`: estado entre repintados (`session.js`), plantillas (`markup.js`) y reloj de la sesión y fin del descanso (`rest.js`). |
+| `js/services/bodyweight.js` | Ejercicios de peso corporal: cuáles son, carga estimada, peso corporal de una fecha, resumen de sesión en reps y la carga en palabras. Puras, con pruebas. |
+| `js/services/bodyweight-progress.js` | Progreso de un ejercicio de peso corporal: sesiones en reps y carga estimada con el peso corporal de cada fecha. |
+| `js/views/progress/` | Partes de Progreso que solo usa `progress.js`: chip de tendencia (`trend.js`), franja «Tu habitual» (`habitual-strip.js`) y progreso de peso corporal (`bodyweight.js`). |
 | `js/services/habitual.js` | «Lo habitual» de un ejercicio: mejor serie de trabajo por sesión, mediana de las últimas 4 y el aviso de bajada de más de un 10 %. Puras, con pruebas. |
 | `js/services/session-plan.js` | Reglas puras del entreno en curso: descanso automático, título de una sesión, orden de la lista y siguiente paso de la rutina. |
 | `js/utils/meal-scanner.js` | Hoja de foto → resultado, edición de gramos y guardado de una comida. |

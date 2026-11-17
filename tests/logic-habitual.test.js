@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { bestWorkingSet, habitualFrom, isBelowHabitual, HABITUAL_SESSIONS, MIN_SESSIONS } from '../js/services/habitual.js';
+import { bestWorkingSet, habitualFrom, isBelowHabitual, carriesMore, HABITUAL_SESSIONS, MIN_SESSIONS } from '../js/services/habitual.js';
 
 test('la mejor serie de trabajo ignora calentamientos y desempata por reps', () => {
   assert.deepEqual(bestWorkingSet([
@@ -47,4 +47,12 @@ test('sin peso se comparan las repeticiones', () => {
   const h = { peso: 0, reps: 10 };
   assert.equal(isBelowHabitual({ peso: 0, reps: 8 }, h), true);
   assert.equal(isBelowHabitual({ peso: 0, reps: 9 }, h), false);
+});
+
+test('con más lastre, menos repeticiones no es bajar', () => {
+  const h = { peso: 0, reps: 10 };
+  assert.equal(carriesMore({ peso: 10, reps: 8 }, h), true);
+  assert.equal(isBelowHabitual({ peso: 10, reps: 6 }, h), false);
+  assert.equal(isBelowHabitual({ peso: 0, reps: 6 }, h), true);
+  assert.equal(carriesMore({ peso: 0, reps: 12 }, h), false);
 });

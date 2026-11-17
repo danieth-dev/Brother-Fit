@@ -44,9 +44,14 @@ export function habitualFrom(tops) {
   };
 }
 
+/** ¿Hoy carga más peso que lo habitual? Con más lastre, menos repeticiones no es bajar. */
+export function carriesMore(today, habitual) {
+  return Boolean(today && habitual && today.peso > habitual.peso);
+}
+
 /** ¿Hoy está más de un DROP_THRESHOLD por debajo de lo habitual? Sin peso, compara reps. */
 export function isBelowHabitual(today, habitual) {
-  if (!today || !habitual) return false;
+  if (!today || !habitual || carriesMore(today, habitual)) return false;
   const byWeight = habitual.peso > 0;
   const ref = byWeight ? habitual.peso : habitual.reps;
   const now = byWeight ? today.peso : today.reps;

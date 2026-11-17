@@ -10,6 +10,14 @@ import { askConfirm } from '../utils/confirm-sheet.js';
 import { openPicker } from '../utils/picker.js';
 import { weightUnit, toKg, fromKg, fmtWeight, fmtVolume } from '../utils/units.js';
 import { syncSegThumb } from '../utils/seg-swipe.js';
+import { isBodyweight } from '../services/bodyweight.js';
+import { bodyweightProgress } from '../services/bodyweight-progress.js';
+import { trendBadge } from './progress/trend.js';
+import { habitualStripHtml } from './progress/habitual-strip.js';
+import {
+  bodyweightMetrics, bodyweightDescription, bodyweightUnit, bodyweightPoints,
+  bodyweightRecordsHtml, bodyweightCompareHtml, bodyweightSessionsHtml,
+} from './progress/bodyweight.js';
 
 const METRICS = {
   e1rm: '1RM est.',
@@ -29,21 +37,20 @@ let currentTab = 'ejercicio'; // 'ejercicio' | 'peso'
 let metric = 'e1rm';
 let view = null;
 
-function trendBadge(curr, prev) {
-  if (!prev || prev === 0) return '<span class="trend-badge trend-badge--neutral">—</span>';
-  const pct = ((curr - prev) / prev) * 100;
-  if (Math.abs(pct) < 0.5) return '<span class="trend-badge trend-badge--neutral">—</span>';
-  if (pct > 0) {
-    return `<span class="trend-badge trend-badge--up">↑ ${pct.toFixed(1).replace('.', ',')}%</span>`;
-  }
-  return `<span class="trend-badge trend-badge--down">↓ ${Math.abs(pct).toFixed(1).replace('.', ',')}%</span>`;
-}
-
 function showW(kg, unidad) {
   return fromKg(kg, unidad);
 }
 
+/* Con pesas, las de METRICS; en peso corporal, las de repeticiones (y peso si lo hay). */
+const metricsFor = () => (view?.bw ? bodyweightMetrics(view.bw) : METRICS);
+
+function activeMetric() {
+  const m = metricsFor();
+  return m[metric] ? metric : Object.keys(m)[0];
+}
+
 function metricPoints(sessions, unidad) {
+  if (view?.bw) return bodyweightPoints(sessions, activeMetric(), unidad);
   return sessions
     .filter((s) => metric !== 'adj' || s.adj != null)
     .map((s) => {
@@ -103,51 +110,6 @@ function compareCardHtml(sessions, unidad) {
       </div>
     </section>
   `;
-}
-
-/* Peso y reps de una serie: «35 kg × 8», o «× 10» si es sin peso. */
-function setLine(set, unidad) {
-  return set.peso > 0
-    ? `${fmtWeight(set.peso, unidad)} <span class="habitual-unit">${esc(unidad)}</span>`
-    : `${set.reps} <span class="habitual-unit">reps</span>`;
-}
-
-function setSub(set, extra = '') {
-  return set.peso > 0 ? `× ${set.reps}${extra}` : `sin peso${extra}`;
-}
-
-/* Lo habitual del ejercicio y, con series de hoy, la comparación. El aviso solo si bajó más de un 10 %. */
-/* Sin series de hoy y con lo habitual igual al récord, la franja repetiría la tarjeta de récord
- * («Récord de peso», o «Más repeticiones» en ejercicios sin peso). */
-function habitualStripHtml(hab, pr, unidad) {
-  const { habitual, today, below } = hab || {};
-  if (!habitual) return '';
-  const sameAsRecord = habitual.peso > 0 ? habitual.peso === pr?.maxPeso : habitual.reps === pr?.maxReps;
-  if (!today && sameAsRecord) return '';
-  if (!today) {
-    return `
-      <section class="habitual-card" aria-label="Tu habitual">
-        <span class="habitual-label habitual-label--accent">Tu habitual</span>
-        <p class="habitual-val">${setLine(habitual, unidad)} ${habitual.peso > 0 ? `<span class="habitual-reps">× ${habitual.reps}</span>` : ''}</p>
-        <p class="habitual-note">${habitual.peso > 0 ? 'Lo que levantas' : 'Lo que haces'} normalmente, según tus últimas ${habitual.sesiones} sesiones.</p>
-      </section>`;
-  }
-  return `
-    <section class="habitual-card" aria-label="Hoy frente a tu habitual">
-      <div class="habitual-pair">
-        <div class="habitual-col">
-          <span class="habitual-label habitual-label--accent">Hoy</span>
-          <p class="habitual-val">${setLine(today, unidad)}</p>
-          <span class="habitual-sub">${setSub(today)}</span>
-        </div>
-        <div class="habitual-col habitual-col--ref">
-          <span class="habitual-label">Tu habitual</span>
-          <p class="habitual-val">${setLine(habitual, unidad)}</p>
-          <span class="habitual-sub">${setSub(habitual, ` · últimas ${habitual.sesiones}`)}</span>
-        </div>
-      </div>
-      ${below ? '<p class="habitual-alert">Hoy vas por debajo de tu habitual. <span>Un día flojo no borra tu progreso.</span></p>' : ''}
-    </section>`;
 }
 
 function prBadgesHtml(pr, unidad) {
@@ -210,14 +172,18 @@ function sessionTableHtml(sessions, unidad) {
 }
 
 function chartCardInnerHtml(sessions, unidad) {
+  const m = activeMetric();
+  const label = metricsFor()[m];
   const points = metricPoints(sessions, unidad);
   const lastVal = points[points.length - 1]?.value ?? 0;
   const prevVal = points[points.length - 2]?.value ?? null;
-  const unitStr = metric === 'series' ? '' : unidad;
+  const unitStr = view?.bw ? bodyweightUnit(m, unidad) : unidad;
+  const marks = chartMarks(unidad);
+  const description = view?.bw ? bodyweightDescription(m) : METRIC_DESCRIPTIONS[m];
 
   return `
     <div class="chart-card-head">
-      <span class="chart-card-title">${METRICS[metric]}</span>
+      <span class="chart-card-title">${label}</span>
       <div class="chart-card-val-wrap">
         <span class="chart-card-val">${fmtNum(lastVal)} ${esc(unitStr)}</span>
         ${prevVal != null ? trendBadge(lastVal, prevVal) : ''}
@@ -225,21 +191,27 @@ function chartCardInnerHtml(sessions, unidad) {
     </div>
 
     <div id="metric-chart">
-      ${lineChart(points, { desc: `${METRICS[metric]} por sesión`, unit: unitStr, ...chartMarks(unidad) })}
+      ${lineChart(points, { desc: `${label} por sesión`, unit: unitStr, ...marks })}
     </div>
 
     <p class="chart-card-note">
-      ${esc(METRIC_DESCRIPTIONS[metric] || '')}${metric === 'maxPeso' && chartMarks(unidad).ref ? ' La línea punteada es tu habitual.' : ''}
+      ${esc(description || '')}${marks.ref ? ' La línea punteada es tu habitual.' : ''}
     </p>
   `;
 }
 
 /* En «Peso máx.» la gráfica marca lo habitual; con series de hoy, el último punto va hueco. */
+/* La línea de lo habitual va en «Peso máx.» (pesas) o en «Reps máx.» (peso corporal sin lastre). */
 function chartMarks(unidad) {
   const hab = view?.hab;
   const openLast = Boolean(hab?.today);
   const h = hab?.habitual;
-  if (metric !== 'maxPeso' || !h || !(h.peso > 0)) return { openLast };
+  const m = activeMetric();
+  if (view?.bw) {
+    if (m !== 'repsMax' || !h || h.peso > 0) return { openLast };
+    return { openLast, ref: { value: h.reps, label: `habitual ${h.reps}` } };
+  }
+  if (m !== 'maxPeso' || !h || !(h.peso > 0)) return { openLast };
   return { openLast, ref: { value: fromKg(h.peso, unidad), label: `habitual ${fmtWeight(h.peso, unidad)}` } };
 }
 
@@ -253,8 +225,8 @@ function chartCardHtml(sessions, unidad) {
       </h2>
 
       <div class="seg metric-seg" role="group" aria-label="Métrica del gráfico">
-        ${Object.entries(METRICS).map(([k, label]) =>
-          `<button type="button" data-action="metric" data-metric="${k}" aria-pressed="${k === metric}">${label}</button>`
+        ${Object.entries(metricsFor()).map(([k, label]) =>
+          `<button type="button" data-action="metric" data-metric="${k}" aria-pressed="${k === activeMetric()}">${label}</button>`
         ).join('')}
       </div>
 
@@ -378,7 +350,7 @@ function bodySectionHtml(body, unidad) {
 
 function updateProgressView(el) {
   if (!view) return;
-  const { currentEx, exs, sessions, body, pr, unidad, hab, inEntreno } = view;
+  const { currentEx, sessions, body, pr, unidad, hab, bw, inEntreno } = view;
 
   const exPane = el.querySelector('#pane-ejercicio');
   const pesoPane = el.querySelector('#pane-peso');
@@ -418,13 +390,14 @@ function updateProgressView(el) {
     }
 
     const habitualSlot = el.querySelector('#habitual-slot');
-    if (habitualSlot) habitualSlot.innerHTML = habitualStripHtml(hab, pr, unidad);
+    const record = bw ? { maxPeso: bw.records.extraMax, maxReps: bw.records.repsSerie } : pr;
+    if (habitualSlot) habitualSlot.innerHTML = habitualStripHtml(hab, record, unidad, Boolean(bw));
 
     const prSlot = el.querySelector('#pr-slot');
-    if (prSlot) prSlot.innerHTML = prBadgesHtml(pr, unidad);
+    if (prSlot) prSlot.innerHTML = bw ? bodyweightRecordsHtml(bw, unidad) : prBadgesHtml(pr, unidad);
 
     const compareSlot = el.querySelector('#compare-slot');
-    if (compareSlot) compareSlot.innerHTML = compareCardHtml(sessions, unidad);
+    if (compareSlot) compareSlot.innerHTML = bw ? bodyweightCompareHtml(sessions, unidad) : compareCardHtml(sessions, unidad);
 
     const chartCardSlot = el.querySelector('#chart-card-slot');
     if (chartCardSlot) {
@@ -434,7 +407,7 @@ function updateProgressView(el) {
     }
 
     const sessSlot = el.querySelector('#sess-slot');
-    if (sessSlot) sessSlot.innerHTML = sessionTableHtml(sessions, unidad);
+    if (sessSlot) sessSlot.innerHTML = bw ? bodyweightSessionsHtml(sessions, unidad) : sessionTableHtml(sessions, unidad);
   } else {
     if (pesoPane) {
       pesoPane.innerHTML = bodySectionHtml(body, unidad);
@@ -469,16 +442,18 @@ export async function render(el, [idParam] = []) {
   const exId = Number(idParam) || trainingExId || (await lastTrainedExerciseId()) || exs[0]?.id;
   const currentEx = exs.find((e) => e.id === exId) || exs[0];
 
-  const [prog, body, pr, hab] = await Promise.all([
-    exId ? progressForExercise(exId) : { sessions: [], pr: 0 },
+  const corporal = isBodyweight(currentEx);
+  const [prog, body, pr, hab, bw] = await Promise.all([
+    exId && !corporal ? progressForExercise(exId) : { sessions: [], pr: 0 },
     listBodyWeights(),
     exId ? prByExercise(exId) : { maxPeso: 0, maxReps: 0, e1rmMax: 0 },
     exId ? habitualForExercise(exId) : null,
+    corporal ? bodyweightProgress(currentEx) : null,
   ]);
   const unidad = weightUnit();
-  const sessions = prog.sessions.slice(-20);
+  const sessions = (bw ? bw.sessions : prog.sessions).slice(-20);
 
-  view = { currentEx, exId, exs, sessions, body, pr, unidad, hab, inEntreno: Boolean(trainingExId) && trainingExId === exId };
+  view = { currentEx, exId, exs, sessions, body, pr, unidad, hab, bw, inEntreno: Boolean(trainingExId) && trainingExId === exId };
 
   el.innerHTML = `
     <header class="page-head page-head--tight">
@@ -513,7 +488,7 @@ export async function render(el, [idParam] = []) {
       ` : `
         <div class="empty">
           ${icons.dumbbell({ size: 40, stroke: 'var(--line-strong)' })}
-          <p>Todavía no hay series registradas de este ejercicio.</p>
+          <p>Todavía no hay series ${corporal ? 'de trabajo ' : ''}registradas de este ejercicio.</p>
           <a class="btn btn-primary" href="#/workout">${icons.plus({ size: 18 })} Ir a entrenar</a>
         </div>
       `}
@@ -558,7 +533,7 @@ export async function render(el, [idParam] = []) {
         const metricSeg = chartCardSlot.querySelector('.metric-seg');
         if (metricSeg) {
           metricSeg.querySelectorAll('button').forEach((b) => {
-            b.setAttribute('aria-pressed', String(b.dataset.metric === metric));
+            b.setAttribute('aria-pressed', String(b.dataset.metric === activeMetric()));
           });
           syncSegThumb(metricSeg);
         }

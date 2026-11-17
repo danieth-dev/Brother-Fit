@@ -14,6 +14,7 @@ import { now } from '../../utils/clock.js';
 import { todayISO } from '../../utils/dates.js';
 import { EVENTS, emit } from '../../utils/events.js';
 import { toKg } from '../../utils/units.js';
+import { isBodyweight, loadWords } from '../bodyweight.js';
 
 function restSeconds(reps) {
   if (state.settings.descansoMode !== 'auto') return state.settings.descanso || 90;
@@ -250,7 +251,7 @@ export async function executeToolCall(name, args) {
     const ultimaSesion = lastSess
       ? {
           fecha: lastSess.workout.fecha,
-          series: lastSess.sets.map((s) => `${s.peso} kg × ${s.reps} reps${s.rpe != null && s.rpe !== '' ? ` (RIR ${Math.max(0, 10 - Number(s.rpe))})` : ''}`),
+          series: lastSess.sets.map((s) => `${loadWords(s.peso, isBodyweight(ex))} × ${s.reps} reps${s.rpe != null && s.rpe !== '' ? ` (RIR ${Math.max(0, 10 - Number(s.rpe))})` : ''}`),
         }
       : null;
     const ultimasFechas = prog.sessions.slice(-5).map((d) => ({

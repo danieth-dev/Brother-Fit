@@ -127,7 +127,7 @@ Este documento es la fuente de verdad del diseño de Bía. Lo leen las personas 
 
 Fuente de los valores: `css/tokens.css` (tokens), `css/base.css` (página, tipografía base e iconos) y `css/components/01-…css` a `14-…css` (componentes, cargados en ese orden desde `index.html`). El frontmatter de arriba usa el formato de `DESIGN.md` que entiende la skill; los valores son los del **modo oscuro con acento amarillo**, que es el de fábrica.
 
-Última revisión: 16 de noviembre de 2026 (caché `v209`).
+Última revisión: 16 de noviembre de 2026 (caché `v210`).
 
 ## 1. Idea
 
@@ -341,6 +341,7 @@ Los archivos se cargan en orden numérico y **ese orden es la cascada**: una reg
 | Fila y tarjeta | `.row`, `.form-card`, `.recent-workout-card` | `--surface`, `--r-xl` (16 px en recientes), `--shadow-sm`, sin borde salvo en recientes. |
 | Chip | `.chip`, `.chip-ok`, `.chip-warn` | Píldora de 12 px; verde para hecho, acento para aviso. |
 | Disco de creatina | `.plate` | Disco olímpico: aros concéntricos del acento (`--c`) sobre ranuras oscuras, hasta 248 px. `.plate.done` cambia `--c` a `--green`. Versión compacta en Inicio según ajuste. |
+| Récords de peso corporal | `.pr-grid`, `.pr-grid--2`, `.pr-note` | Las mismas tarjetas de récord con otros datos: reps en una serie, reps en una sesión o peso añadido, y carga estimada. Sin lastre ni carga estimable quedan dos tarjetas (`.pr-grid--2`). Debajo, `.pr-note` en `--muted` explica cómo se estima la carga. Entreno no cambia de diseño en peso corporal: solo el texto («Peso corporal», «+10 kg»). |
 | Lo habitual | `.habitual-card` (`13-progreso.css`) | Franja de Progreso entre la tarjeta del ejercicio y los récords: `--surface` con borde `--line-accent-strong`, `--r-lg`. Etiquetas `--fs-2xs` en mayúsculas («Hoy» en `--primary`, «Tu habitual» en `--muted`), cifras `--fs-2xl` tabulares. Con hoy, dos columnas separadas por `--line`. El aviso de bajada va debajo tras una línea `--line`: frase en `--text` y consuelo en `--muted`, sin rojo ni icono de alarma. |
 | Ejercicio en curso | `.progress-ex-card-tag--live` | La etiqueta de la tarjeta de Progreso pasa a «En Entreno ahora» con un punto `--green`. |
 | Referencia en la gráfica | `.chart .ref-line`, `.chart .ref-label`, `.chart .pt--open` | Línea punteada `--muted` con su etiqueta `--fs-2xs`; el punto de una sesión en curso va hueco: relleno `--surface` y borde `--primary`. |

@@ -1,5 +1,6 @@
 /* Plantillas de la pantalla Entreno. Reciben datos y devuelven HTML; no escuchan nada. */
 import { muscleName, muscleFocus, isOwnExercise } from '../../services/workouts.js';
+import { isBodyweight } from '../../services/bodyweight.js';
 import { workoutTitle } from '../../services/session-plan.js';
 import { esc } from '../../utils/dom.js';
 import { formatShort, formatWeekdayShort } from '../../utils/dates.js';
@@ -11,6 +12,17 @@ export const weightStep = (unidad) => (unidad === 'lb' ? '5' : '2,5');
 
 const kgSpan = (peso, unidad) =>
   `<span data-kg="${peso}">${fmtWeight(peso, unidad)}</span> <span data-unit>${esc(unidad)}</span>`;
+
+/* En un ejercicio de peso corporal 0 kg es «solo el cuerpo» y lo que se anota es el lastre.
+ * loadShort cabe en una tarjeta («+10 kg»); loadPhrase es la frase entera. */
+const loadShort = (peso, unidad, corporal) => {
+  if (!corporal) return kgSpan(peso, unidad);
+  return peso > 0 ? `+${kgSpan(peso, unidad)}` : 'Peso corporal';
+};
+const loadPhrase = (peso, unidad, corporal, label = 'Peso corporal') => {
+  if (!corporal) return kgSpan(peso, unidad);
+  return peso > 0 ? `${label} + ${kgSpan(peso, unidad)}` : label;
+};
 
 /* ---------- Sin entreno ---------- */
 
@@ -68,7 +80,7 @@ function refEffort(s) {
 }
 
 /* La sesión anterior del ejercicio en tarjetas; la que toca superar va marcada. */
-export function setRefMarkup(prev, curSets, unidad) {
+export function setRefMarkup(prev, curSets, unidad, corporal = false) {
   const sets = prev?.sets || [];
   if (!sets.length) {
     return `<div class="set-ref-card-wrap set-ref-card-wrap--empty" id="set-ref">
@@ -83,7 +95,7 @@ export function setRefMarkup(prev, curSets, unidad) {
       <div class="set-ref-card ${isTarget ? 'is-target' : ''}">
         <span class="ref-card-num">Serie ${i + 1}</span>
         <span class="ref-card-reps ${isTarget ? 'text-primary' : ''}">${s.reps}</span>
-        <span class="ref-card-detail">${kgSpan(s.peso, unidad)}</span>
+        <span class="ref-card-detail">${loadShort(s.peso, unidad, corporal)}</span>
         ${effort ? `<span class="ref-card-detail muted">${effort}</span>` : ''}
       </div>`;
   }).join('');
@@ -114,21 +126,21 @@ export function todayLogMarkup(groups, unidad, { open, openEffortId }) {
       <span>Series de hoy</span>
       <span class="today-log-meta"><span class="section-count">${n}</span>${icons.chevronDown({ size: 18, cls: 'muted' })}</span>
     </summary>
-    ${groups.map((g) => `
+    ${groups.map((g) => { const corporal = isBodyweight(g.exercise); return `
       <div class="group">
         ${exerciseHeading(g.exercise)}
         <ul class="sets">
           ${g.sets.map((s, i) => `
             <li>
               <span class="n">Serie ${i + 1}</span>
-              <span class="v">${kgSpan(s.peso, unidad)} × ${s.reps}${effortTag(s)}</span>
+              <span class="v">${loadShort(s.peso, unidad, corporal)} × ${s.reps}${effortTag(s)}</span>
               <button class="btn-x" data-action="del-set" data-id="${s.id}" type="button" aria-label="Borrar serie ${i + 1} de ${esc(g.exercise.nombre)}">
                 ${icons.trash({ size: 15 })}
               </button>
               ${effortExtra(s, openEffortId)}
             </li>`).join('')}
         </ul>
-      </div>`).join('')}
+      </div>`; }).join('')}
   </details>`;
 }
 
@@ -219,8 +231,9 @@ function effortPicker(draftTipo, draftRir) {
  *      targetSet, prev, curExSets, unidad, elapsed, draftTipo, draftRir, todayLog }
  */
 export function activeMarkup(v) {
+  const corporal = isBodyweight(v.currentEx);
   const target = v.targetSet
-    ? `<p class="workout-set-target">A superar: <strong>${kgSpan(v.targetSet.peso, v.unidad)} × ${v.targetSet.reps}</strong></p>`
+    ? `<p class="workout-set-target">A superar: <strong>${loadPhrase(v.targetSet.peso, v.unidad, corporal, 'peso corporal')} × ${v.targetSet.reps}</strong></p>`
     : '<p class="workout-set-target">Primera sesión</p>';
   return `
     <header class="page-head">
@@ -252,7 +265,7 @@ export function activeMarkup(v) {
         </div>
       </div>
 
-      ${setRefMarkup(v.prev, v.curExSets, v.unidad)}
+      ${setRefMarkup(v.prev, v.curExSets, v.unidad, corporal)}
 
       <div class="workout-inputs-grid">
         ${weightCard(v.unidad)}

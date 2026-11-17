@@ -36,6 +36,12 @@ function ensureSheet() {
         <label class="field"><span>Grupo muscular</span>
           <select name="grupo">${GRUPOS.map((g) => `<option value="${esc(g)}">${esc(g)}</option>`).join('')}</select>
         </label>
+        <label class="field"><span>Carga</span>
+          <select name="carga">
+            <option value="pesas">Pesas o máquina</option>
+            <option value="corporal">Peso corporal</option>
+          </select>
+        </label>
         <button class="btn btn-primary btn-block" type="submit">Guardar</button>
         <button class="editor-delete" type="button">Eliminar ejercicio</button>
       </form>
@@ -97,16 +103,17 @@ async function save() {
   const isCreate = form.dataset.mode === 'create';
   const nombre = form.elements.nombre.value.trim();
   const grupo = form.elements.grupo.value;
+  const corporal = form.elements.carga.value === 'corporal';
   const done = onDone;
   busy(true);
   try {
     if (isCreate) {
-      const id = await addExercise(nombre, grupo);
+      const id = await addExercise(nombre, grupo, { corporal });
       closeEditor({ immediate: true });
       await done?.({ id, nombre, grupo, created: true });
     } else {
       const id = Number(form.dataset.id);
-      await updateExercise(id, nombre, grupo);
+      await updateExercise(id, nombre, grupo, { corporal });
       closeEditor({ immediate: true });
       await done?.({ id, nombre, grupo, deleted: false });
     }
@@ -153,11 +160,13 @@ export function openExerciseCreator({ name = '', grupo = 'Otro' } = {}, done) {
   delete form.dataset.id;
   form.elements.nombre.value = name;
   form.elements.grupo.value = GRUPOS.includes(grupo) ? grupo : 'Otro';
+  form.elements.carga.value = 'pesas';
   titleEl.textContent = 'Crear nuevo ejercicio';
   form.querySelector('.editor-delete').hidden = true;
   busy(false);
   mountPickers(sheet);
   form.elements.grupo.dispatchEvent(new Event('change'));
+  form.elements.carga.dispatchEvent(new Event('change'));
   document.body.append(sheet);
   sheet.hidden = false;
   document.body.classList.add('picker-open');
@@ -178,11 +187,13 @@ export async function openExerciseEditor(id, done) {
   form.dataset.id = String(ex.id);
   form.elements.nombre.value = ex.nombre;
   form.elements.grupo.value = GRUPOS.includes(ex.grupo) ? ex.grupo : 'Otro';
+  form.elements.carga.value = ex.corporal ? 'corporal' : 'pesas';
   titleEl.textContent = 'Editar ejercicio';
   form.querySelector('.editor-delete').hidden = false;
   busy(false);
   mountPickers(sheet);
   form.elements.grupo.dispatchEvent(new Event('change'));
+  form.elements.carga.dispatchEvent(new Event('change'));
   document.body.append(sheet);
   sheet.hidden = false;
   document.body.classList.add('picker-open');

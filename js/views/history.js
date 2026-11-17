@@ -20,6 +20,7 @@ import {
 import { icons } from '../utils/icons.js';
 import { askConfirm } from '../utils/confirm-sheet.js';
 import { weightUnit, fmtWeight, fmtVolume } from '../utils/units.js';
+import { isBodyweight } from '../services/bodyweight.js';
 import { syncSegThumb } from '../utils/seg-swipe.js';
 
 let editingSetId = null;
@@ -198,6 +199,13 @@ async function list(el) {
   });
 }
 
+/* «Peso corporal × 10» en ejercicios de peso corporal (0 kg es el cuerpo, más es lastre). */
+function setLoadText(s, exercise, unidad) {
+  const kg = `${fmtWeight(s.peso, unidad)} ${esc(unidad)}`;
+  if (isBodyweight(exercise)) return `${s.peso > 0 ? `Peso corporal + ${kg}` : 'Peso corporal'} × ${s.reps}`;
+  return s.peso === 0 ? `Sin peso × ${s.reps}` : `${kg} × ${s.reps}`;
+}
+
 function setBadgeHtml(s) {
   if (s.tipo === 'calentamiento') {
     return `<span class="workout-set-badge tag-warm">calentamiento</span>`;
@@ -283,9 +291,7 @@ async function detail(el, id) {
           <div class="workout-sets-table">
             ${g.sets.map((s, i) => {
               const isEditing = editingSetId === s.id;
-              const weightDisplay = s.peso === 0
-                ? `Sin peso × ${s.reps}`
-                : `${fmtWeight(s.peso, unidad)} ${esc(unidad)} × ${s.reps}`;
+              const weightDisplay = setLoadText(s, g.exercise, unidad);
 
               return `
                 <div class="workout-set-wrap ${isEditing ? 'is-editing' : ''}">

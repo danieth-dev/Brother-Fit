@@ -5,7 +5,8 @@ import { emit, EVENTS } from '../utils/events.js';
 import { todayISO, startOfWeekISO, addDays } from '../utils/dates.js';
 import { isCatalogExercise, BASE } from './seed.js';
 import { PENDING_KEY, effortPhrase } from './effort.js';
-import { bestWorkingSet, habitualFrom, isBelowHabitual } from './habitual.js';
+import { bestWorkingSet, habitualFrom, isBelowHabitual, carriesMore } from './habitual.js';
+import { isBodyweight, loadWords } from './bodyweight.js';
 
 export { isCatalogExercise };
 
@@ -244,7 +245,8 @@ export async function listExercises() {
   return (await db.getAll('exercises')).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
 }
 
-export async function addExercise(nombre, grupo = 'Otro') {
+/* corporal: se hace con el peso del cuerpo (solo los del atleta; el catálogo ya lo sabe). */
+export async function addExercise(nombre, grupo = 'Otro', { corporal = false } = {}) {
   nombre = String(nombre || '').trim();
   if (!nombre) throw new Error('Escribe el nombre del ejercicio.');
   grupo = normalizeGrupo(grupo);
@@ -252,7 +254,7 @@ export async function addExercise(nombre, grupo = 'Otro') {
   const dup = all.find((e) => e.nombre.toLowerCase() === nombre.toLowerCase());
   if (dup) throw new Error('Ese ejercicio ya existe.');
   try {
-    return await db.add('exercises', { nombre, grupo });
+    return await db.add('exercises', { nombre, grupo, ...(corporal ? { corporal: true } : {}) });
   } catch (e) {
     if (e?.name === 'ConstraintError' || (e?.message && e.message.toLowerCase().includes('constraint'))) {
       throw new Error('Ese ejercicio ya existe.');
@@ -274,7 +276,7 @@ export async function countSetsForExercise(exerciseId) {
   return sets.length;
 }
 
-export async function updateExercise(id, nombre, grupo = 'Otro') {
+export async function updateExercise(id, nombre, grupo = 'Otro', { corporal = false } = {}) {
   const ex = await db.get('exercises', Number(id));
   if (!ex) throw new Error('Ese ejercicio ya no está.');
   if (!isOwnExercise(ex)) throw new Error('El catálogo no se edita.');
@@ -286,7 +288,10 @@ export async function updateExercise(id, nombre, grupo = 'Otro') {
   const dup = all.find((e) => e.id !== ex.id && e.nombre.toLowerCase() === nombre.toLowerCase());
   if (dup) throw new Error('Ese ejercicio ya existe.');
   try {
-    await db.put('exercises', { ...ex, nombre, grupo });
+    const next = { ...ex, nombre, grupo };
+    if (corporal) next.corporal = true;
+    else delete next.corporal;
+    await db.put('exercises', next);
   } catch (e) {
     if (e?.name === 'ConstraintError' || (e?.message && e.message.toLowerCase().includes('constraint'))) {
       throw new Error('Ese ejercicio ya existe.');
@@ -448,9 +453,10 @@ export async function finishWorkoutSummary(id) {
   const groups = {};
   for (const s of sets) {
     volumen += (s.peso || 0) * (s.reps || 0);
-    const exName = exMap.get(s.exerciseId)?.nombre || 'Ejercicio';
+    const ex = exMap.get(s.exerciseId);
+    const exName = ex?.nombre || 'Ejercicio';
     if (!groups[exName]) groups[exName] = [];
-    groups[exName].push(setBit(s));
+    groups[exName].push(setBit(s, isBodyweight(ex)));
   }
   const lines = Object.entries(groups).map(([name, sList]) => `${name} (${sList.join(', ')})`);
   return {
@@ -460,9 +466,9 @@ export async function finishWorkoutSummary(id) {
   };
 }
 
-function setBit(s) {
+function setBit(s, corporal = false) {
   /* Resumen en kg canónicos: la memoria del agente y el historial hablado usan kg. */
-  const base = `${s.peso}kg×${s.reps}`;
+  const base = `${loadWords(s.peso, corporal)} × ${s.reps}`;
   if (s.tipo === 'calentamiento') return `${base} calentamiento`;
   if (s.tipo === 'trabajo' && (s.rpe == null || s.rpe === '')) return `${base} sin esfuerzo`;
   if (s.rpe != null && s.rpe !== '') return `${base} ${effortPhrase(s.rpe)}`;
@@ -664,7 +670,11 @@ export async function habitualForExercise(exerciseId) {
     .map((id) => bestWorkingSet(byWorkout.get(id)));
   const habitual = habitualFrom(past);
   const today = activeId ? bestWorkingSet(byWorkout.get(activeId) || []) : null;
-  return { habitual, today, inProgress: Boolean(activeId), below: isBelowHabitual(today, habitual) };
+  return {
+    habitual, today, inProgress: Boolean(activeId),
+    below: isBelowHabitual(today, habitual),
+    heavier: carriesMore(today, habitual),
+  };
 }
 
 export async function progressForExercise(exerciseId) {
