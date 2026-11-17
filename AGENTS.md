@@ -64,6 +64,7 @@ Las excepciones que existen hoy están listadas en `SISTEMA.md` → «Deuda téc
 - Sin código muerto, sin `console.log` de depuración, sin comentarios que repiten el código. Un comentario explica el **porqué**.
 - Sin constantes mágicas sueltas: se nombran (`DOSE_G`, `SATURATION_DAYS`).
 - Sin datos personales ni valores del autor en el código (nombre, peso, rutina). Los valores por defecto son neutros.
+- Los músculos se nombran con su nombre anatómico en todo texto que ve el atleta o dice Bía (pectoral mayor, dorsal ancho, trapecio medio, isquiotibiales…). «Pecho alto/medio/bajo» o «espalda media» no son músculos: un ángulo se escribe como énfasis en una porción («pectoral mayor (énfasis clavicular)»). Las palabras del gimnasio solo sirven para entender lo que escribe o dice el atleta.
 - Sin claves, tokens ni URLs privadas en el repositorio.
 - Sin dependencias nuevas ni paso de build sin acordarlo antes.
 
