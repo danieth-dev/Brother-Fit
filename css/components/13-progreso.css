@@ -246,8 +246,19 @@ html[data-modo="claro"] .seg.progress-tabs:not(:has(.seg-thumb)) .progress-tab-b
   pointer-events: none;
 }
 .progress-ex-card-sub strong {
+  flex-shrink: 0;
   color: var(--text);
   font-weight: 600;
+}
+/* Grupo y músculos en una sola línea, como en Entreno: lo que no cabe acaba en «…». */
+.progress-ex-card-body {
+  min-width: 0;
+}
+.progress-ex-card-focus {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 .progress-ex-card-icon {
   width: 44px;

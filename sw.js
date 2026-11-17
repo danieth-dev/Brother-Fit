@@ -1,7 +1,7 @@
 /* Service worker de Bía.
  * Con red responde lo publicado y guarda una copia. Sin red usa esa copia.
  * Sube VERSION al publicar para que el teléfono suelte la caché anterior. */
-const VERSION = 'v214';
+const VERSION = 'v215';
 const CACHE = `brother-ft-${VERSION}`;
 
 const ASSETS = [

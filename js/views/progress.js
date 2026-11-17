@@ -372,15 +372,16 @@ function updateProgressView(el) {
       const gName = muscleName(currentEx.grupo) || currentEx.grupo;
       const fName = muscleFocus(currentEx.nombre);
       cardSlot.innerHTML = `
-        <button type="button" class="progress-ex-card" data-action="open-picker" aria-label="Cambiar ejercicio, actualmente ${esc(currentEx.nombre)}">
-          <span>
+        <button type="button" class="progress-ex-card" data-action="open-picker" aria-label="Cambiar ejercicio, actualmente ${esc(currentEx.nombre)}, ${esc(gName)}${fName ? `, ${esc(fName)}` : ''}">
+          <span class="progress-ex-card-body">
             ${inEntreno
               ? '<span class="progress-ex-card-tag progress-ex-card-tag--live"><span class="progress-ex-card-live" aria-hidden="true"></span>En Entreno ahora</span>'
               : '<span class="progress-ex-card-tag">Ejercicio</span>'}
             <span class="progress-ex-card-title">${esc(currentEx.nombre)}</span>
             <span class="progress-ex-card-sub">
               <span aria-hidden="true" class="progress-ex-card-dot"></span>
-              <strong>${esc(gName)}</strong> ${fName ? `· ${esc(fName)}` : ''}
+              <strong>${esc(gName)}</strong>
+              ${fName ? `<span class="progress-ex-card-focus">· ${esc(fName)}</span>` : ''}
             </span>
           </span>
           <span class="progress-ex-card-icon">
