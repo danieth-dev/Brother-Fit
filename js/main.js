@@ -7,6 +7,7 @@ import { watchPickers } from './utils/picker.js';
 import { watchCalendars } from './utils/calendar.js';
 import { watchTimes } from './utils/time-sheet.js';
 import { watchSegs } from './utils/seg-swipe.js';
+import { initRestPill } from './utils/rest-pill.js';
 import { resumeWaterReminders } from './services/water-reminders.js';
 
 /* Pulsación larga: el navegador muestra menú de vínculo/compartir. En Bía no debe salir nunca. */
@@ -101,6 +102,7 @@ async function boot() {
     watchCalendars(document.getElementById('app'));
     watchTimes(document.getElementById('app'));
     watchSegs(document.getElementById('app'));
+    await initRestPill();
   } catch (err) {
     console.error(err);
     document.getElementById('app').innerHTML =

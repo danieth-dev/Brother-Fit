@@ -9,6 +9,8 @@ export const EVENTS = {
   EXERCISE_SELECTED: 'exercise-selected',
   /** detail: { restEnd, lastReps } — empezó un descanso por una serie anotada fuera de la pantalla. */
   SET_LOGGED: 'set-logged',
+  /** detail: { restEnd, start } — el descanso empezó, cambió o se apagó (restEnd 0). */
+  REST_CHANGED: 'rest-changed',
 };
 
 export function emit(type, detail) {

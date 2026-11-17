@@ -127,7 +127,7 @@ Este documento es la fuente de verdad del diseño de Bía. Lo leen las personas 
 
 Fuente de los valores: `css/tokens.css` (tokens), `css/base.css` (página, tipografía base e iconos) y `css/components/01-…css` a `14-…css` (componentes, cargados en ese orden desde `index.html`). El frontmatter de arriba usa el formato de `DESIGN.md` que entiende la skill; los valores son los del **modo oscuro con acento amarillo**, que es el de fábrica.
 
-Última revisión: 16 de noviembre de 2026 (caché `v201`).
+Última revisión: 16 de noviembre de 2026 (caché `v203`).
 
 ## 1. Idea
 
@@ -161,7 +161,7 @@ Todo color sale de un token de `css/tokens.css`. Un componente nunca escribe un 
 | `--primary` / `--yellow` | `#ffe600` | La acción principal, la pestaña activa, la pastilla del segmento, el foco. |
 | `--primary-hover` / `--primary-active` | `#f5dc00` / `#d6c000` | Respuesta al tocar. |
 | `--primary-ink` / `--yellow-ink` | `#07080a` | Texto e iconos **sobre** el acento. |
-| `--yellow-dim` | acento al 12 % | Fondo del descanso, chips de aviso, halos de foco. |
+| `--yellow-dim` | acento al 12 % | Chips de aviso, halos de foco. |
 | `--primary-glow` | `0 0 24px` acento al 22 % | Solo en el aviso (toast). |
 | `--accent-faint` | acento al 6 % (`color-mix`) | Fondos muy suaves: hover de botones discontinuos, tarjeta objetivo. |
 | `--line-accent-strong` | acento al 45 % (`color-mix`) | Borde del primario y bordes de aviso marcados. |
@@ -240,7 +240,7 @@ Tres voces, cada una con un trabajo:
 | --- | --- | --- |
 | **Display** | `--font-display`: Fugaz One (archivo local `fonts/FugazOne-Regular.ttf`, licencia OFL) | Solo `h1`, `h2`, `h3` y `.section-title`. |
 | **Interfaz** | `--font`: fuente del sistema | Cuerpo, etiquetas, botones, campos, números normales. |
-| **Reloj** | `--font-mono`: monoespaciada del sistema | Cronómetro de sesión (`.elapsed`), descanso, campos técnicos. |
+| **Reloj** | `--font-mono`: monoespaciada del sistema | Cronómetro de sesión (`.elapsed`), campos técnicos. El descanso usa cifras tabulares de la letra normal. |
 
 Reglas de Fugaz One: un único peso real (400) y `font-synthesis: none`. Nunca se le pide 700/800: el navegador inventaría una negrita falsa. Nunca se usa para números, etiquetas ni párrafos.
 
@@ -258,7 +258,7 @@ Todo valor que cambia (peso, reps, tiempo, kcal, racha) lleva `font-variant-nume
 | `--fs-base` | 16 px | Cuerpo, campos, botones. |
 | `--fs-md` | 18 px | `h3`, títulos de sección. |
 | `--fs-lg` | 20 px | `h2`. |
-| `--fs-xl` | 24 px | Descanso, cifras de tarjeta. |
+| `--fs-xl` | 24 px | Cifras de tarjeta. |
 | `--fs-2xl` | 30 px | Cifras destacadas. |
 | `--fs-3xl` | 36 px | `h1`, PR. |
 | `--fs-hero` | 44 px | Cronómetro de sesión. |
@@ -280,14 +280,14 @@ Todo `font-size` de `css/components/` usa un token de la escala; el único valor
 | --- | --- | --- |
 | `--r-xs` | 4 px | Detalles mínimos. |
 | `--r-sm` | 8 px | Campos, botón compacto, pastilla del segmento. |
-| `--r-md` | 12 px | Botones, segmentos, descanso, avisos. |
+| `--r-md` | 12 px | Botones, segmentos, avisos. |
 | `--r-lg` | 16 px | Tarjetas de entreno reciente. |
 | `--r-xl` | 20 px | Tarjetas de formulario, filas, hojas inferiores. |
 | `--r-full` | 9999 px | Chips, barrita de arrastre, discos y anillos. |
 
 La isla de navegación usa 28 px por fuera y 22 px en cada pestaña.
 
-Profundidad con sombras neutras de contacto, nunca de color: `--shadow-sm` (filas y tarjetas), `--shadow-md` (descanso, hover del primario), `--shadow-lg` (isla, hojas, avisos). La única luz de color es `--primary-glow`, y solo en el aviso.
+Profundidad con sombras neutras de contacto, nunca de color: `--shadow-sm` (filas y tarjetas), `--shadow-md` (hover del primario), `--shadow-lg` (isla, cápsula del descanso, hojas, avisos). La única luz de color es `--primary-glow`, y solo en el aviso.
 
 ## 6. Movimiento
 
@@ -312,7 +312,7 @@ Los archivos se cargan en orden numérico y **ese orden es la cascada**: una reg
 | `01-controles.css` | Encabezados, botones, formularios, hojas de listas (picker), calendario, hora y confirmación. |
 | `02-listas-chips.css` | Listas, filas, estadísticas y chips. |
 | `03-inicio.css` | Disco de creatina, pastillas, tarjeta de entreno y últimos entrenos. |
-| `04-series-descanso.css` | Puntos de grupo muscular, series del entreno y descanso. |
+| `04-series-descanso.css` | Puntos de grupo muscular y series del entreno. |
 | `05-segmento-isla-aviso.css` | Segmento, gráfica, isla de navegación y aviso. |
 | `06-creatina.css` | Pantalla de creatina, calendario y estado vacío. |
 | `07-bia.css` | Chat de Bía, paneles Recuerdos y Conexión, reporte de respuestas. |
@@ -341,7 +341,8 @@ Los archivos se cargan en orden numérico y **ese orden es la cascada**: una reg
 | Fila y tarjeta | `.row`, `.form-card`, `.recent-workout-card` | `--surface`, `--r-xl` (16 px en recientes), `--shadow-sm`, sin borde salvo en recientes. |
 | Chip | `.chip`, `.chip-ok`, `.chip-warn` | Píldora de 12 px; verde para hecho, acento para aviso. |
 | Disco de creatina | `.plate` | Disco olímpico: aros concéntricos del acento (`--c`) sobre ranuras oscuras, hasta 248 px. `.plate.done` cambia `--c` a `--green`. Versión compacta en Inicio según ajuste. |
-| Descanso | `.rest` | Banda `--yellow-dim` con borde del acento, tiempo en mono `--fs-xl`. |
+| Cápsula del descanso | `.rest-pill` (`js/utils/rest-pill.js`) | Píldora `--primary` de 44 px que flota sobre la isla, encima de Entreno, en todas las pantallas: reloj, cuenta atrás `--fs-lg` en cifras tabulares y una barra de 3 px en `--primary-ink` que se vacía. Anillo de 2 px en `--bg` para separarla de lo que pasa por debajo. En una rutina repetida y estando en Entreno, `.rest-pill--action` la mete en una píldora `--surface-elevated` con «Siguiente · ejercicio ›» o «✓ Terminar sesión»; el nombre largo se corta con puntos suspensivos. Con ella visible, `body.has-rest-pill` sube `--tabbar-h`. |
+| Hoja del descanso | `.rest-sheet` (`js/utils/rest-sheet.js`) | Se abre al tocar el reloj en Entreno: cuenta atrás `--fs-hero` en `--primary`, zona en `--muted`, barra de 6 px, «−15 s» y «+30 s», la acción de la rutina y «Saltar descanso» primario. |
 | Punto muscular | `.dot`, `.muscle-dot` | 8–9 px con el color del grupo. |
 | Anillo de calorías | `.meal-ring-svg`, `.home-food-ring` | SVG con trazo verde sobre `--line`; cifra central en `--text`. |
 | Estado vacío | `.empty` y variantes | Texto `--muted` centrado y una sola acción primaria. |
@@ -377,6 +378,8 @@ Los archivos se cargan en orden numérico y **ese orden es la cascada**: una reg
 ## 11. Deuda conocida
 
 Medida el 15 de noviembre de 2026. Cada cambio que toque una de estas zonas la deja mejor, y esta lista se actualiza.
+
+Resuelto en la `v203`: el descanso dejó de ser una banda dentro de Entreno que empujaba el formulario; ahora es la cápsula sobre la isla y se ve desde cualquier pantalla.
 
 Resuelto en la `v201`: los 93 hex de `css/components/` pasaron a tokens (tabla «Tokens de componente» y grupos musculares); los 52 `font-size` sueltos pasaron al paso más cercano de la escala (un empate sube: 17 → 18, 22 → 24, 13,5 → 14) y los títulos de Ajustes, Aspecto, Historial y Comida usan el `h1` común; se quitaron los 156 `!important` de componentes. Se comprobó comparando los estilos calculados de cada elemento en todas las pantallas y hojas, en oscuro y claro y a 360 px: sin `!important` no cambió nada; los únicos cambios son los de tamaño y estos colores, que pasaron al token de estado más cercano: punto de creatina de Inicio (`--blue`), punto de conexión de Bía (`--green`/`--red`), modelo elegido en Conexión (`--green`), subida/bajada en Progreso (`--red`/`--green`), chevron de Historial (`--muted`), borde al pasar sobre «Repetir» (`--text-dim`) y punto de la rutina actual (`--text`, que en claro ahora se ve). El degradado de los filtros de Historial usa `--bg` y en claro ya coincide con el fondo. Dos reglas que solo funcionaban por `!important` se arreglaron: el botón de esfuerzo elegido del editor en modo claro y las pestañas de Progreso a 360 px.
 

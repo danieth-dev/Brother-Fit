@@ -9,7 +9,7 @@ La descripción completa y al día del sistema (pantallas, datos, reglas, Bía) 
 ## Qué incluye
 
 - **Inicio:** botón de creatina de un toque (con "Deshacer"), racha, resumen semanal, últimos entrenos.
-- **Entreno:** sesión activa con cronómetro, series (peso, repeticiones, RPE), autocompletado con la última serie, temporizador de descanso con vibración, ejercicios propios.
+- **Entreno:** sesión activa con cronómetro, series (peso, repeticiones, RPE), autocompletado con la última serie, descanso en una cápsula sobre la isla (visible en todas las pantallas, con −15 s / +30 s y saltar), ejercicios propios.
 - **Historial:** todos los entrenamientos y su detalle.
 - **Progreso:** récord de peso, gráfico (1RM estimado, peso máximo o volumen) y peso corporal.
 - **Creatina:** calendario mensual, rachas, últimos 7 y 30 días, tomas pasadas y borrado.

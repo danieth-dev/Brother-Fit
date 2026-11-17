@@ -430,47 +430,6 @@
   color: var(--primary-ink);
 }
 
-/* ---------- HUD de Temporizador de Descanso ---------- */
-.rest {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 10px 14px;
-  padding: 12px 14px 12px 18px;
-  border-radius: var(--r-md);
-  background: var(--yellow-dim);
-  border: 1px solid var(--line-accent);
-  color: var(--text);
-  box-shadow: var(--shadow-md);
-}
-.rest span {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: var(--fs-sm);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--primary);
-}
-.rest strong.num {
-  font-family: var(--font-mono);
-  font-size: var(--fs-xl);
-  font-weight: 800;
-  color: var(--text);
-}
-.rest .btn {
-  background: var(--surface);
-  border: 1px solid var(--line-accent-strong);
-  color: var(--primary);
-  font-weight: 700;
-}
-.rest .btn:hover {
-  background: var(--primary);
-  color: var(--primary-ink);
-}
-
 .elapsed {
   font-family: var(--font-mono);
   font-size: var(--fs-hero);

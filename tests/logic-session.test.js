@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { restZone, restSeconds, workoutTitle, orderExercises, nextRoutineStep, routineComplete, ROUTINE_DONE } from '../js/services/session-plan.js';
-import { formatWeekdayShort } from '../js/utils/dates.js';
+import { formatWeekdayShort, formatCountdown } from '../js/utils/dates.js';
 
 test('descanso automático por repeticiones; el fijo sale de Ajustes', () => {
   assert.equal(restZone(5).secs, 180);
@@ -55,4 +55,12 @@ test('la rutina está hecha solo con todos sus ejercicios y sus series', () => {
   // Entreno nuevo, sin rutina: nunca.
   assert.equal(routineComplete([], 10, new Map([[10, 5]]), planned), false);
   assert.equal(routineComplete(null, 10, new Map(), planned), false);
+});
+
+test('la cuenta atrás del descanso redondea hacia arriba', () => {
+  assert.equal(formatCountdown(88), '1:28');
+  assert.equal(formatCountdown(87.2), '1:28');
+  assert.equal(formatCountdown(5), '0:05');
+  assert.equal(formatCountdown(0), '0:00');
+  assert.equal(formatCountdown(-3), '0:00');
 });

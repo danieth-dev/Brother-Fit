@@ -1,6 +1,7 @@
 /* Lógica de entrenamientos, ejercicios y progreso. Las vistas solo llaman a estas funciones. */
 import { db } from '../db.js';
 import { now } from '../utils/clock.js';
+import { emit, EVENTS } from '../utils/events.js';
 import { todayISO, startOfWeekISO, addDays } from '../utils/dates.js';
 import { isCatalogExercise, BASE } from './seed.js';
 import { PENDING_KEY, effortPhrase } from './effort.js';
@@ -340,12 +341,28 @@ export async function loadActiveRest() {
   return value;
 }
 
-export async function saveActiveRest(restEnd, lastReps) {
-  await db.put('meta', { key: REST_KEY, value: { restEnd, lastReps } });
+/* start sirve para dibujar cuánto queda; los descansos guardados antes no lo traen. */
+export async function saveActiveRest(restEnd, lastReps, start = now()) {
+  await db.put('meta', { key: REST_KEY, value: { restEnd, lastReps, start } });
+  emit(EVENTS.REST_CHANGED, { restEnd, start });
 }
 
 export async function clearActiveRest() {
   await db.remove('meta', REST_KEY);
+  emit(EVENTS.REST_CHANGED, { restEnd: 0, start: 0 });
+}
+
+/** Alarga o acorta el descanso en curso. Devuelve el nuevo fin, o 0 si ya no queda descanso. */
+export async function shiftActiveRest(deltaMs) {
+  const rest = await loadActiveRest();
+  if (!rest) return 0;
+  const restEnd = rest.restEnd + deltaMs;
+  if (restEnd <= now()) {
+    await clearActiveRest();
+    return 0;
+  }
+  await saveActiveRest(restEnd, rest.lastReps, rest.start ?? now());
+  return restEnd;
 }
 
 export async function startWorkout(fromWorkoutId = null) {

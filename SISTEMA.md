@@ -2,7 +2,7 @@
 
 Documento vivo del producto. Describe cómo está armado, dónde vive cada dato y qué no se puede romper. Cuando cambie el comportamiento, el esquema, una pantalla o la forma de publicar, este archivo se actualiza en el mismo cambio.
 
-Última revisión: 16 de noviembre de 2026. Base de datos versión 3. Caché de la app `v202`.
+Última revisión: 16 de noviembre de 2026. Base de datos versión 3. Caché de la app `v203`.
 
 ## Qué es
 
@@ -134,7 +134,7 @@ Claves de `meta`:
 | `settings` | `{ descanso, descansoMode, unidad, aguaRecordatorios, tema, modo, creatinaCompacta, metaKcal, metaProteina, metaCarbos, metaGrasa, metaObjetivo }`. `unidad` es `kg` o `lb` (preferencia de pantalla). `tema` es `amarillo`, `azul` o `rosado`; `modo` es `oscuro`, `claro` o `sistema`. `metaObjetivo` es `ganar`, `mantener` o `definir`. La toma de creatina es siempre 5 g (`DOSE_G`). |
 | `waterReminders` | Plan del día: `{ fecha, items: [{ id, at, body, done }] }`. Avisos locales de agua tras la creatina. |
 | `activeWorkoutId` | Id de la sesión abierta. Se borra al terminar o si esa sesión ya está cerrada. |
-| `activeRest` | `{ restEnd, lastReps }` del descanso en curso. Si ya venció, se borra al leerlo. |
+| `activeRest` | `{ restEnd, lastReps, start }` del descanso en curso; `start` sirve para dibujar cuánto queda y falta en los guardados antes de la `v203`. Si ya venció, se borra al leerlo. |
 | `pendingRpe` | Pregunta abierta: `{ setId, mark, attempts, until }`. Se suelta al anotar, al vencer, al crear otra serie, al terminar o descartar, al borrar esa serie, al pasarla a calentamiento o al usar los botones. |
 | `rpeSeq` | Entero de la próxima marca. No vuelve a cero al cerrar la pregunta. Solo puede bajar si se importa un respaldo o se borra todo, porque esas dos acciones recargan la página y cortan la sesión de Bía. |
 | `seeded` | Marca de que el catálogo ya se intentó. La semilla ya no depende de esta marca para volver a correr. |
@@ -178,7 +178,9 @@ Cada serie dispara el descanso y lo guarda en `meta.activeRest`. Recargar el tel
 
 En modo manual se usan los segundos de Ajustes (`descanso`, 90 por defecto).
 
-Una sesión repetida desde Historial guarda la rutina (`routineExercises`, los ejercicios de la sesión de origen en orden). Al igualar las series de la vez anterior en un ejercicio, el descanso ofrece «Pasar a» el siguiente y, al acabar, pasa solo. «Terminar sesión» aparece en el descanso solo cuando el atleta está en el **último** ejercicio de la rutina y **todos** sus ejercicios tienen hoy al menos sus series de la sesión de origen (`routineComplete()`); terminar el último con otros a medias, añadir series a otro de la rutina o un ejercicio fuera de ella solo dice «Completaste las series de …» y deja «Saltar». Un entreno nuevo, que no repite otro, no tiene rutina: nunca ofrece «Pasar a» ni «Terminar sesión». Debajo de la sesión anterior, «Igualaste» o «Superaste» según las series de hoy.
+El descanso se ve en una cápsula sobre la isla de navegación, encima de Entreno, en todas las pantallas menos la de Bía, donde la isla se oculta (`js/utils/rest-pill.js`). Lee `meta.activeRest` al arrancar y escucha `EVENTS.REST_CHANGED`, que emiten `saveActiveRest`, `clearActiveRest`, `shiftActiveRest` y `skipRestClock`; así también aparece cuando Bía anota una serie. Fuera de Entreno, tocarla vuelve a Entreno. En Entreno abre la hoja del descanso (`js/utils/rest-sheet.js`): «−15 s», «+30 s» (`shiftActiveRest`; acortar hasta cero es saltar), la acción de la rutina y «Saltar descanso». Qué pasa al acabar lo sigue decidiendo Entreno (`views/workout/rest.js`): apaga el micrófono y pasa al siguiente ejercicio de la rutina o Bía avisa de la siguiente serie.
+
+Una sesión repetida desde Historial guarda la rutina (`routineExercises`, los ejercicios de la sesión de origen en orden). Al igualar las series de la vez anterior en un ejercicio, la cápsula del descanso ofrece «Siguiente · ejercicio» y, al acabar, pasa solo. «Terminar sesión» aparece en la cápsula solo cuando el atleta está en el **último** ejercicio de la rutina y **todos** sus ejercicios tienen hoy al menos sus series de la sesión de origen (`routineComplete()`); terminar el último con otros a medias, añadir series a otro de la rutina o un ejercicio fuera de ella solo dice «Completaste las series de …» y deja «Saltar». Un entreno nuevo, que no repite otro, no tiene rutina: nunca ofrece «Siguiente» ni «Terminar sesión». Debajo de la sesión anterior, «Igualaste» o «Superaste» según las series de hoy.
 
 El 1RM estimado es Epley: si hay una repetición, el peso; si hay más, `peso * (1 + reps / 30)`. El volumen de una serie es peso por repeticiones, también en el calentamiento. El PR de un ejercicio sigue siendo el mayor peso, las mayores reps y el mayor 1RM de Epley. Esa curva no cambia el día que empieza el esfuerzo.
 
@@ -384,7 +386,7 @@ Pendiente:
 | `js/services/water-reminders.js` | Recordatorios locales de agua tras la creatina. |
 | `js/views/*.js` | Una pantalla por archivo: home, workout, history, progress, creatine, meals, agent, settings, appearance. |
 | `js/views/agent/` | Partes de la pantalla Bía: alta de la clave (`key-setup.js`), plantilla (`chat-markup.js`), lista de mensajes y reportes (`messages.js`) y tarjetas de herramientas (`chat-cards.js`). |
-| `js/views/workout/` | Partes de la pantalla Entreno que solo usa `workout.js`: estado entre repintados (`session.js`), plantillas (`markup.js`) y reloj del descanso (`rest.js`). |
+| `js/views/workout/` | Partes de la pantalla Entreno que solo usa `workout.js`: estado entre repintados (`session.js`), plantillas (`markup.js`) y reloj de la sesión y fin del descanso (`rest.js`). |
 | `js/services/session-plan.js` | Reglas puras del entreno en curso: descanso automático, título de una sesión, orden de la lista y siguiente paso de la rutina. |
 | `js/utils/meal-scanner.js` | Hoja de foto → resultado, edición de gramos y guardado de una comida. |
 | `js/utils/picker.js` | Hoja de las listas: la arma, la abre, la cierra y la llena. Cierra arrastrando con `sheet-drag.js`, como las demás hojas. |
@@ -410,6 +412,8 @@ Pendiente:
 | `js/utils/calendar.js` | Hoja del día. |
 | `js/utils/time-sheet.js` | Hoja de la hora. Los minutos van de 5 en 5. |
 | `js/utils/confirm-sheet.js` | Hoja de confirmación antes de borrar o acciones fuertes. |
+| `js/utils/rest-pill.js` | Cápsula del descanso sobre la isla: cuenta atrás, barra y la acción de la rutina que le pasa Entreno (`setRestControls`). |
+| `js/utils/rest-sheet.js` | Hoja del descanso: −15 s, +30 s, la acción de la rutina y «Saltar descanso». |
 | `js/utils/chart.js` | Gráfica SVG. |
 | `js/utils/clock.js` | Reloj único. Las pruebas pueden adelantarlo. |
 | `js/utils/set-line.js` | Botones de esfuerzo en la serie ya hecha. |

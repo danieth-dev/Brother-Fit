@@ -6,7 +6,7 @@ import {
   loadActiveRest, saveActiveRest, clearActiveRest, listWorkoutSummaries, getWorkoutExerciseSets,
 } from '../services/workouts.js';
 import { registerSet, setEffort, setTipo, skipRestClock } from '../services/effort.js';
-import { restSeconds, orderExercises, nextRoutineStep, routineComplete, ROUTINE_DONE } from '../services/session-plan.js';
+import { restSeconds, restZone, orderExercises, nextRoutineStep, routineComplete, ROUTINE_DONE } from '../services/session-plan.js';
 import { getActiveAgent } from '../voice/fit-agent.js';
 import { saveMemory } from '../services/bia/memory.js';
 import { creatineSummary } from '../services/creatine.js';
@@ -22,7 +22,8 @@ import { syncSegThumb } from '../utils/seg-swipe.js';
 import { maybePromptBackup } from '../utils/backup-nudge.js';
 import { session, setActiveExercise, resetSession } from './workout/session.js';
 import { idleMarkup, activeMarkup, todayLogMarkup, weightStep } from './workout/markup.js';
-import { startTicker, stopRest, currentRestHtml } from './workout/rest.js';
+import { startTicker, stopRest } from './workout/rest.js';
+import { setRestControls } from '../utils/rest-pill.js';
 
 const MAX_PESO_KG = 600;
 const PAST_WORKOUTS_SHOWN = 3;
@@ -38,6 +39,7 @@ export async function render(el) {
 
 async function renderIdle(el) {
   resetSession();
+  setRestControls(null);
   clearActiveRest();
   const summaries = await listWorkoutSummaries(SUMMARIES_TO_SCAN);
   const pastWorkouts = summaries.filter((s) => s.finishedAt && s.totalSets > 0).slice(0, PAST_WORKOUTS_SHOWN);
@@ -161,7 +163,6 @@ async function renderActive(el, w) {
     inRoutine: Boolean(w.routineExercises?.length),
     unidad,
     elapsed: formatDuration(now() - w.startedAt),
-    restHtml: currentRestHtml(),
     draftTipo: session.draftTipo,
     draftRir: session.draftRir,
     todayLog: todayLogMarkup(d.groups, unidad, { open: session.todayLogOpen, openEffortId: session.openEffortId }),
@@ -175,9 +176,51 @@ async function renderActive(el, w) {
   watchSubmitInputs(el);
   scrollTargetRefCard(el);
   startTicker(el, w, (id) => goToExercise(el, d.exs, id));
+  setRestControls(restControls(el, d));
   const tipoSeg = el.querySelector('#draft-tipo-seg');
   if (tipoSeg) requestAnimationFrame(() => syncSegThumb(tipoSeg));
   bindActive(el, d);
+}
+
+/* Lo que la cápsula del descanso ofrece: solo en una rutina repetida, «Siguiente» al igualar
+ * las series del ejercicio y «Terminar sesión» al acabar el último con todo hecho. */
+function restControls(el, d) {
+  let action = null;
+  if (session.routineDone) action = { kind: 'finish', label: 'Terminar sesión' };
+  else if (session.isExCompleted && session.nextExObj) action = { kind: 'next', label: session.nextExObj.nombre };
+  return {
+    zone: state.settings.descansoMode === 'auto' && session.lastReps ? restZone(session.lastReps).label : '',
+    action,
+    onSkip: () => skipRest(el, d.exs),
+    onAction: () => (action?.kind === 'finish' ? finishFlow(d.w) : advanceTo(el, d.exs, session.nextExObj.id)),
+  };
+}
+
+async function skipRest(el, exs) {
+  stopRest();
+  await skipRestClock();
+  const next = session.pendingNextEx;
+  if (next && next !== ROUTINE_DONE) {
+    await goToExercise(el, exs, next, { announce: true });
+    return;
+  }
+  session.pendingNextEx = null;
+  await render(el);
+}
+
+async function advanceTo(el, exs, id) {
+  stopRest();
+  await skipRestClock();
+  await goToExercise(el, exs, id, { announce: true });
+}
+
+async function finishFlow(w) {
+  if (!(await confirmFinish(w))) return;
+  await tellBiaWorkoutDone(w);
+  await finishWorkout(w.id);
+  forgetActiveWorkout();
+  await maybePromptBackup();
+  go(`/history/${w.id}`);
 }
 
 function prefillWeight(el, targetSet) {
@@ -314,6 +357,7 @@ function forgetActiveWorkout() {
   state.activeWorkoutId = null;
   state.activeExercise = null;
   session.restEnd = 0;
+  setRestControls(null);
   clearActiveRest();
 }
 
@@ -422,24 +466,6 @@ function bindActive(el, d) {
       const input = el.querySelector('input[name="reps"]');
       if (input) stepInput(input, Number(t.dataset.dir || 1));
     },
-    'next-exercise': async (t) => {
-      const nextId = Number(t.dataset.id || session.pendingNextEx);
-      if (!nextId) return;
-      stopRest(el);
-      await skipRestClock();
-      await goToExercise(el, exs, nextId, { announce: true });
-    },
-    'skip-rest': async () => {
-      stopRest(el);
-      await skipRestClock();
-      const next = session.pendingNextEx;
-      if (next && next !== ROUTINE_DONE) {
-        await goToExercise(el, exs, next, { announce: true });
-        return;
-      }
-      session.pendingNextEx = null;
-      await rerender();
-    },
     'draft-tipo': (t) => {
       session.draftTipo = t.dataset.tipo === 'calentamiento' ? 'calentamiento' : 'trabajo';
       if (session.draftTipo === 'calentamiento') session.draftRir = null;
@@ -465,14 +491,7 @@ function bindActive(el, d) {
       session.openEffortId = null;
       await rerender();
     },
-    finish: async () => {
-      if (!(await confirmFinish(w))) return;
-      await tellBiaWorkoutDone(w);
-      await finishWorkout(w.id);
-      forgetActiveWorkout();
-      await maybePromptBackup();
-      go(`/history/${w.id}`);
-    },
+    finish: () => finishFlow(w),
     discard: async () => {
       if (!(await confirmDiscard(w, d.groups))) return;
       await deleteWorkout(w.id);

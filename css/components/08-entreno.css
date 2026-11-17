@@ -262,25 +262,6 @@
   transform: scale(1.25);
 }
 
-.rest--next-ex {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 12px 14px;
-}
-.rest--next-ex .rest-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-}
-.rest-next-hint {
-  margin: 0;
-  font-size: var(--fs-xs);
-  color: var(--primary);
-  font-weight: 600;
-}
-
 /* ---------- Confirmación enriquecida (terminar / descartar) ---------- */
 .confirm-grabber,
 .confirm-icon {

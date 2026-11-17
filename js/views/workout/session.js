@@ -31,6 +31,11 @@ on(EVENTS.SET_LOGGED, (detail) => {
   if (detail.lastReps) session.lastReps = detail.lastReps;
 });
 
+/* La hoja del descanso puede alargarlo o acortarlo; el reloj de Entreno sigue ese fin. */
+on(EVENTS.REST_CHANGED, (detail) => {
+  session.restEnd = detail?.restEnd || 0;
+});
+
 on(EVENTS.EXERCISE_SELECTED, (detail) => {
   const id = Number(detail?.id);
   if (!id) return;

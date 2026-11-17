@@ -285,7 +285,9 @@ html[data-modo="claro"] .seg.metric-seg:not(:has(.seg-thumb)) button[aria-presse
   right: 0;
   bottom: 0;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
   pointer-events: none;
   padding:
     0
@@ -357,6 +359,202 @@ html[data-modo="claro"] .seg.metric-seg:not(:has(.seg-thumb)) button[aria-presse
 }
 .tabbar a[aria-current="page"] svg {
   stroke: var(--primary-ink);
+}
+
+/* ---------- Cápsula del descanso (sobre la isla, encima de Entreno) ---------- */
+/* Con la cápsula visible la isla ocupa más: el final de página y los avisos suben con ella. */
+body.has-rest-pill {
+  --tabbar-h: 144px;
+}
+.rest-pill {
+  pointer-events: auto;
+  max-width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: var(--r-full);
+}
+.rest-pill--action {
+  padding: 4px;
+  background: var(--surface-elevated);
+  border: 1px solid var(--line-strong);
+  box-shadow: var(--shadow-lg);
+}
+.rest-pill-time {
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 18px 2px;
+  border: 0;
+  border-radius: var(--r-full);
+  background: var(--primary);
+  color: var(--primary-ink);
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
+  /* El anillo del color de fondo la separa de lo que pase por debajo al hacer scroll. */
+  box-shadow: 0 0 0 2px var(--bg), var(--shadow-lg);
+  cursor: pointer;
+}
+.rest-pill--action .rest-pill-time {
+  box-shadow: none;
+}
+/* La barra de abajo se vacía con el descanso: --rest-left es lo que queda. */
+.rest-pill-time::before,
+.rest-pill-time::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 3px;
+}
+.rest-pill-time::before {
+  right: 0;
+  background: color-mix(in srgb, var(--primary-ink) 18%, transparent);
+}
+.rest-pill-time::after {
+  width: var(--rest-left, 100%);
+  background: var(--primary-ink);
+  transition: width 1s linear;
+}
+.tabbar .rest-pill svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+}
+.rest-pill-time:active,
+.rest-pill-action:active {
+  transform: scale(0.96);
+}
+.rest-pill-time:focus-visible,
+.rest-pill-action:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.rest-pill-action {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 14px 0 8px;
+  border: 0;
+  border-radius: var(--r-full);
+  background: transparent;
+  color: var(--text);
+  font-size: var(--fs-sm-plus);
+  font-weight: 600;
+  cursor: pointer;
+}
+.rest-pill-action-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rest-pill-action svg {
+  flex-shrink: 0;
+}
+.rest-pill-action-hint {
+  color: var(--muted);
+  font-size: var(--fs-xs-plus);
+  font-weight: 500;
+}
+.tabbar .rest-pill-action svg {
+  color: var(--primary);
+}
+
+/* ---------- Hoja del descanso ---------- */
+.rest-sheet .picker-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.rest-sheet-grabber {
+  display: flex;
+  justify-content: center;
+  padding: 2px 0 4px;
+  cursor: grab;
+}
+.rest-sheet-grabber span {
+  width: 40px;
+  height: 5px;
+  border-radius: var(--r-full);
+  background: var(--line-strong);
+}
+.rest-sheet-num {
+  margin: 0;
+  text-align: center;
+  font-size: var(--fs-hero);
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--primary);
+}
+.rest-sheet-zone {
+  margin: -6px 0 0;
+  text-align: center;
+  font-size: var(--fs-sm);
+  color: var(--muted);
+}
+.rest-sheet-bar {
+  height: 6px;
+  border-radius: var(--r-full);
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.rest-sheet-bar span {
+  display: block;
+  height: 100%;
+  width: var(--rest-left, 100%);
+  background: var(--primary);
+  transition: width 1s linear;
+}
+.rest-sheet-shift {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.rest-sheet-shift .btn {
+  min-height: 52px;
+  font-variant-numeric: tabular-nums;
+}
+.rest-sheet-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 56px;
+  padding: 0 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: var(--fs-base);
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+.rest-sheet-action svg {
+  color: var(--primary);
+  flex-shrink: 0;
+}
+.rest-sheet-action-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.rest-sheet-action-hint {
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  color: var(--muted);
+}
+.rest-sheet-skip {
+  min-height: 56px;
 }
 
 /* ---------- Avisos Emergentes (Toast) ---------- */

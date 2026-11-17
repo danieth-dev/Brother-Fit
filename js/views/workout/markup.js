@@ -1,13 +1,11 @@
 /* Plantillas de la pantalla Entreno. Reciben datos y devuelven HTML; no escuchan nada. */
 import { muscleName, muscleFocus, isOwnExercise } from '../../services/workouts.js';
-import { restZone, workoutTitle } from '../../services/session-plan.js';
+import { workoutTitle } from '../../services/session-plan.js';
 import { esc } from '../../utils/dom.js';
 import { formatShort, formatWeekdayShort } from '../../utils/dates.js';
 import { icons } from '../../utils/icons.js';
 import { effortTag, effortExtra, rirButtons } from '../../utils/set-line.js';
 import { fmtWeight, fmtVolume, unitSegHtml } from '../../utils/units.js';
-
-export const mmss = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 
 export const weightStep = (unidad) => (unidad === 'lb' ? '5' : '2,5');
 
@@ -59,58 +57,6 @@ export function idleMarkup(pastWorkouts, unidad) {
         </section>
       ` : ''}
     </div>`;
-}
-
-/* ---------- Descanso ---------- */
-
-const restClock = (left) => `<span>${icons.clock({ size: 18 })} Descanso <strong class="num">${mmss(left)}</strong></span>`;
-
-/**
- * Aviso de descanso. En una rutina ofrece pasar al siguiente ejercicio, o terminar solo cuando
- * todos sus ejercicios tienen sus series; si no, el tiempo, la zona (modo automático) y «Saltar».
- */
-export function restMarkup({ left, nextExObj, isExCompleted, routineDone, curExName, lastReps, autoRest }) {
-  if (left <= 0) return '';
-  if (nextExObj) {
-    const hint = isExCompleted
-      ? `Completaste las series de ${esc(curExName || 'este ejercicio')}`
-      : `Siguiente en la rutina: ${esc(nextExObj.nombre)}`;
-    return `<div class="rest rest--next-ex">
-      <div class="rest-top">
-        ${restClock(left)}
-        <button class="btn btn-sm btn-primary" data-action="next-exercise" data-id="${nextExObj.id}" type="button">
-          Pasar a ${esc(nextExObj.nombre)} ${icons.chevronRight({ size: 14 })}
-        </button>
-      </div>
-      <p class="rest-next-hint">${hint}</p>
-    </div>`;
-  }
-  if (routineDone) {
-    return `<div class="rest rest--next-ex">
-      <div class="rest-top">
-        ${restClock(left)}
-        <button class="btn btn-sm btn-primary" data-action="finish" type="button">
-          ${icons.check({ size: 16 })} Terminar sesión
-        </button>
-      </div>
-      <p class="rest-next-hint">Completaste todos los ejercicios de la rutina.</p>
-    </div>`;
-  }
-  if (isExCompleted) {
-    return `<div class="rest rest--next-ex">
-      <div class="rest-top">
-        ${restClock(left)}
-        <button class="btn btn-sm" data-action="skip-rest" type="button">Saltar</button>
-      </div>
-      <p class="rest-next-hint">Completaste las series de ${esc(curExName || 'este ejercicio')}.</p>
-    </div>`;
-  }
-  const zone = autoRest ? restZone(lastReps).label : '';
-  return `<div class="rest">
-    ${restClock(left)}
-    ${zone ? `<span class="rest-zone">${zone}</span>` : ''}
-    <button class="btn btn-sm" data-action="skip-rest" type="button">Saltar</button>
-  </div>`;
 }
 
 /* ---------- Serie ---------- */
@@ -270,7 +216,7 @@ function effortPicker(draftTipo, draftRir) {
 /**
  * Pantalla con entreno en curso.
  * v: { w, exs, orderedExs, groups, selectedEx, todayIds, routineIdx, inRoutine, nextSetNum,
- *      targetSet, prev, curExSets, unidad, elapsed, restHtml, draftTipo, draftRir, todayLog }
+ *      targetSet, prev, curExSets, unidad, elapsed, draftTipo, draftRir, todayLog }
  */
 export function activeMarkup(v) {
   const target = v.targetSet
@@ -286,8 +232,6 @@ export function activeMarkup(v) {
     </header>
 
     ${v.inRoutine ? routineBar(v.w, v.routineIdx, v.groups, v.selectedEx, v.exs) : ''}
-
-    <div id="rest">${v.restHtml}</div>
 
     <form class="form-card stack set-form" data-form="set">
       <label class="field">

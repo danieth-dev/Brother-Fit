@@ -1378,21 +1378,3 @@ body.in-agent-view #app .view {
   background: var(--primary);
   color: var(--primary-ink);
 }
-
-/* ═══════════════════════════════════════════════
-   DESCANSO INTELIGENTE — Zona en banner de descanso
-   ═══════════════════════════════════════════════ */
-.rest-zone {
-  display: inline-flex;
-  align-items: center;
-  font-size: var(--fs-xs);
-  color: var(--primary);
-  background: rgba(0, 0, 0, 0.25);
-  border: 1px solid var(--line-accent);
-  padding: 3px 9px;
-  border-radius: var(--r-full);
-  font-weight: 700;
-  text-transform: none;
-  letter-spacing: normal;
-}
-

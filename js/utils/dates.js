@@ -45,6 +45,12 @@ export function formatDuration(ms) {
   return h ? `${h}:${pad(m)}:${pad(sec)}` : `${pad(m)}:${pad(sec)}`;
 }
 
+/** Cuenta atrás de un descanso: «1:28», «0:05». */
+export function formatCountdown(secs) {
+  const s = Math.max(0, Math.ceil(secs));
+  return `${Math.floor(s / 60)}:${pad(s % 60)}`;
+}
+
 export function formatRelativeDays(iso) {
   if (!iso) return '';
   const now = parseISO(todayISO());

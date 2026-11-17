@@ -2,6 +2,7 @@
  * Se guarda rpe = 10 - rir. Un rir de 4 o más queda en 4, o sea rpe 6: es un piso, no un punto medio. */
 import { db } from '../db.js';
 import { now } from '../utils/clock.js';
+import { emit, EVENTS } from '../utils/events.js';
 
 export const PENDING_KEY = 'pendingRpe';
 export const SEQ_KEY = 'rpeSeq';
@@ -384,8 +385,8 @@ export function updateSet(setId, { peso, reps, tipo, rir }) {
 }
 
 /* Saltar el descanso es el único caso que reescribe el plazo: ahora más un minuto, en la misma operación que apaga el reloj. */
-export function skipRestClock() {
-  return db.mutate(['meta'], (tx) => {
+export async function skipRestClock() {
+  await db.mutate(['meta'], (tx) => {
     const meta = tx.objectStore('meta');
     meta.delete('activeRest');
     const pReq = meta.get(PENDING_KEY);
@@ -395,4 +396,5 @@ export function skipRestClock() {
       meta.put({ key: PENDING_KEY, value: { ...pending, until: now() + 60_000 } });
     };
   });
+  emit(EVENTS.REST_CHANGED, { restEnd: 0, start: 0 });
 }
