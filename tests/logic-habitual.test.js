@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { bestWorkingSet, habitualFrom, isBelowHabitual, HABITUAL_SESSIONS } from '../js/services/habitual.js';
+import { bestWorkingSet, habitualFrom, isBelowHabitual, HABITUAL_SESSIONS, MIN_SESSIONS } from '../js/services/habitual.js';
 
 test('la mejor serie de trabajo ignora calentamientos y desempata por reps', () => {
   assert.deepEqual(bestWorkingSet([
@@ -25,8 +25,13 @@ test('lo habitual es la mediana de las últimas sesiones y un día malo no lo mu
   assert.equal(h.sesiones, HABITUAL_SESSIONS);
   assert.equal(h.peso, 35);
   assert.equal(h.reps, 8);
-  assert.deepEqual(habitualFrom([{ peso: 20, reps: 10 }]), { peso: 20, reps: 10, sesiones: 1 });
   assert.equal(habitualFrom([]), null);
+});
+
+test('con menos de 3 sesiones todavía no hay habitual', () => {
+  assert.equal(MIN_SESSIONS, 3);
+  assert.equal(habitualFrom([{ peso: 15, reps: 8 }, { peso: 15, reps: 8 }]), null);
+  assert.deepEqual(habitualFrom([{ peso: 15, reps: 8 }, { peso: 15, reps: 8 }, { peso: 17.5, reps: 6 }]), { peso: 15, reps: 8, sesiones: 3 });
 });
 
 test('el aviso solo sale al bajar más de un 10 %', () => {

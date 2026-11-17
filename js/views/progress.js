@@ -117,18 +117,19 @@ function setSub(set, extra = '') {
 }
 
 /* Lo habitual del ejercicio y, con series de hoy, la comparación. El aviso solo si bajó más de un 10 %. */
-function habitualStripHtml(hab, unidad) {
+/* Sin series de hoy y con lo habitual igual al récord, la franja repetiría la tarjeta de récord
+ * («Récord de peso», o «Más repeticiones» en ejercicios sin peso). */
+function habitualStripHtml(hab, pr, unidad) {
   const { habitual, today, below } = hab || {};
   if (!habitual) return '';
-  const una = habitual.sesiones === 1;
-  const segun = una ? 'tu última sesión' : `tus últimas ${habitual.sesiones} sesiones`;
-  const corto = una ? 'última sesión' : `últimas ${habitual.sesiones}`;
+  const sameAsRecord = habitual.peso > 0 ? habitual.peso === pr?.maxPeso : habitual.reps === pr?.maxReps;
+  if (!today && sameAsRecord) return '';
   if (!today) {
     return `
       <section class="habitual-card" aria-label="Tu habitual">
         <span class="habitual-label habitual-label--accent">Tu habitual</span>
         <p class="habitual-val">${setLine(habitual, unidad)} ${habitual.peso > 0 ? `<span class="habitual-reps">× ${habitual.reps}</span>` : ''}</p>
-        <p class="habitual-note">Lo que levantas normalmente, según ${segun}.</p>
+        <p class="habitual-note">${habitual.peso > 0 ? 'Lo que levantas' : 'Lo que haces'} normalmente, según tus últimas ${habitual.sesiones} sesiones.</p>
       </section>`;
   }
   return `
@@ -142,7 +143,7 @@ function habitualStripHtml(hab, unidad) {
         <div class="habitual-col habitual-col--ref">
           <span class="habitual-label">Tu habitual</span>
           <p class="habitual-val">${setLine(habitual, unidad)}</p>
-          <span class="habitual-sub">${setSub(habitual, ` · ${corto}`)}</span>
+          <span class="habitual-sub">${setSub(habitual, ` · últimas ${habitual.sesiones}`)}</span>
         </div>
       </div>
       ${below ? '<p class="habitual-alert">Hoy vas por debajo de tu habitual. <span>Un día flojo no borra tu progreso.</span></p>' : ''}
@@ -417,7 +418,7 @@ function updateProgressView(el) {
     }
 
     const habitualSlot = el.querySelector('#habitual-slot');
-    if (habitualSlot) habitualSlot.innerHTML = habitualStripHtml(hab, unidad);
+    if (habitualSlot) habitualSlot.innerHTML = habitualStripHtml(hab, pr, unidad);
 
     const prSlot = el.querySelector('#pr-slot');
     if (prSlot) prSlot.innerHTML = prBadgesHtml(pr, unidad);

@@ -7,6 +7,8 @@
  * comparan las repeticiones. */
 
 export const HABITUAL_SESSIONS = 4;
+/* Con una o dos sesiones aún no hay costumbre, solo los primeros entrenos. */
+export const MIN_SESSIONS = 3;
 /* Solo se avisa de una bajada mayor que esta: una placa menos es variación normal. */
 export const DROP_THRESHOLD = 0.1;
 
@@ -30,11 +32,11 @@ function median(values) {
 
 /**
  * tops: la mejor serie de cada sesión anterior, de la más vieja a la más nueva.
- * Devuelve { peso, reps, sesiones } o null si no hay sesiones.
+ * Devuelve { peso, reps, sesiones } o null si hay menos de MIN_SESSIONS.
  */
 export function habitualFrom(tops) {
   const last = tops.filter(Boolean).slice(-HABITUAL_SESSIONS);
-  if (!last.length) return null;
+  if (last.length < MIN_SESSIONS) return null;
   return {
     peso: median(last.map((t) => t.peso)),
     reps: Math.round(median(last.map((t) => t.reps))),

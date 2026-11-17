@@ -2,7 +2,7 @@
 
 Documento vivo del producto. Describe cómo está armado, dónde vive cada dato y qué no se puede romper. Cuando cambie el comportamiento, el esquema, una pantalla o la forma de publicar, este archivo se actualiza en el mismo cambio.
 
-Última revisión: 16 de noviembre de 2026. Base de datos versión 3. Caché de la app `v204`.
+Última revisión: 16 de noviembre de 2026. Base de datos versión 3. Caché de la app `v205`.
 
 ## Qué es
 
@@ -242,7 +242,7 @@ Progreso agrupa las series de un ejercicio por día y muestra el 1RM estimado, e
 
 Con un entreno en curso, `#/progress` sin id abre el ejercicio que está abierto en Entreno (`state.activeExercise`) y la tarjeta lo marca «En Entreno ahora». Elegir otro en la lista lleva a `#/progress/:id` y se respeta. Tras recargar el teléfono Entreno aún no ha elegido ejercicio, así que Progreso abre el último entrenado, como sin entreno.
 
-**Lo habitual** (`js/services/habitual.js`, consultado con `habitualForExercise()`): de cada sesión terminada se toma la mejor serie de trabajo (más peso; a igual peso, más reps; los calentamientos no cuentan) y se usa la mediana de las últimas 4. Un día malo o muy bueno no la mueve. La franja bajo el ejercicio muestra «Tu habitual»; con series de hoy en el entreno abierto, «Hoy» al lado. Solo si hoy queda más de un 10 % por debajo (`DROP_THRESHOLD`) añade «Hoy vas por debajo de tu habitual. Un día flojo no borra tu progreso.». En ejercicios sin peso se comparan las repeticiones. En la gráfica de «Peso máx.» una línea punteada marca lo habitual y, con series de hoy, el último punto va hueco porque la sesión sigue.
+**Lo habitual** (`js/services/habitual.js`, consultado con `habitualForExercise()`): de cada sesión terminada se toma la mejor serie de trabajo (más peso; a igual peso, más reps; los calentamientos no cuentan) y se usa la mediana de las últimas 4. Un día malo o muy bueno no la mueve. Con menos de 3 sesiones terminadas no hay habitual (`MIN_SESSIONS`) y no sale nada. La franja bajo el ejercicio muestra «Tu habitual», salvo que todavía no haya series de hoy y coincida con el récord (de peso, o de repeticiones si es sin peso), que ya está en la tarjeta de al lado; con series de hoy en el entreno abierto, «Hoy» al lado. Solo si hoy queda más de un 10 % por debajo (`DROP_THRESHOLD`) añade «Hoy vas por debajo de tu habitual. Un día flojo no borra tu progreso.». En ejercicios sin peso se comparan las repeticiones. En la gráfica de «Peso máx.» una línea punteada marca lo habitual y, con series de hoy, el último punto va hueco porque la sesión sigue.
 
 El peso corporal es independiente del entreno. Se guarda por fecha y se dibuja con la misma gráfica.
 
