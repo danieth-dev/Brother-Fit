@@ -18,7 +18,7 @@ Deportistas, practicantes de levantamiento de pesas, calistenia, fuerza e hipert
 
 Ofrecer un compañero de entrenamiento ultra rápido, libre de fricción y con foco 100% privado en el atleta. Permite:
 1. Registrar la dosis diaria de creatina con un solo toque y mantener la racha de suplementación.
-2. Gestionar sesiones activas de entrenamiento con cronómetro, autocompletado inteligente de la última serie y temporizador de descanso con vibración háptica.
+2. Gestionar sesiones activas de entrenamiento con cronómetro, autocompletado de la última serie y descanso visible desde cualquier pantalla.
 3. Analizar la progresión mediante gráficos de 1RM estimado (fórmula de Epley), volumen acumulado y peso corporal.
 4. Consultar a Bía, la asistente atlética personalizada (mismo nombre que la app), con voz y memoria persistente que aprende objetivos y contexto del usuario sin costos mensuales.
 5. Funcionar 100% offline y conservar todos los datos en el dispositivo del usuario.
@@ -37,7 +37,7 @@ A diferencia de las aplicaciones de fitness convencionales (que exigen cuentas e
 
 - **PWA Offline-First:** Funciona de inmediato sin conexión a internet mediante Service Worker y almacenamiento persistente en IndexedDB.
 - **Gestión local y respaldo:** Exportación e importación segura de respaldos atómicos en formato JSON.
-- **Temporizador activo:** Cuenta regresiva de descanso configurable por ejercicio con alarma visual y vibración háptica.
+- **Temporizador activo:** Cuenta regresiva de descanso según las repeticiones o fija en Ajustes, en una cápsula sobre la navegación.
 - **Cálculo analítico:** Estimación de 1RM en tiempo real mediante la ecuación Epley: `peso × (1 + reps / 30)`.
 - **Asistente de voz y memoria persistente (Bía):** Conexión en tiempo real con Gemini Multimodal Live API mediante WebSockets y memoria a largo plazo en IndexedDB (`agentMemory`), con llamadas a herramientas automáticas (`guardar_recuerdo`, `listar_recuerdos`, `borrar_recuerdo`).
 - **Restricción técnica:** No depende de backend ni autenticación remota; la persistencia depende del almacenamiento del navegador/dispositivo, por lo que se prioriza la retención persistente del sistema de archivos (`navigator.storage.persist()`).
@@ -60,6 +60,8 @@ A diferencia de las aplicaciones de fitness convencionales (que exigen cuentas e
 2. **Legibilidad a un brazo de distancia:** Los números clave (peso, reps, segundos de descanso, racha) deben distinguirse al instante en una pantalla móvil sin forzar la vista ni detener la concentración.
 3. **Alto contraste atlético:** La combinación negro y amarillo proporciona una jerarquía inmediata, guiando la atención del usuario hacia la acción principal.
 4. **Soberanía del usuario (Local-First):** Los datos pertenecen exclusivamente al atleta. Sin telemetría intrusiva, sin muros de pago, con respaldo y exportación total.
+5. **Lo que no se mide no se puede mejorar:** La finalidad es medir el progreso real del atleta. Cada serie queda registrada con peso, reps y esfuerzo, y la app muestra lo que realmente levanta (lo habitual, los récords, la tendencia) para que un día flojo no se confunda con un retroceso ni un día bueno con el nivel de siempre.
+6. **Verdad anatómica y científica:** La app y Bía hablan con la anatomía correcta (pectoral mayor, no «pecho alto») y marcan un énfasis solo cuando hay respaldo científico. Describe lo típico con buena técnica; nunca promete resultados.
 
 ## Accessibility & Inclusion
 
