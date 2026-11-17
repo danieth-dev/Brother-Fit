@@ -2,6 +2,7 @@
  * Esta pieza arma la hoja, la abre y la cierra. El buscador vive en picker-find.js y el alta
  * de ejercicio en picker-creator.js; las tres comparten el estado `ui`. */
 import { icons } from './icons.js';
+import { toast } from './dom.js';
 import { fold } from './text-match.js';
 import { bindSheetDrag } from './sheet-drag.js';
 import { normalizeGrupo } from '../services/workouts.js';
@@ -391,6 +392,15 @@ function labelOf(select) {
   return span?.textContent.trim() || 'Elegir';
 }
 
+/* La línea va en una sola fila con «…»; si se cortó, tocarla muestra los músculos completos. */
+function showFullFocus(e) {
+  const spec = e.currentTarget.querySelector('.muscle-focus');
+  if (!spec || spec.scrollWidth <= spec.clientWidth) return;
+  e.preventDefault();
+  e.stopPropagation();
+  toast(`${e.currentTarget.querySelector('strong').textContent} · ${spec.textContent}`);
+}
+
 /* Debajo del control, el grupo y el foco del ejercicio elegido. */
 function syncMuscleHint(select, trigger, grupo, foco) {
   const field = select.closest('label.field');
@@ -403,6 +413,7 @@ function syncMuscleHint(select, trigger, grupo, foco) {
     hint = document.createElement('p');
     hint.className = 'muscle-hint';
     hint.setAttribute('aria-hidden', 'true');
+    hint.addEventListener('click', showFullFocus);
     trigger.after(hint);
   }
   hint.replaceChildren(muscleNode(grupo, foco));

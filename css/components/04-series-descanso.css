@@ -33,8 +33,10 @@
 .muscle-dot[data-g="Otro"] { background: var(--muscle-otro); color: var(--muscle-otro); }
 .muscle {
   display: inline-flex;
-  align-items: baseline;
+  align-items: center;
   flex-wrap: nowrap;
+  max-width: 100%;
+  min-width: 0;
   gap: 6px;
   color: var(--muted);
   font-family: var(--font);
@@ -43,15 +45,19 @@
   line-height: 1.2;
 }
 .muscle strong {
+  flex-shrink: 0;
   color: var(--text);
   font-weight: 600;
   text-transform: capitalize;
 }
-/* Un foco largo baja de línea alineado tras el «·», no debajo del grupo. */
+/* Siempre una línea: lo que no cabe acaba en «…» (en Entreno, tocar la línea lo muestra entero). */
 .muscle-focus {
   position: relative;
   min-width: 0;
   padding-left: 12px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   text-transform: none;
   letter-spacing: 0;
   font-weight: 500;
@@ -68,11 +74,9 @@
   background: var(--line-strong);
   flex-shrink: 0;
   display: inline-block;
-  align-self: flex-start;
-  /* Centrado en la primera línea aunque el foco ocupe dos. */
-  margin-top: calc((1.2em - 8px) / 2);
 }
 .muscle-hint {
+  display: flex;
   margin: 8px 0 0;
 }
 
