@@ -2,7 +2,7 @@
 
 Documento vivo del producto. Describe cómo está armado, dónde vive cada dato y qué no se puede romper. Cuando cambie el comportamiento, el esquema, una pantalla o la forma de publicar, este archivo se actualiza en el mismo cambio.
 
-Última revisión: 16 de noviembre de 2026. Base de datos versión 3. Caché de la app `v203`.
+Última revisión: 16 de noviembre de 2026. Base de datos versión 3. Caché de la app `v204`.
 
 ## Qué es
 
@@ -101,7 +101,7 @@ El día del peso corporal y el de una toma de creatina usan la misma hoja, con e
 | `#/` | Inicio | Creatina de hoy, la semana en siete días (amarillo si hubo entreno), tarjeta de entreno (empezar o continuar), anillo de calorías del día con enlace a Comidas y últimos entrenos. Cada entreno abre `#/history/:id`. |
 | `#/workout` | Entreno | Una sesión abierta. Si no hay ninguna, el botón la crea. Peso, reps, tipo de serie y esfuerzo; encima del peso, la sesión anterior completa, para repetirla o pasarla. Si ya la pasaste, lo dice y parte del último peso. Las series de hoy van en un pliegue. La lista de ejercicios pone primero los de hoy, y se recorta por nombre o por grupo muscular. Descanso, alta de ejercicio y corrección desde esa lista. |
 | `#/history` y `#/history/:id` | Historial | Lista por semanas con filtro por grupo muscular, y detalle. En el detalle se edita una serie (peso, reps, tipo, esfuerzo) y se enlaza al progreso del ejercicio. Borrar un entreno borra también sus series. |
-| `#/progress` y `#/progress/:id` | Progreso | Dos pestañas. Ejercicio: PR, comparativa, gráfica (1RM estimado, ajustado, peso máximo, volumen) y tabla. Peso corporal: registro, gráfica y lista. |
+| `#/progress` y `#/progress/:id` | Progreso | Dos pestañas. Ejercicio: lo habitual (y hoy, si hay entreno), PR, comparativa, gráfica (1RM estimado, ajustado, peso máximo, volumen) y tabla. Peso corporal: registro, gráfica y lista. |
 | `#/meals` | Comidas | Anillo de calorías y barras de proteína, carbos y grasa del día frente a la meta; objetivo (ganar, mantener, definir) que recalcula la meta con el último peso corporal; lista de comidas del día con su tipo y proteína (tocar una la edita); escanear foto, añadir a mano o pedir a Bía. |
 | `#/creatine` | Creatina | Disco + racha, calendario, progreso/ciencia en pliegue, últimas 5 tomas (+ pliegue «Ver todas»). |
 | `#/agent` | Bía | Voz en directo y caja de texto, con botón de cámara para escanear comida. Sin clave, solo pide la clave. Panel «Recuerdos»: perfil (nombre, peso, estatura, creatina), rutina semanal, notas y entrenos. Panel «Conexión y clave»: proveedor (Gemini u OpenAI), claves y estado. La charla se guarda en el teléfono; Nuevo chat la borra tras confirmar. |
@@ -239,6 +239,10 @@ Los carbos son el resto de las kcal, con un piso de 100, 80 o 60 g según el obj
 ## Progreso y peso corporal
 
 Progreso agrupa las series de un ejercicio por día y muestra el 1RM estimado, el 1RM ajustado, el peso máximo y el volumen. El ajustado no se dibuja en la misma línea que el estimado. La gráfica es un SVG propio (`js/utils/chart.js`). Los números del eje van en el color del texto, no en el negro por defecto del SVG.
+
+Con un entreno en curso, `#/progress` sin id abre el ejercicio que está abierto en Entreno (`state.activeExercise`) y la tarjeta lo marca «En Entreno ahora». Elegir otro en la lista lleva a `#/progress/:id` y se respeta. Tras recargar el teléfono Entreno aún no ha elegido ejercicio, así que Progreso abre el último entrenado, como sin entreno.
+
+**Lo habitual** (`js/services/habitual.js`, consultado con `habitualForExercise()`): de cada sesión terminada se toma la mejor serie de trabajo (más peso; a igual peso, más reps; los calentamientos no cuentan) y se usa la mediana de las últimas 4. Un día malo o muy bueno no la mueve. La franja bajo el ejercicio muestra «Tu habitual»; con series de hoy en el entreno abierto, «Hoy» al lado. Solo si hoy queda más de un 10 % por debajo (`DROP_THRESHOLD`) añade «Hoy vas por debajo de tu habitual. Un día flojo no borra tu progreso.». En ejercicios sin peso se comparan las repeticiones. En la gráfica de «Peso máx.» una línea punteada marca lo habitual y, con series de hoy, el último punto va hueco porque la sesión sigue.
 
 El peso corporal es independiente del entreno. Se guarda por fecha y se dibuja con la misma gráfica.
 
@@ -387,6 +391,7 @@ Pendiente:
 | `js/views/*.js` | Una pantalla por archivo: home, workout, history, progress, creatine, meals, agent, settings, appearance. |
 | `js/views/agent/` | Partes de la pantalla Bía: alta de la clave (`key-setup.js`), plantilla (`chat-markup.js`), lista de mensajes y reportes (`messages.js`) y tarjetas de herramientas (`chat-cards.js`). |
 | `js/views/workout/` | Partes de la pantalla Entreno que solo usa `workout.js`: estado entre repintados (`session.js`), plantillas (`markup.js`) y reloj de la sesión y fin del descanso (`rest.js`). |
+| `js/services/habitual.js` | «Lo habitual» de un ejercicio: mejor serie de trabajo por sesión, mediana de las últimas 4 y el aviso de bajada de más de un 10 %. Puras, con pruebas. |
 | `js/services/session-plan.js` | Reglas puras del entreno en curso: descanso automático, título de una sesión, orden de la lista y siguiente paso de la rutina. |
 | `js/utils/meal-scanner.js` | Hoja de foto → resultado, edición de gramos y guardado de una comida. |
 | `js/utils/picker.js` | Hoja de las listas: la arma, la abre, la cierra y la llena. Cierra arrastrando con `sheet-drag.js`, como las demás hojas. |
@@ -414,7 +419,7 @@ Pendiente:
 | `js/utils/confirm-sheet.js` | Hoja de confirmación antes de borrar o acciones fuertes. |
 | `js/utils/rest-pill.js` | Cápsula del descanso sobre la isla: cuenta atrás, barra y la acción de la rutina que le pasa Entreno (`setRestControls`). |
 | `js/utils/rest-sheet.js` | Hoja del descanso: −15 s, +30 s, la acción de la rutina y «Saltar descanso». |
-| `js/utils/chart.js` | Gráfica SVG. |
+| `js/utils/chart.js` | Gráfica SVG; opcionalmente una línea de referencia (`ref`) y el último punto hueco (`openLast`). |
 | `js/utils/clock.js` | Reloj único. Las pruebas pueden adelantarlo. |
 | `js/utils/set-line.js` | Botones de esfuerzo en la serie ya hecha. |
 | `rpe-test.html` | Casos del esfuerzo, las herramientas de Bía y el respaldo sobre una base temporal. |

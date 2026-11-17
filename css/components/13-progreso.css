@@ -122,6 +122,91 @@ html[data-modo="claro"] .seg.progress-tabs:not(:has(.seg-thumb)) .progress-tab-b
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
+.progress-ex-card-tag--live {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--green);
+}
+.progress-ex-card-live {
+  width: 7px;
+  height: 7px;
+  border-radius: var(--r-full);
+  background: var(--green);
+}
+
+/* Lo habitual: la franja entre el ejercicio y los récords. */
+.habitual-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--line-accent-strong);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+}
+.habitual-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.habitual-col {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.habitual-col--ref {
+  padding-left: 12px;
+  border-left: 1px solid var(--line);
+}
+.habitual-label {
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.habitual-label--accent {
+  color: var(--primary);
+}
+.habitual-val {
+  margin: 0;
+  font-size: var(--fs-2xl);
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+.habitual-unit,
+.habitual-reps {
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  color: var(--muted);
+}
+.habitual-sub,
+.habitual-note {
+  margin: 0;
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+.habitual-note {
+  font-size: var(--fs-xs-plus);
+  line-height: 1.45;
+}
+.habitual-alert {
+  margin: 8px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  font-size: var(--fs-sm);
+  line-height: 1.45;
+  color: var(--text);
+}
+.habitual-alert span {
+  color: var(--muted);
+}
+
 .progress-ex-card-title {
   display: block;
   font-size: var(--fs-xl);

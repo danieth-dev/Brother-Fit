@@ -1,6 +1,6 @@
-import { listExercises, progressForExercise, lastTrainedExerciseId, prByExercise, isOwnExercise, muscleFocus, muscleName } from '../services/workouts.js';
+import { listExercises, progressForExercise, lastTrainedExerciseId, prByExercise, isOwnExercise, muscleFocus, muscleName, habitualForExercise, getActiveWorkout } from '../services/workouts.js';
 import { addBodyWeight, listBodyWeights, deleteBodyMetric } from '../services/body.js';
-import { saveSettings } from '../store.js';
+import { saveSettings, state } from '../store.js';
 import { delegate, forms, toast, esc, num, fmtNum, go } from '../utils/dom.js';
 import { lineChart } from '../utils/chart.js';
 import { formatShort, todayISO, formatMedium, formatRelativeDays } from '../utils/dates.js';
@@ -105,6 +105,50 @@ function compareCardHtml(sessions, unidad) {
   `;
 }
 
+/* Peso y reps de una serie: «35 kg × 8», o «× 10» si es sin peso. */
+function setLine(set, unidad) {
+  return set.peso > 0
+    ? `${fmtWeight(set.peso, unidad)} <span class="habitual-unit">${esc(unidad)}</span>`
+    : `${set.reps} <span class="habitual-unit">reps</span>`;
+}
+
+function setSub(set, extra = '') {
+  return set.peso > 0 ? `× ${set.reps}${extra}` : `sin peso${extra}`;
+}
+
+/* Lo habitual del ejercicio y, con series de hoy, la comparación. El aviso solo si bajó más de un 10 %. */
+function habitualStripHtml(hab, unidad) {
+  const { habitual, today, below } = hab || {};
+  if (!habitual) return '';
+  const una = habitual.sesiones === 1;
+  const segun = una ? 'tu última sesión' : `tus últimas ${habitual.sesiones} sesiones`;
+  const corto = una ? 'última sesión' : `últimas ${habitual.sesiones}`;
+  if (!today) {
+    return `
+      <section class="habitual-card" aria-label="Tu habitual">
+        <span class="habitual-label habitual-label--accent">Tu habitual</span>
+        <p class="habitual-val">${setLine(habitual, unidad)} ${habitual.peso > 0 ? `<span class="habitual-reps">× ${habitual.reps}</span>` : ''}</p>
+        <p class="habitual-note">Lo que levantas normalmente, según ${segun}.</p>
+      </section>`;
+  }
+  return `
+    <section class="habitual-card" aria-label="Hoy frente a tu habitual">
+      <div class="habitual-pair">
+        <div class="habitual-col">
+          <span class="habitual-label habitual-label--accent">Hoy</span>
+          <p class="habitual-val">${setLine(today, unidad)}</p>
+          <span class="habitual-sub">${setSub(today)}</span>
+        </div>
+        <div class="habitual-col habitual-col--ref">
+          <span class="habitual-label">Tu habitual</span>
+          <p class="habitual-val">${setLine(habitual, unidad)}</p>
+          <span class="habitual-sub">${setSub(habitual, ` · ${corto}`)}</span>
+        </div>
+      </div>
+      ${below ? '<p class="habitual-alert">Hoy vas por debajo de tu habitual. <span>Un día flojo no borra tu progreso.</span></p>' : ''}
+    </section>`;
+}
+
 function prBadgesHtml(pr, unidad) {
   return `
     <div class="pr-grid">
@@ -180,13 +224,22 @@ function chartCardInnerHtml(sessions, unidad) {
     </div>
 
     <div id="metric-chart">
-      ${lineChart(points, { desc: `${METRICS[metric]} por sesión`, unit: unitStr })}
+      ${lineChart(points, { desc: `${METRICS[metric]} por sesión`, unit: unitStr, ...chartMarks(unidad) })}
     </div>
 
     <p class="chart-card-note">
-      ${esc(METRIC_DESCRIPTIONS[metric] || '')}
+      ${esc(METRIC_DESCRIPTIONS[metric] || '')}${metric === 'maxPeso' && chartMarks(unidad).ref ? ' La línea punteada es tu habitual.' : ''}
     </p>
   `;
+}
+
+/* En «Peso máx.» la gráfica marca lo habitual; con series de hoy, el último punto va hueco. */
+function chartMarks(unidad) {
+  const hab = view?.hab;
+  const openLast = Boolean(hab?.today);
+  const h = hab?.habitual;
+  if (metric !== 'maxPeso' || !h || !(h.peso > 0)) return { openLast };
+  return { openLast, ref: { value: fromKg(h.peso, unidad), label: `habitual ${fmtWeight(h.peso, unidad)}` } };
 }
 
 function chartCardHtml(sessions, unidad) {
@@ -324,7 +377,7 @@ function bodySectionHtml(body, unidad) {
 
 function updateProgressView(el) {
   if (!view) return;
-  const { currentEx, exs, sessions, body, pr, unidad } = view;
+  const { currentEx, exs, sessions, body, pr, unidad, hab, inEntreno } = view;
 
   const exPane = el.querySelector('#pane-ejercicio');
   const pesoPane = el.querySelector('#pane-peso');
@@ -347,7 +400,9 @@ function updateProgressView(el) {
       cardSlot.innerHTML = `
         <button type="button" class="progress-ex-card" data-action="open-picker" aria-label="Cambiar ejercicio, actualmente ${esc(currentEx.nombre)}">
           <span>
-            <span class="progress-ex-card-tag">Ejercicio</span>
+            ${inEntreno
+              ? '<span class="progress-ex-card-tag progress-ex-card-tag--live"><span class="progress-ex-card-live" aria-hidden="true"></span>En Entreno ahora</span>'
+              : '<span class="progress-ex-card-tag">Ejercicio</span>'}
             <span class="progress-ex-card-title">${esc(currentEx.nombre)}</span>
             <span class="progress-ex-card-sub">
               <span aria-hidden="true" class="progress-ex-card-dot"></span>
@@ -360,6 +415,9 @@ function updateProgressView(el) {
         </button>
       `;
     }
+
+    const habitualSlot = el.querySelector('#habitual-slot');
+    if (habitualSlot) habitualSlot.innerHTML = habitualStripHtml(hab, unidad);
 
     const prSlot = el.querySelector('#pr-slot');
     if (prSlot) prSlot.innerHTML = prBadgesHtml(pr, unidad);
@@ -404,18 +462,22 @@ function setupBodyInputListener(root) {
 
 export async function render(el, [idParam] = []) {
   const exs = await listExercises();
-  const exId = Number(idParam) || (await lastTrainedExerciseId()) || exs[0]?.id;
+  // Sin un ejercicio en la ruta, Progreso abre el que está abierto en Entreno.
+  const training = await getActiveWorkout();
+  const trainingExId = training ? state.activeExercise?.id ?? null : null;
+  const exId = Number(idParam) || trainingExId || (await lastTrainedExerciseId()) || exs[0]?.id;
   const currentEx = exs.find((e) => e.id === exId) || exs[0];
 
-  const [prog, body, pr] = await Promise.all([
+  const [prog, body, pr, hab] = await Promise.all([
     exId ? progressForExercise(exId) : { sessions: [], pr: 0 },
     listBodyWeights(),
     exId ? prByExercise(exId) : { maxPeso: 0, maxReps: 0, e1rmMax: 0 },
+    exId ? habitualForExercise(exId) : null,
   ]);
   const unidad = weightUnit();
   const sessions = prog.sessions.slice(-20);
 
-  view = { currentEx, exId, exs, sessions, body, pr, unidad };
+  view = { currentEx, exId, exs, sessions, body, pr, unidad, hab, inEntreno: Boolean(trainingExId) && trainingExId === exId };
 
   el.innerHTML = `
     <header class="page-head page-head--tight">
@@ -440,6 +502,7 @@ export async function render(el, [idParam] = []) {
       </select>
 
       <div id="ex-card-slot"></div>
+      <div id="habitual-slot"></div>
 
       ${sessions.length ? `
         <div id="pr-slot"></div>

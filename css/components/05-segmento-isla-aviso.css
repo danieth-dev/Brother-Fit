@@ -272,6 +272,21 @@ html[data-modo="claro"] .seg.metric-seg:not(:has(.seg-thumb)) button[aria-presse
   font-size: var(--fs-xs-plus);
   font-weight: 700;
 }
+.chart .pt--open {
+  fill: var(--surface);
+  stroke: var(--primary);
+  stroke-width: 2.5;
+}
+/* Lo habitual: línea punteada de referencia en «Peso máx.». */
+.chart .ref-line {
+  stroke: var(--muted);
+  stroke-width: 1.2;
+  stroke-dasharray: 5 4;
+}
+.chart .ref-label {
+  fill: var(--muted);
+  font-size: var(--fs-2xs);
+}
 .chart .pt--single {
   stroke: var(--surface);
   stroke-width: 3;

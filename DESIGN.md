@@ -127,7 +127,7 @@ Este documento es la fuente de verdad del diseño de Bía. Lo leen las personas 
 
 Fuente de los valores: `css/tokens.css` (tokens), `css/base.css` (página, tipografía base e iconos) y `css/components/01-…css` a `14-…css` (componentes, cargados en ese orden desde `index.html`). El frontmatter de arriba usa el formato de `DESIGN.md` que entiende la skill; los valores son los del **modo oscuro con acento amarillo**, que es el de fábrica.
 
-Última revisión: 16 de noviembre de 2026 (caché `v203`).
+Última revisión: 16 de noviembre de 2026 (caché `v204`).
 
 ## 1. Idea
 
@@ -341,6 +341,9 @@ Los archivos se cargan en orden numérico y **ese orden es la cascada**: una reg
 | Fila y tarjeta | `.row`, `.form-card`, `.recent-workout-card` | `--surface`, `--r-xl` (16 px en recientes), `--shadow-sm`, sin borde salvo en recientes. |
 | Chip | `.chip`, `.chip-ok`, `.chip-warn` | Píldora de 12 px; verde para hecho, acento para aviso. |
 | Disco de creatina | `.plate` | Disco olímpico: aros concéntricos del acento (`--c`) sobre ranuras oscuras, hasta 248 px. `.plate.done` cambia `--c` a `--green`. Versión compacta en Inicio según ajuste. |
+| Lo habitual | `.habitual-card` (`13-progreso.css`) | Franja de Progreso entre la tarjeta del ejercicio y los récords: `--surface` con borde `--line-accent-strong`, `--r-lg`. Etiquetas `--fs-2xs` en mayúsculas («Hoy» en `--primary`, «Tu habitual» en `--muted`), cifras `--fs-2xl` tabulares. Con hoy, dos columnas separadas por `--line`. El aviso de bajada va debajo tras una línea `--line`: frase en `--text` y consuelo en `--muted`, sin rojo ni icono de alarma. |
+| Ejercicio en curso | `.progress-ex-card-tag--live` | La etiqueta de la tarjeta de Progreso pasa a «En Entreno ahora» con un punto `--green`. |
+| Referencia en la gráfica | `.chart .ref-line`, `.chart .ref-label`, `.chart .pt--open` | Línea punteada `--muted` con su etiqueta `--fs-2xs`; el punto de una sesión en curso va hueco: relleno `--surface` y borde `--primary`. |
 | Cápsula del descanso | `.rest-pill` (`js/utils/rest-pill.js`) | Píldora `--primary` de 44 px que flota sobre la isla, encima de Entreno, en todas las pantallas: reloj y cuenta atrás `--fs-lg` en cifras tabulares, sin borde ni barra: la barra que se vacía está en la hoja. En una rutina repetida y estando en Entreno, `.rest-pill--action` la mete en una píldora `--surface-elevated` con «Siguiente · ejercicio ›» o «✓ Terminar sesión»; el nombre largo se corta con puntos suspensivos. Con ella visible, `body.has-rest-pill` sube `--tabbar-h`. |
 | Hoja del descanso | `.rest-sheet` (`js/utils/rest-sheet.js`) | Se abre al tocar el reloj en Entreno: cuenta atrás `--fs-hero` en `--primary`, zona en `--muted`, barra de 6 px, «−15 s» y «+30 s», la acción de la rutina y «Saltar descanso» primario. |
 | Punto muscular | `.dot`, `.muscle-dot` | 8–9 px con el color del grupo. |
@@ -378,6 +381,8 @@ Los archivos se cargan en orden numérico y **ese orden es la cascada**: una reg
 ## 11. Deuda conocida
 
 Medida el 15 de noviembre de 2026. Cada cambio que toque una de estas zonas la deja mejor, y esta lista se actualiza.
+
+Resuelto en la `v204`: los decimales se escriben con coma («17,5 kg») en toda la pantalla: `fmtNum` dejaba el punto en récords, comparativa y gráficas.
 
 Resuelto en la `v203`: el descanso dejó de ser una banda dentro de Entreno que empujaba el formulario; ahora es la cápsula sobre la isla y se ve desde cualquier pantalla.
 

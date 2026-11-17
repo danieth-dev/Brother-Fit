@@ -10,7 +10,8 @@ export const num = (v) => {
 export const fmtNum = (n) => {
   const num = typeof n === 'number' ? n : parseFloat(String(n ?? '').replace(',', '.'));
   if (!Number.isFinite(num)) return String(n ?? '');
-  return Number.isInteger(num) ? String(num) : num.toFixed(1).replace(/\.0$/, '');
+  // Coma decimal, como se escribe en español: «17,5». Los campos la leen con num().
+  return Number.isInteger(num) ? String(num) : num.toFixed(1).replace(/\.0$/, '').replace('.', ',');
 };
 export const go = (path) => { location.hash = '#' + path; };
 

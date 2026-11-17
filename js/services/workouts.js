@@ -5,6 +5,7 @@ import { emit, EVENTS } from '../utils/events.js';
 import { todayISO, startOfWeekISO, addDays } from '../utils/dates.js';
 import { isCatalogExercise, BASE } from './seed.js';
 import { PENDING_KEY, effortPhrase } from './effort.js';
+import { bestWorkingSet, habitualFrom, isBelowHabitual } from './habitual.js';
 
 export { isCatalogExercise };
 
@@ -635,6 +636,33 @@ export async function weekStats() {
 }
 
 /* Sesiones agrupadas por día para un ejercicio: peso máx., 1RM estimado y volumen. */
+/**
+ * Lo habitual del ejercicio (sesiones terminadas) y su mejor serie de trabajo en el entreno abierto.
+ * { habitual: { peso, reps, sesiones } | null, today: { peso, reps } | null, inProgress, below }
+ */
+export async function habitualForExercise(exerciseId) {
+  const [sets, ws, active] = await Promise.all([
+    db.byIndex('sets', 'exerciseId', exerciseId),
+    db.getAll('workouts'),
+    getActiveWorkout(),
+  ]);
+  const fechaDe = new Map(ws.map((w) => [w.id, w.fecha]));
+  const byWorkout = new Map();
+  for (const s of sets) {
+    if (!fechaDe.has(s.workoutId)) continue;
+    if (!byWorkout.has(s.workoutId)) byWorkout.set(s.workoutId, []);
+    byWorkout.get(s.workoutId).push(s);
+  }
+  const activeId = active?.id ?? null;
+  const past = [...byWorkout.keys()]
+    .filter((id) => id !== activeId)
+    .sort((a, b) => fechaDe.get(a).localeCompare(fechaDe.get(b)) || a - b)
+    .map((id) => bestWorkingSet(byWorkout.get(id)));
+  const habitual = habitualFrom(past);
+  const today = activeId ? bestWorkingSet(byWorkout.get(activeId) || []) : null;
+  return { habitual, today, inProgress: Boolean(activeId), below: isBelowHabitual(today, habitual) };
+}
+
 export async function progressForExercise(exerciseId) {
   const [sets, ws] = await Promise.all([db.byIndex('sets', 'exerciseId', exerciseId), db.getAll('workouts')]);
   const fechaDe = new Map(ws.map((w) => [w.id, w.fecha]));
