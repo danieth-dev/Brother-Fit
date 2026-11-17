@@ -72,7 +72,7 @@ const FOCO = {
   'Prensa de piernas vertical': 'cuádriceps y glúteo mayor (90°)',
   'Peso muerto rumano': 'isquiotibiales y glúteo mayor',
   'Zancadas': 'glúteo mayor y cuádriceps',
-  'Extensión de pierna': 'cuádriceps (aislamiento)',
+  'Extensión de pierna': 'cuádriceps (énfasis en recto femoral)',
   'Sentadilla péndulo': 'cuádriceps y glúteo mayor',
 
   // Hombros
