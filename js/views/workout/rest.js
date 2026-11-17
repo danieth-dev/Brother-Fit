@@ -19,6 +19,7 @@ export function currentRestHtml() {
     left: secondsLeft(),
     nextExObj: session.nextExObj,
     isExCompleted: session.isExCompleted,
+    routineDone: session.routineDone,
     curExName: session.curExName,
     lastReps: session.lastReps,
     autoRest: state.settings.descansoMode === 'auto',

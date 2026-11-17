@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { restZone, restSeconds, workoutTitle, orderExercises, nextRoutineStep, ROUTINE_DONE } from '../js/services/session-plan.js';
+import { restZone, restSeconds, workoutTitle, orderExercises, nextRoutineStep, routineComplete, ROUTINE_DONE } from '../js/services/session-plan.js';
 import { formatWeekdayShort } from '../js/utils/dates.js';
 
 test('descanso automático por repeticiones; el fijo sale de Ajustes', () => {
@@ -38,4 +38,16 @@ test('rutina: siguiente ejercicio al igualar las series de la vez anterior', () 
 test('fecha corta fija en español', () => {
   assert.equal(formatWeekdayShort('2026-10-29'), 'Jue 29 Oct');
   assert.equal(formatWeekdayShort(''), '');
+});
+
+test('la rutina está hecha solo con todos sus ejercicios y sus series', () => {
+  const routine = [10, 20, 30];
+  const planned = new Map([[10, 3], [20, 3], [30, 2]]);
+  assert.equal(routineComplete(routine, new Map([[30, 2]]), planned), false);
+  assert.equal(routineComplete(routine, new Map([[10, 3], [20, 2], [30, 2]]), planned), false);
+  assert.equal(routineComplete(routine, new Map([[10, 3], [20, 4], [30, 2]]), planned), true);
+  assert.equal(routineComplete(routine, new Map([[10, 1], [20, 1], [30, 1]]), new Map()), true);
+  assert.equal(routineComplete(routine, new Map([[10, 1], [20, 1]]), new Map()), false);
+  assert.equal(routineComplete([], new Map([[10, 5]]), planned), false);
+  assert.equal(routineComplete(null, new Map(), planned), false);
 });

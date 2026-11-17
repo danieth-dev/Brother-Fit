@@ -66,10 +66,10 @@ export function idleMarkup(pastWorkouts, unidad) {
 const restClock = (left) => `<span>${icons.clock({ size: 18 })} Descanso <strong class="num">${mmss(left)}</strong></span>`;
 
 /**
- * Aviso de descanso. En una rutina ofrece pasar al siguiente ejercicio o terminar;
- * fuera de ella, el tiempo, la zona (modo automático) y «Saltar».
+ * Aviso de descanso. En una rutina ofrece pasar al siguiente ejercicio, o terminar solo cuando
+ * todos sus ejercicios tienen sus series; si no, el tiempo, la zona (modo automático) y «Saltar».
  */
-export function restMarkup({ left, nextExObj, isExCompleted, curExName, lastReps, autoRest }) {
+export function restMarkup({ left, nextExObj, isExCompleted, routineDone, curExName, lastReps, autoRest }) {
   if (left <= 0) return '';
   if (nextExObj) {
     const hint = isExCompleted
@@ -85,7 +85,7 @@ export function restMarkup({ left, nextExObj, isExCompleted, curExName, lastReps
       <p class="rest-next-hint">${hint}</p>
     </div>`;
   }
-  if (isExCompleted) {
+  if (routineDone) {
     return `<div class="rest rest--next-ex">
       <div class="rest-top">
         ${restClock(left)}
@@ -94,6 +94,15 @@ export function restMarkup({ left, nextExObj, isExCompleted, curExName, lastReps
         </button>
       </div>
       <p class="rest-next-hint">Completaste todos los ejercicios de la rutina.</p>
+    </div>`;
+  }
+  if (isExCompleted) {
+    return `<div class="rest rest--next-ex">
+      <div class="rest-top">
+        ${restClock(left)}
+        <button class="btn btn-sm" data-action="skip-rest" type="button">Saltar</button>
+      </div>
+      <p class="rest-next-hint">Completaste las series de ${esc(curExName || 'este ejercicio')}.</p>
     </div>`;
   }
   const zone = autoRest ? restZone(lastReps).label : '';
@@ -138,7 +147,7 @@ export function setRefMarkup(prev, curSets, unidad) {
       ${past ? '<span class="set-ref-badge-done">Completada</span>' : ''}
     </div>
     <div class="set-ref-cards">${cards}</div>
-    ${past ? `<p class="set-ref-note">Ya pasaste la sesión anterior (${sets.length} series).</p>` : ''}
+    ${past ? `<p class="set-ref-note">${curSets.length > sets.length ? 'Superaste' : 'Igualaste'} la sesión anterior (${sets.length} series).</p>` : ''}
   </div>`;
 }
 

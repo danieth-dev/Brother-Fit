@@ -16,6 +16,8 @@ export const session = {
   /* Lo que muestra el aviso de descanso de una rutina. */
   nextExObj: null,
   isExCompleted: false,
+  /* Todos los ejercicios de la rutina tienen sus series: el descanso ofrece terminar. */
+  routineDone: false,
   curExName: '',
   lastConfiguredSetKey: '',
   /* Una serie se está guardando: frena el doble toque. */

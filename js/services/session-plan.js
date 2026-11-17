@@ -46,6 +46,15 @@ export function orderExercises(exs, todayIds = [], routineIds = []) {
 export const ROUTINE_DONE = 'DONE';
 
 /**
+ * La rutina está hecha solo si cada uno de sus ejercicios tiene hoy al menos las series de la sesión
+ * que se repite (o una, si de esa no se sabe). done y planned: Map de id de ejercicio → series.
+ */
+export function routineComplete(routine, done, planned) {
+  if (!routine?.length) return false;
+  return routine.every((id) => (done.get(id) || 0) >= Math.max(1, planned.get(id) || 0));
+}
+
+/**
  * Tras guardar una serie de una rutina repetida: si ya igualó las series de la sesión anterior,
  * el siguiente ejercicio de la rutina, ROUTINE_DONE si era el último, o null si sigue con este.
  */

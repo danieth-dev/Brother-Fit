@@ -6,7 +6,7 @@ import {
   loadActiveRest, saveActiveRest, clearActiveRest, listWorkoutSummaries, getWorkoutExerciseSets,
 } from '../services/workouts.js';
 import { registerSet, setEffort, setTipo, skipRestClock } from '../services/effort.js';
-import { restSeconds, orderExercises, nextRoutineStep, ROUTINE_DONE } from '../services/session-plan.js';
+import { restSeconds, orderExercises, nextRoutineStep, routineComplete, ROUTINE_DONE } from '../services/session-plan.js';
 import { getActiveAgent } from '../voice/fit-agent.js';
 import { saveMemory } from '../services/bia/memory.js';
 import { creatineSummary } from '../services/creatine.js';
@@ -92,6 +92,15 @@ async function referenceSets(w, exId) {
   return lastSessionSetsFor(exId);
 }
 
+const setCounts = (groups) => new Map(groups.map((g) => [g.exercise.id, g.sets.length]));
+
+/* Series por ejercicio de la sesión que se repite: lo que pide la rutina. */
+async function plannedCounts(w) {
+  if (!w.routineExercises?.length || !w.fromWorkoutId) return new Map();
+  const from = await getWorkoutDetail(w.fromWorkoutId);
+  return setCounts(from?.groups || []);
+}
+
 /* Al abrir una serie nueva, el tipo sigue al de la sesión anterior y el esfuerzo se vacía. */
 function prepareDraft(w, nextSetNum, targetSet) {
   const key = `${w.id}-${session.selectedEx}-${nextSetNum}`;
@@ -111,7 +120,11 @@ async function loadActive(w) {
   state.activeWorkoutId = w.id;
   setActiveExercise(currentEx);
 
-  const [prev, pr] = await Promise.all([referenceSets(w, selectedEx), selectedEx ? prByExercise(selectedEx) : null]);
+  const [prev, pr, planned] = await Promise.all([
+    referenceSets(w, selectedEx),
+    selectedEx ? prByExercise(selectedEx) : null,
+    plannedCounts(w),
+  ]);
   const curExSets = groups.find((g) => g.exercise.id === selectedEx)?.sets || [];
   const prevSets = prev?.sets || [];
   const nextSetNum = curExSets.length + 1;
@@ -123,6 +136,7 @@ async function loadActive(w) {
   const nextId = routineIdx >= 0 && routineIdx < routine.length - 1 ? routine[routineIdx + 1] : null;
   session.nextExObj = nextId ? exs.find((e) => e.id === nextId) : null;
   session.isExCompleted = prevSets.length > 0 && curExSets.length >= prevSets.length;
+  session.routineDone = routineComplete(routine, setCounts(groups), planned);
   session.curExName = currentEx?.nombre || '';
 
   return { w, exs, groups, currentEx, prev, pr, curExSets, prevSets, nextSetNum, targetSet, routineIdx };

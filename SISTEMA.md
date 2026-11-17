@@ -178,6 +178,8 @@ Cada serie dispara el descanso y lo guarda en `meta.activeRest`. Recargar el tel
 
 En modo manual se usan los segundos de Ajustes (`descanso`, 90 por defecto).
 
+Una sesión repetida desde Historial guarda la rutina (`routineExercises`, los ejercicios de la sesión de origen en orden). Al igualar las series de la vez anterior en un ejercicio, el descanso ofrece «Pasar a» el siguiente y, al acabar, pasa solo. «Terminar sesión» aparece en el descanso solo cuando **todos** los ejercicios de la rutina tienen hoy al menos sus series de la sesión de origen (`routineComplete()`); terminar el último ejercicio con otros a medias, o un ejercicio fuera de la rutina, solo dice «Completaste las series de …» y deja «Saltar». Debajo de la sesión anterior, «Igualaste» o «Superaste» según las series de hoy.
+
 El 1RM estimado es Epley: si hay una repetición, el peso; si hay más, `peso * (1 + reps / 30)`. El volumen de una serie es peso por repeticiones, también en el calentamiento. El PR de un ejercicio sigue siendo el mayor peso, las mayores reps y el mayor 1RM de Epley. Esa curva no cambia el día que empieza el esfuerzo.
 
 Una serie de trabajo pregunta «¿Cuántas repeticiones más podrías haber hecho?» con cinco botones: 0, 1, 2, 3 y «4 o más». Debajo, «0 es no salía otra». No se copia de la serie anterior. Se guarda `rpe = 10 - rir`, y un 4 o cualquier entero mayor queda en 4, así que el RPE es 6. Ese 6 es un piso, no un punto medio, y no cuenta como serie efectiva. En calentamiento los botones siguen en su sitio, atenuados: «Los calentamientos no llevan esfuerzo». Si había un número elegido, se borra y no vuelve solo al pasar otra vez a trabajo.
