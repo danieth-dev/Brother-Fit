@@ -33,8 +33,8 @@
 .muscle-dot[data-g="Otro"] { background: var(--muscle-otro); color: var(--muscle-otro); }
 .muscle {
   display: inline-flex;
-  align-items: center;
-  flex-wrap: wrap;
+  align-items: baseline;
+  flex-wrap: nowrap;
   gap: 6px;
   color: var(--muted);
   font-family: var(--font);
@@ -47,14 +47,19 @@
   font-weight: 600;
   text-transform: capitalize;
 }
+/* Un foco largo baja de línea alineado tras el «·», no debajo del grupo. */
 .muscle-focus {
+  position: relative;
+  min-width: 0;
+  padding-left: 12px;
   text-transform: none;
   letter-spacing: 0;
   font-weight: 500;
 }
 .muscle-focus::before {
   content: "·";
-  margin-right: 6px;
+  position: absolute;
+  left: 0;
 }
 .muscle-dot {
   width: 8px;
@@ -63,6 +68,9 @@
   background: var(--line-strong);
   flex-shrink: 0;
   display: inline-block;
+  align-self: flex-start;
+  /* Centrado en la primera línea aunque el foco ocupe dos. */
+  margin-top: calc((1.2em - 8px) / 2);
 }
 .muscle-hint {
   margin: 8px 0 0;
@@ -281,7 +289,7 @@
 .group h3 {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 6px 8px;
   min-width: 0;
   color: var(--text);
@@ -296,7 +304,7 @@
 .sets li {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 12px;
   padding: 10px 4px;
   border-top: 1px solid var(--line);

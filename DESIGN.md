@@ -127,7 +127,7 @@ Este documento es la fuente de verdad del diseño de Bía. Lo leen las personas 
 
 Fuente de los valores: `css/tokens.css` (tokens), `css/base.css` (página, tipografía base e iconos) y `css/components/01-…css` a `14-…css` (componentes, cargados en ese orden desde `index.html`). El frontmatter de arriba usa el formato de `DESIGN.md` que entiende la skill; los valores son los del **modo oscuro con acento amarillo**, que es el de fábrica.
 
-Última revisión: 16 de noviembre de 2026 (caché `v213`).
+Última revisión: 16 de noviembre de 2026 (caché `v214`).
 
 ## 1. Idea
 
@@ -349,6 +349,7 @@ Los archivos se cargan en orden numérico y **ese orden es la cascada**: una reg
 | Cápsula del descanso | `.rest-pill` (`js/utils/rest-pill.js`) | Píldora `--primary` de 44 px que flota sobre la isla, encima de Entreno, en todas las pantallas: reloj y cuenta atrás `--fs-lg` en cifras tabulares, sin borde ni barra: la barra que se vacía está en la hoja. En una rutina repetida y estando en Entreno, `.rest-pill--action` la mete en una píldora `--surface-elevated` con «Siguiente · ejercicio ›» o «✓ Terminar sesión»; el nombre largo se corta con puntos suspensivos. Con ella visible, `body.has-rest-pill` sube `--tabbar-h`. |
 | Hoja del descanso | `.rest-sheet` (`js/utils/rest-sheet.js`) | Se abre al tocar el reloj en Entreno: cuenta atrás `--fs-hero` en `--primary`, zona en `--muted`, barra de 6 px, «−15 s» y «+30 s», la acción de la rutina y «Saltar descanso» primario. |
 | Punto muscular | `.dot`, `.muscle-dot` | 8–9 px con el color del grupo. |
+| Grupo y músculos | `.muscle`, `.muscle-focus` | Punto, grupo en negrita y «· músculos». Si los músculos no caben, bajan de línea alineados tras el «·» y el punto queda en la primera línea. |
 | Anillo de calorías | `.meal-ring-svg`, `.home-food-ring` | SVG con trazo verde sobre `--line`; cifra central en `--text`. |
 | Estado vacío | `.empty` y variantes | Texto `--muted` centrado y una sola acción primaria. |
 | Reportar respuesta | `.agent-bubble-actions`, `.agent-bubble-report`, `.agent-bubble-bot.is-reported` | Al tocar una burbuja de Bía aparece una píldora de 44 px con bandera; una burbuja reportada queda con borde discontinuo y texto `--muted`. La hoja usa las clases `.picker-*`. |
