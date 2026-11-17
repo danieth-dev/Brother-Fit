@@ -43,11 +43,16 @@ test('fecha corta fija en español', () => {
 test('la rutina está hecha solo con todos sus ejercicios y sus series', () => {
   const routine = [10, 20, 30];
   const planned = new Map([[10, 3], [20, 3], [30, 2]]);
-  assert.equal(routineComplete(routine, new Map([[30, 2]]), planned), false);
-  assert.equal(routineComplete(routine, new Map([[10, 3], [20, 2], [30, 2]]), planned), false);
-  assert.equal(routineComplete(routine, new Map([[10, 3], [20, 4], [30, 2]]), planned), true);
-  assert.equal(routineComplete(routine, new Map([[10, 1], [20, 1], [30, 1]]), new Map()), true);
-  assert.equal(routineComplete(routine, new Map([[10, 1], [20, 1]]), new Map()), false);
-  assert.equal(routineComplete([], new Map([[10, 5]]), planned), false);
-  assert.equal(routineComplete(null, new Map(), planned), false);
+  const all = new Map([[10, 3], [20, 4], [30, 2]]);
+  assert.equal(routineComplete(routine, 30, new Map([[30, 2]]), planned), false);
+  assert.equal(routineComplete(routine, 30, new Map([[10, 3], [20, 2], [30, 2]]), planned), false);
+  assert.equal(routineComplete(routine, 30, all, planned), true);
+  // Todo hecho, pero está añadiendo series a otro ejercicio: no es el final.
+  assert.equal(routineComplete(routine, 20, all, planned), false);
+  assert.equal(routineComplete(routine, 99, all, planned), false);
+  assert.equal(routineComplete(routine, 30, new Map([[10, 1], [20, 1], [30, 1]]), new Map()), true);
+  assert.equal(routineComplete(routine, 30, new Map([[10, 1], [30, 1]]), new Map()), false);
+  // Entreno nuevo, sin rutina: nunca.
+  assert.equal(routineComplete([], 10, new Map([[10, 5]]), planned), false);
+  assert.equal(routineComplete(null, 10, new Map(), planned), false);
 });

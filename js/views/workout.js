@@ -136,7 +136,7 @@ async function loadActive(w) {
   const nextId = routineIdx >= 0 && routineIdx < routine.length - 1 ? routine[routineIdx + 1] : null;
   session.nextExObj = nextId ? exs.find((e) => e.id === nextId) : null;
   session.isExCompleted = prevSets.length > 0 && curExSets.length >= prevSets.length;
-  session.routineDone = routineComplete(routine, setCounts(groups), planned);
+  session.routineDone = routineComplete(routine, selectedEx, setCounts(groups), planned);
   session.curExName = currentEx?.nombre || '';
 
   return { w, exs, groups, currentEx, prev, pr, curExSets, prevSets, nextSetNum, targetSet, routineIdx };

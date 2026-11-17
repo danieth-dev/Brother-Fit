@@ -46,11 +46,12 @@ export function orderExercises(exs, todayIds = [], routineIds = []) {
 export const ROUTINE_DONE = 'DONE';
 
 /**
- * La rutina está hecha solo si cada uno de sus ejercicios tiene hoy al menos las series de la sesión
- * que se repite (o una, si de esa no se sabe). done y planned: Map de id de ejercicio → series.
+ * La rutina está hecha cuando el atleta está en el último ejercicio de la sesión que repite y cada
+ * ejercicio tiene hoy al menos sus series de entonces (o una, si de esa no se sabe).
+ * done y planned: Map de id de ejercicio → series.
  */
-export function routineComplete(routine, done, planned) {
-  if (!routine?.length) return false;
+export function routineComplete(routine, currentId, done, planned) {
+  if (!routine?.length || routine.at(-1) !== currentId) return false;
   return routine.every((id) => (done.get(id) || 0) >= Math.max(1, planned.get(id) || 0));
 }
 
