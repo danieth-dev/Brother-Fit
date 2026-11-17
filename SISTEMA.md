@@ -2,7 +2,7 @@
 
 Documento vivo del producto. Describe cómo está armado, dónde vive cada dato y qué no se puede romper. Cuando cambie el comportamiento, el esquema, una pantalla o la forma de publicar, este archivo se actualiza en el mismo cambio.
 
-Última revisión: 15 de noviembre de 2026. Base de datos versión 3. Caché de la app `v201`.
+Última revisión: 16 de noviembre de 2026. Base de datos versión 3. Caché de la app `v202`.
 
 ## Qué es
 
@@ -182,7 +182,7 @@ El 1RM estimado es Epley: si hay una repetición, el peso; si hay más, `peso * 
 
 Una serie de trabajo pregunta «¿Cuántas repeticiones más podrías haber hecho?» con cinco botones: 0, 1, 2, 3 y «4 o más». Debajo, «0 es no salía otra». No se copia de la serie anterior. Se guarda `rpe = 10 - rir`, y un 4 o cualquier entero mayor queda en 4, así que el RPE es 6. Ese 6 es un piso, no un punto medio, y no cuenta como serie efectiva. En calentamiento los botones siguen en su sitio, atenuados: «Los calentamientos no llevan esfuerzo». Si había un número elegido, se borra y no vuelve solo al pasar otra vez a trabajo.
 
-En la pantalla, una serie de trabajo **no se guarda** sin elegir el esfuerzo (0–4). El aviso es «Elige el esfuerzo (0–4).» y no se crea la fila. El calentamiento sí se guarda sin RIR. Bía por voz puede seguir anotando sin `rir` y abrir la pregunta pendiente: el pendiente significa solo que Bía preguntó en voz alta y espera respuesta. Un segundo toque igual en pantalla, dentro de 8 segundos, no crea otra serie. En series ya hechas (p. ej. importadas o de Bía sin respuesta), «Falta esfuerzo» sigue abriendo los cinco botones. Esos botones sí pisan un esfuerzo ya guardado. Bía no lo pisa.
+En la pantalla, una serie de trabajo **no se guarda** sin elegir el esfuerzo (0–4). El aviso es «Elige el esfuerzo (0–4).» y no se crea la fila. El calentamiento sí se guarda sin RIR. Bía por voz puede seguir anotando sin `rir` y abrir la pregunta pendiente: el pendiente significa solo que Bía preguntó en voz alta y espera respuesta. Un doble toque en «Registrar» no crea dos series: mientras se guarda, el segundo toque no hace nada. Dos series iguales anotadas seguidas, por rápido que sea, son dos series. El candado de 8 segundos con la misma serie es solo de Bía, que a veces repite la llamada. En series ya hechas (p. ej. importadas o de Bía sin respuesta), «Falta esfuerzo» sigue abriendo los cinco botones. Esos botones sí pisan un esfuerzo ya guardado. Bía no lo pisa.
 
 Bía, si no lo oyó al anotar, abre una pregunta con marca y hace la misma pregunta que la pantalla. El plazo se escribe en ese momento: fin del descanso más un minuto si hay reloj, o cinco minutos si no hay. Saltar el descanso es el único caso que lo reescribe, a un minuto desde ahora, en la misma operación que apaga el reloj. La respuesta entra con `anotar_rpe` y la marca vigente. Una marca vieja no anota y no gasta intento. Un número inválido gasta un intento; al segundo, la serie se queda sin esfuerzo. «No sé» la suelta sin gastar ese intento. Si no hay pregunta, el plazo venció o la serie ya no está, Bía no vuelve a preguntar.
 

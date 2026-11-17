@@ -5,7 +5,7 @@ import {
   deleteSet, getWorkoutDetail, lastSessionSetsFor, prByExercise,
   loadActiveRest, saveActiveRest, clearActiveRest, listWorkoutSummaries, getWorkoutExerciseSets,
 } from '../services/workouts.js';
-import { registerSet, setEffort, setTipo, skipRestClock, AVISO_DUPLICADA } from '../services/effort.js';
+import { registerSet, setEffort, setTipo, skipRestClock } from '../services/effort.js';
 import { restSeconds, orderExercises, nextRoutineStep, ROUTINE_DONE } from '../services/session-plan.js';
 import { getActiveAgent } from '../voice/fit-agent.js';
 import { saveMemory } from '../services/bia/memory.js';
@@ -322,7 +322,19 @@ function confirmDiscard(w, groups) {
 
 /* ---------- Guardar una serie ---------- */
 
+/* Un doble toque no crea dos series: mientras se guarda, el segundo toque no hace nada.
+ * Sin candado de tiempo: dos series iguales seguidas, anotadas rápido, son dos series. */
 async function saveSet(el, f, d) {
+  if (session.saving) return;
+  session.saving = true;
+  try {
+    await saveSetNow(el, f, d);
+  } finally {
+    session.saving = false;
+  }
+}
+
+async function saveSetNow(el, f, d) {
   const exerciseId = Number(f.elements.exerciseId.value);
   const peso = toKg(num(f.elements.peso.value));
   const reps = parseInt(f.elements.reps.value, 10);
@@ -346,8 +358,7 @@ async function saveSet(el, f, d) {
     tipo: session.draftTipo,
     rir: working ? session.draftRir : undefined,
     restEnd,
-  }, { guard: true, abrirPregunta: false });
-  if (saved?.duplicada) { toast(saved.aviso || AVISO_DUPLICADA); return; }
+  }, { abrirPregunta: false });
 
   session.restEnd = restEnd;
   session.selectedEx = exerciseId;

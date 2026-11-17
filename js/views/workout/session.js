@@ -18,6 +18,8 @@ export const session = {
   isExCompleted: false,
   curExName: '',
   lastConfiguredSetKey: '',
+  /* Una serie se está guardando: frena el doble toque. */
+  saving: false,
 };
 
 /* Bía puede anotar una serie o elegir ejercicio desde su pantalla: Entreno lo recoge al volver. */

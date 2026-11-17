@@ -266,20 +266,19 @@
         assert(res.preguntar === false && res.mensaje.includes('No hay pregunta abierta'), res.mensaje);
       });
 
-      await check('doble toque de la pantalla', async () => {
+      await check('dos series iguales seguidas en pantalla son dos', async () => {
         const A = await effort.registerSet(
-          { workoutId: 22, exerciseId: 1, peso: 15, reps: 15 },
-          { guard: true, abrirPregunta: false }
+          { workoutId: 22, exerciseId: 1, peso: 15, reps: 15, rir: 1 },
+          { abrirPregunta: false }
         );
-        const dup = await effort.registerSet(
-          { workoutId: 22, exerciseId: 1, peso: 15, reps: 15, rir: 2 },
-          { guard: true, abrirPregunta: false }
+        const B = await effort.registerSet(
+          { workoutId: 22, exerciseId: 1, peso: 15, reps: 15, rir: 0 },
+          { abrirPregunta: false }
         );
-        assert(dup.duplicada && dup.aviso === effort.AVISO_DUPLICADA, dup.aviso);
-        assert(dup.aviso.includes('Falta esfuerzo'), dup.aviso);
+        assert(!B.duplicada && B.setId !== A.setId, B.mensaje);
         const twins = (await db.getAll('sets')).filter((s) => s.workoutId === 22 && s.peso === 15);
-        assert(twins.length === 1 && twins[0].id === A.setId, String(twins.length));
-        assert(twins[0].rpe == null, 'el segundo toque no guardó el esfuerzo');
+        assert(twins.length === 2, String(twins.length));
+        assert(twins.map((s) => s.rpe).join() === '9,10', twins.map((s) => s.rpe).join());
       });
 
       await check('reloj de descanso vencido se borra al leer', async () => {

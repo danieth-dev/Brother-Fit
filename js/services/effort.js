@@ -9,7 +9,6 @@ export const SEQ_KEY = 'rpeSeq';
 const GUARD_MS = 8000;
 let lastCall = null;
 
-export const AVISO_DUPLICADA = 'Esa serie ya estaba anotada. Para añadirle el esfuerzo, usa «Falta esfuerzo» en la serie.';
 export const AVISO_SIN_ESFUERZO = 'Serie guardada. Falta esfuerzo.';
 
 export function resetRegisterGuard() {
@@ -145,9 +144,7 @@ export async function registerSet(input, { guard = false, abrirPregunta = true }
   const rpe = kind === 'ok' ? rpeFromRir(Number(input.rir)) : null;
 
   if (guard && sameCall(workoutId, exerciseId, peso, reps, t)) {
-    const dup = await duplicateResponse(lastCall.setId);
-    dup.aviso = AVISO_DUPLICADA;
-    return dup;
+    return duplicateResponse(lastCall.setId);
   }
 
   const out = await db.mutate(['sets', 'meta'], (tx) => {
