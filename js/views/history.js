@@ -21,6 +21,7 @@ import { icons } from '../utils/icons.js';
 import { askConfirm } from '../utils/confirm-sheet.js';
 import { weightUnit, fmtWeight, fmtVolume } from '../utils/units.js';
 import { isBodyweight } from '../services/bodyweight.js';
+import { isTimedSet, formatTime, TIME_STEP_S, HOLD_LABELS } from '../services/timed.js';
 import { syncSegThumb } from '../utils/seg-swipe.js';
 
 let editingSetId = null;
@@ -202,8 +203,9 @@ async function list(el) {
 /* «Peso corporal × 10» en ejercicios de peso corporal (0 kg es el cuerpo, más es lastre). */
 function setLoadText(s, exercise, unidad) {
   const kg = `${fmtWeight(s.peso, unidad)} ${esc(unidad)}`;
-  if (isBodyweight(exercise)) return `${s.peso > 0 ? `Peso corporal + ${kg}` : 'Peso corporal'} × ${s.reps}`;
-  return s.peso === 0 ? `Sin peso × ${s.reps}` : `${kg} × ${s.reps}`;
+  const amount = isTimedSet(s) ? formatTime(s.segundos) : s.reps;
+  if (isBodyweight(exercise)) return `${s.peso > 0 ? `Peso corporal + ${kg}` : 'Peso corporal'} × ${amount}`;
+  return s.peso === 0 ? `Sin peso × ${amount}` : `${kg} × ${amount}`;
 }
 
 function setBadgeHtml(s) {
@@ -315,12 +317,12 @@ async function detail(el, id) {
                         </div>
 
                         <div class="editor-stepper">
-                          <button type="button" class="stepper-btn" data-action="step-reps" data-delta="-1" aria-label="Restar repeticiones">−</button>
+                          <button type="button" class="stepper-btn" data-action="step-reps" data-delta="${editDraft.timed ? -TIME_STEP_S : -1}" aria-label="${editDraft.timed ? 'Restar 5 segundos' : 'Restar repeticiones'}">−</button>
                           <div class="stepper-display">
                             <input type="text" inputmode="numeric" autocomplete="off" class="stepper-input" id="edit-reps-input" value="${editDraft.reps}">
-                            <span class="stepper-unit">reps</span>
+                            <span class="stepper-unit">${editDraft.timed ? 's' : 'reps'}</span>
                           </div>
-                          <button type="button" class="stepper-btn" data-action="step-reps" data-delta="1" aria-label="Sumar repeticiones">+</button>
+                          <button type="button" class="stepper-btn" data-action="step-reps" data-delta="${editDraft.timed ? TIME_STEP_S : 1}" aria-label="${editDraft.timed ? 'Sumar 5 segundos' : 'Sumar repeticiones'}">+</button>
                         </div>
                       </div>
 
@@ -330,11 +332,11 @@ async function detail(el, id) {
                       </div>
 
                       <div class="editor-effort-wrap" id="editor-effort-wrap" ${editDraft.tipo === 'calentamiento' ? 'hidden' : ''}>
-                        <p class="editor-effort-label">¿Cuántas más podías hacer?</p>
+                        <p class="editor-effort-label">${editDraft.timed ? '¿Cuánto más podías aguantar?' : '¿Cuántas más podías hacer?'}</p>
                         <div class="editor-rir-grid" role="group" aria-label="Esfuerzo RIR">
                           ${[0, 1, 2, 3, 4].map((r) => `
                             <button type="button" class="editor-rir-btn" data-action="edit-rir" data-rir="${r}" aria-pressed="${editDraft.rir === r}">
-                              ${r === 4 ? '4+' : r}
+                              ${editDraft.timed ? HOLD_LABELS[r] : (r === 4 ? '4+' : r)}
                             </button>
                           `).join('')}
                         </div>
@@ -378,9 +380,12 @@ async function detail(el, id) {
       editingSetId = sid;
       const targetSet = d.groups.flatMap((g) => g.sets).find((s) => s.id === sid);
       if (targetSet) {
+        /* En una serie por tiempo, «reps» del editor son sus segundos. */
+        const timed = isTimedSet(targetSet);
         editDraft = {
+          timed,
           peso: targetSet.peso,
-          reps: targetSet.reps,
+          reps: timed ? targetSet.segundos : targetSet.reps,
           tipo: targetSet.tipo || 'trabajo',
           rir: targetSet.rpe != null ? 10 - Number(targetSet.rpe) : 1,
         };
@@ -441,14 +446,14 @@ async function detail(el, id) {
         return;
       }
       if (Number.isNaN(finalReps) || finalReps <= 0) {
-        toast('Las repeticiones deben ser al menos 1', { tone: 'warn' });
+        toast(editDraft.timed ? 'El tiempo debe ser de al menos 1 segundo' : 'Las repeticiones deben ser al menos 1', { tone: 'warn' });
         return;
       }
 
       btn.disabled = true;
       await updateSet(sid, {
         peso: finalPeso,
-        reps: finalReps,
+        ...(editDraft.timed ? { segundos: finalReps } : { reps: finalReps }),
         tipo: editDraft.tipo,
         rir: editDraft.tipo === 'calentamiento' ? null : editDraft.rir,
       });

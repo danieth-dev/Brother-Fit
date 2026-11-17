@@ -19,18 +19,19 @@ export const TOOL_DECLARATIONS = [
   {
     name: 'registrar_serie',
     description:
-      'Registra una serie en el entrenamiento en curso. Úsala cuando el atleta diga las repeticiones y el peso que acaba de hacer. El esfuerzo, si lo dice, responde a «¿Cuántas repeticiones más podrías haber hecho?». No uses RPE.',
+      'Registra una serie en el entrenamiento en curso. Úsala cuando el atleta diga las repeticiones y el peso que acaba de hacer, o los segundos si el ejercicio es por tiempo (plancha). El esfuerzo, si lo dice, responde a «¿Cuántas repeticiones más podrías haber hecho?» (en tiempo, «¿Cuánto más podrías haber aguantado?», en pasos de 5 s). No uses RPE.',
     parameters: {
       type: 'OBJECT',
       properties: {
-        reps: { type: 'NUMBER', description: 'Número de repeticiones completadas.' },
+        reps: { type: 'NUMBER', description: 'Número de repeticiones completadas. No lo envíes en un ejercicio por tiempo.' },
+        segundos: { type: 'NUMBER', description: 'Solo en ejercicios por tiempo (plancha, colgado): cuántos segundos aguantó. «Un minuto» son 60.' },
         ejercicio: { type: 'STRING', description: 'Nombre del ejercicio si el atleta lo dice, con sus palabras. Si no lo dice, no lo envíes: se usa el de la pantalla. No inventes ni elijas un id.' },
         peso: { type: 'NUMBER', description: 'Peso añadido. Si no se indica, usa el de la serie anterior de ese ejercicio. Nunca el peso de la báscula.' },
         corporal: { type: 'BOOLEAN', description: 'True si dice peso corporal o sin peso extra. El peso añadido queda en 0, salvo que también diga un disco o unos kilos: entonces peso es solo ese número.' },
         tipo: { type: 'STRING', description: 'trabajo o calentamiento. Si no lo dice, es trabajo.' },
         rir: { type: 'NUMBER', description: 'Respuesta a «¿Cuántas repeticiones más podrías haber hecho?»: 0 es no salía otra, 1, 2, 3, o 4 o más. No conviertas un RPE a este número.' },
       },
-      required: ['reps'],
+      required: [],
     },
   },
   {

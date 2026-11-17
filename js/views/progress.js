@@ -11,6 +11,7 @@ import { openPicker } from '../utils/picker.js';
 import { weightUnit, toKg, fromKg, fmtWeight, fmtVolume } from '../utils/units.js';
 import { syncSegThumb } from '../utils/seg-swipe.js';
 import { isBodyweight } from '../services/bodyweight.js';
+import { isTimed, formatTime } from '../services/timed.js';
 import { bodyweightProgress } from '../services/bodyweight-progress.js';
 import { trendBadge } from './progress/trend.js';
 import { habitualStripHtml } from './progress/habitual-strip.js';
@@ -177,9 +178,9 @@ function chartCardInnerHtml(sessions, unidad) {
   const points = metricPoints(sessions, unidad);
   const lastVal = points[points.length - 1]?.value ?? 0;
   const prevVal = points[points.length - 2]?.value ?? null;
-  const unitStr = view?.bw ? bodyweightUnit(m, unidad) : unidad;
+  const unitStr = view?.bw ? bodyweightUnit(m, unidad, view.bw.timed) : unidad;
   const marks = chartMarks(unidad);
-  const description = view?.bw ? bodyweightDescription(m) : METRIC_DESCRIPTIONS[m];
+  const description = view?.bw ? bodyweightDescription(m, view.bw.timed) : METRIC_DESCRIPTIONS[m];
 
   return `
     <div class="chart-card-head">
@@ -209,7 +210,7 @@ function chartMarks(unidad) {
   const m = activeMetric();
   if (view?.bw) {
     if (m !== 'repsMax' || !h || h.peso > 0) return { openLast };
-    return { openLast, ref: { value: h.reps, label: `habitual ${h.reps}` } };
+    return { openLast, ref: { value: h.reps, label: `habitual ${view.bw.timed ? formatTime(h.reps) : h.reps}` } };
   }
   if (m !== 'maxPeso' || !h || !(h.peso > 0)) return { openLast };
   return { openLast, ref: { value: fromKg(h.peso, unidad), label: `habitual ${fmtWeight(h.peso, unidad)}` } };
@@ -391,13 +392,13 @@ function updateProgressView(el) {
 
     const habitualSlot = el.querySelector('#habitual-slot');
     const record = bw ? { maxPeso: bw.records.extraMax, maxReps: bw.records.repsSerie } : pr;
-    if (habitualSlot) habitualSlot.innerHTML = habitualStripHtml(hab, record, unidad, Boolean(bw));
+    if (habitualSlot) habitualSlot.innerHTML = habitualStripHtml(hab, record, unidad, Boolean(bw), Boolean(bw?.timed));
 
     const prSlot = el.querySelector('#pr-slot');
     if (prSlot) prSlot.innerHTML = bw ? bodyweightRecordsHtml(bw, unidad) : prBadgesHtml(pr, unidad);
 
     const compareSlot = el.querySelector('#compare-slot');
-    if (compareSlot) compareSlot.innerHTML = bw ? bodyweightCompareHtml(sessions, unidad) : compareCardHtml(sessions, unidad);
+    if (compareSlot) compareSlot.innerHTML = bw ? bodyweightCompareHtml(sessions, unidad, bw.timed) : compareCardHtml(sessions, unidad);
 
     const chartCardSlot = el.querySelector('#chart-card-slot');
     if (chartCardSlot) {
@@ -407,7 +408,7 @@ function updateProgressView(el) {
     }
 
     const sessSlot = el.querySelector('#sess-slot');
-    if (sessSlot) sessSlot.innerHTML = bw ? bodyweightSessionsHtml(sessions, unidad) : sessionTableHtml(sessions, unidad);
+    if (sessSlot) sessSlot.innerHTML = bw ? bodyweightSessionsHtml(sessions, unidad, bw.timed) : sessionTableHtml(sessions, unidad);
   } else {
     if (pesoPane) {
       pesoPane.innerHTML = bodySectionHtml(body, unidad);
@@ -442,7 +443,8 @@ export async function render(el, [idParam] = []) {
   const exId = Number(idParam) || trainingExId || (await lastTrainedExerciseId()) || exs[0]?.id;
   const currentEx = exs.find((e) => e.id === exId) || exs[0];
 
-  const corporal = isBodyweight(currentEx);
+  /* Peso corporal y tiempo se miden por su cantidad (reps o segundos), no por el peso. */
+  const corporal = isBodyweight(currentEx) || isTimed(currentEx);
   const [prog, body, pr, hab, bw] = await Promise.all([
     exId && !corporal ? progressForExercise(exId) : { sessions: [], pr: 0 },
     listBodyWeights(),

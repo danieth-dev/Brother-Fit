@@ -18,6 +18,12 @@ export const REST_ZONES = [
 export const RIR_BONUS = { 0: 30, 1: 15 };
 
 const RIR_REASON = { 0: 'por llegar al fallo', 1: 'por quedarte a 1' };
+const HOLD_REASON = { 0: 'por llegar al fallo', 1: 'por quedarte a 5 s' };
+
+/* Una serie por tiempo (plancha, colgado) es un esfuerzo isométrico de intensidad moderada: 1:30,
+ * con el mismo ajuste cerca del fallo. Su calentamiento, 1:00. */
+export const TIMED_REST = { secs: 90, label: 'Isométrico · 1:30' };
+export const TIMED_WARMUP = { secs: 60, label: 'Calentamiento · 1:00' };
 
 /* «4 o más» se guarda como piso: cuenta como 4. */
 const RIR_FLOOR = 4;
@@ -59,14 +65,20 @@ export function effortBonus(rir, tipo = 'trabajo') {
  * Segundos de descanso. En automático: un calentamiento, por sus repeticiones; una serie de trabajo,
  * por las repeticiones posibles más el ajuste cerca del fallo. En manual, los fijos de Ajustes.
  */
-export function restSeconds(reps, { descansoMode, descanso }, { rir = null, tipo = 'trabajo' } = {}) {
+export function restSeconds(reps, { descansoMode, descanso }, { rir = null, tipo = 'trabajo', timed = false } = {}) {
   if (descansoMode !== 'auto') return descanso;
+  if (timed) return isWarmup(tipo) ? TIMED_WARMUP.secs : TIMED_REST.secs + effortBonus(rir, tipo);
   if (isWarmup(tipo)) return warmupZone(reps).secs;
   return restZone(possibleReps(reps, rir)).secs + effortBonus(rir, tipo);
 }
 
 /** Lo que dice la hoja del descanso: «Hipertrofia · 1:30 · podías unas 9 reps», «… + 30 s por llegar al fallo». */
-export function restLabel(reps, { rir = null, tipo = 'trabajo' } = {}) {
+export function restLabel(reps, { rir = null, tipo = 'trabajo', timed = false } = {}) {
+  if (timed) {
+    if (isWarmup(tipo)) return TIMED_WARMUP.label;
+    const bonus = effortBonus(rir, tipo);
+    return bonus ? `${TIMED_REST.label} + ${bonus} s ${HOLD_REASON[rir]}` : TIMED_REST.label;
+  }
   if (isWarmup(tipo)) return warmupZone(reps).label;
   const possible = possibleReps(reps, rir);
   let label = restZone(possible).label;

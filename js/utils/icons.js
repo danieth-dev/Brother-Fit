@@ -18,6 +18,7 @@ export const icons = {
   coffee: (opts) => svg('<path d="M18 8h1a4 4 0 0 1 0 8h-1M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8zM6 1v3M10 1v3M14 1v3"/>', opts),
   dumbbell: (opts) => svg('<path d="m6.5 6.5 11 11M21 21l-1-1M3 3l1 1M18 22l4-4M2 6l4-4M3 10l7-7M14 21l7-7"/>', opts),
   clock: (opts) => svg('<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>', opts),
+  stop: (opts) => svg('<rect x="6" y="6" width="12" height="12" rx="2"/>', opts),
   calendar: (opts) => svg('<rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>', opts),
   chevronLeft: (opts) => svg('<polyline points="15 18 9 12 15 6"/>', opts),
   chevronRight: (opts) => svg('<polyline points="9 18 15 12 9 6"/>', opts),

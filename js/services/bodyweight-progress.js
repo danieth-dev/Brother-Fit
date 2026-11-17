@@ -3,12 +3,14 @@
 import { db } from '../db.js';
 import { listBodyWeights } from './body.js';
 import { bodyweightSession, bodyWeightOn, estimatedLoad, bodyFraction } from './bodyweight.js';
+import { asMeasured, isTimed } from './timed.js';
 
 const LAST_DAY = '9999-12-31';
 const maxOf = (values) => (values.length ? Math.max(...values) : 0);
 
 /**
- * { sessions: [{ fecha, repsMax, repsTotal, extra, series, carga }], records, bodyKg }
+ * { sessions: [{ fecha, repsMax, repsTotal, extra, series, carga }], records, bodyKg, timed }
+ * En un ejercicio por tiempo, repsMax y repsTotal son segundos.
  * records: { repsSerie, repsSesion, extraMax, cargaMax }. carga y cargaMax son null si no se estima.
  */
 export async function bodyweightProgress(ex) {
@@ -23,7 +25,7 @@ export async function bodyweightProgress(ex) {
     const fecha = fechaDe.get(s.workoutId);
     if (!fecha) continue;
     if (!byDay.has(fecha)) byDay.set(fecha, []);
-    byDay.get(fecha).push(s);
+    byDay.get(fecha).push(asMeasured(s));
   }
   const fraction = bodyFraction(ex);
   const sessions = [...byDay.keys()].sort().map((fecha) => {
@@ -41,5 +43,6 @@ export async function bodyweightProgress(ex) {
       cargaMax: cargas.length ? Math.max(...cargas) : null,
     },
     bodyKg: fraction != null ? bodyWeightOn(LAST_DAY, body) : null,
+    timed: isTimed(ex),
   };
 }

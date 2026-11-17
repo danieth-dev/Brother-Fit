@@ -1,32 +1,45 @@
-/* Progreso de un ejercicio de peso corporal: récords, comparativa, métricas de la gráfica e
- * historial en repeticiones. La carga estimada solo aparece si se puede estimar
- * (services/bodyweight.js). Usa las mismas piezas visuales que el progreso con pesas. */
+/* Progreso de un ejercicio de peso corporal o por tiempo: récords, comparativa, métricas de la
+ * gráfica e historial en repeticiones o en segundos (bw.timed). La carga estimada solo aparece si se
+ * puede estimar (services/bodyweight.js). Usa las mismas piezas visuales que el progreso con pesas. */
 import { esc, fmtNum } from '../../utils/dom.js';
 import { formatShort } from '../../utils/dates.js';
 import { icons } from '../../utils/icons.js';
 import { fmtWeight, fromKg } from '../../utils/units.js';
 import { trendBadge } from './trend.js';
+import { formatTime } from '../../services/timed.js';
 
 const DESCRIPTIONS = {
   repsMax: 'Las repeticiones de tu mejor serie de cada sesión. Es la medida exacta: no estima nada.',
   repsTotal: 'Todas las repeticiones de trabajo de la sesión, sin calentamientos.',
+  timeMax: 'El tiempo de tu mejor serie de cada sesión, en segundos. Es la medida exacta.',
+  timeTotal: 'Todo el tiempo de trabajo de la sesión, sin calentamientos, en segundos.',
   extra: 'El peso que añadiste sobre tu cuerpo (lastre). 0 es solo tu cuerpo.',
   carga: 'Estimada: tu peso corporal de cada fecha más el peso añadido.',
 };
 
 /** Métricas de la gráfica: las de peso solo si hay lastre o carga estimable. */
 export function bodyweightMetrics(bw) {
-  const m = { repsMax: 'Reps máx.', repsTotal: 'Reps totales' };
+  const m = bw.timed ? { repsMax: 'Tiempo máx.', repsTotal: 'Tiempo total' } : { repsMax: 'Reps máx.', repsTotal: 'Reps totales' };
   if (bw.records.extraMax > 0) m.extra = 'Añadido';
   if (bw.records.cargaMax != null) m.carga = 'Carga est.';
   return m;
 }
 
-export const bodyweightDescription = (metric) => DESCRIPTIONS[metric] || '';
+export function bodyweightDescription(metric, timed = false) {
+  if (timed && metric === 'repsMax') return DESCRIPTIONS.timeMax;
+  if (timed && metric === 'repsTotal') return DESCRIPTIONS.timeTotal;
+  return DESCRIPTIONS[metric] || '';
+}
 
 const isWeightMetric = (metric) => metric === 'extra' || metric === 'carga';
 
-export const bodyweightUnit = (metric, unidad) => (isWeightMetric(metric) ? unidad : 'reps');
+export const bodyweightUnit = (metric, unidad, timed = false) => {
+  if (isWeightMetric(metric)) return unidad;
+  return timed ? 's' : 'reps';
+};
+
+/* Una cantidad de reps o de tiempo: «12» con unidad «reps», o «0:45» sin unidad. */
+const amountOf = (value, timed) => (timed ? formatTime(value) : value);
 
 export function bodyweightPoints(sessions, metric, unidad) {
   return sessions
@@ -48,9 +61,10 @@ function card({ icon, tone, value, unit, label, gold = false }) {
 
 /* Récords: más reps en una serie, el lastre máximo (o más reps en una sesión) y la carga estimada. */
 export function bodyweightRecordsHtml(bw, unidad) {
-  const { records, bodyKg } = bw;
-  const cards = [card({ icon: icons.crown({ size: 20 }), tone: 'primary', value: records.repsSerie, unit: 'reps', label: 'Más reps en una serie', gold: true })];
-  const sesion = card({ icon: icons.trendUp({ size: 20 }), tone: 'green', value: records.repsSesion, unit: 'reps', label: 'Más reps en una sesión' });
+  const { records, bodyKg, timed } = bw;
+  const unit = timed ? '' : 'reps';
+  const cards = [card({ icon: icons.crown({ size: 20 }), tone: 'primary', value: amountOf(records.repsSerie, timed), unit, label: timed ? 'Más tiempo en una serie' : 'Más reps en una serie', gold: true })];
+  const sesion = card({ icon: icons.trendUp({ size: 20 }), tone: 'green', value: amountOf(records.repsSesion, timed), unit, label: timed ? 'Más tiempo en una sesión' : 'Más reps en una sesión' });
   if (records.extraMax > 0) {
     cards.push(card({ icon: icons.plus({ size: 20 }), tone: 'green', value: `+${fmtWeight(records.extraMax, unidad)}`, unit: unidad, label: 'Peso añadido máx.' }));
   } else {
@@ -80,14 +94,15 @@ function row(label, prev, curr, unit, rawPrev = prev, rawCurr = curr) {
     </div>`;
 }
 
-export function bodyweightCompareHtml(sessions, unidad) {
+export function bodyweightCompareHtml(sessions, unidad, timed = false) {
   if (sessions.length < 2) return '';
   const last = sessions[sessions.length - 1];
   const prev = sessions[sessions.length - 2];
   const kg = (v) => fmtNum(Math.round(fromKg(v, unidad) * 10) / 10);
+  const a = (v) => amountOf(v, timed);
   const rows = [
-    row('Reps máx.', prev.repsMax, last.repsMax, ''),
-    row('Reps totales', prev.repsTotal, last.repsTotal, ''),
+    row(timed ? 'Tiempo máx.' : 'Reps máx.', a(prev.repsMax), a(last.repsMax), '', prev.repsMax, last.repsMax),
+    row(timed ? 'Tiempo total' : 'Reps totales', a(prev.repsTotal), a(last.repsTotal), '', prev.repsTotal, last.repsTotal),
     row('Series', prev.series, last.series, ''),
   ];
   if (prev.extra > 0 || last.extra > 0) rows.push(row('Peso añadido', kg(prev.extra), kg(last.extra), unidad, prev.extra, last.extra));
@@ -106,7 +121,7 @@ export function bodyweightCompareHtml(sessions, unidad) {
     </section>`;
 }
 
-export function bodyweightSessionsHtml(sessions, unidad) {
+export function bodyweightSessionsHtml(sessions, unidad, timed = false) {
   if (!sessions.length) return '';
   const rows = sessions.slice().reverse().map((s, i, arr) => {
     const load = s.extra > 0 ? `peso corporal + ${fmtWeight(s.extra, unidad)} ${esc(unidad)}` : 'peso corporal';
@@ -114,10 +129,10 @@ export function bodyweightSessionsHtml(sessions, unidad) {
       <div class="sess-item">
         <div>
           <span class="sess-item-date">${esc(formatShort(s.fecha))}</span>
-          <span class="sess-item-sub">${s.series} ${s.series === 1 ? 'serie' : 'series'} · ${s.repsTotal} reps · ${load}</span>
+          <span class="sess-item-sub">${s.series} ${s.series === 1 ? 'serie' : 'series'} · ${timed ? `${formatTime(s.repsTotal)} en total` : `${s.repsTotal} reps`} · ${load}</span>
         </div>
         <div class="sess-item-right">
-          <span class="sess-item-max">${s.repsMax} reps máx.</span>
+          <span class="sess-item-max">${timed ? formatTime(s.repsMax) : `${s.repsMax} reps`} máx.</span>
           ${trendBadge(s.repsMax, arr[i + 1]?.repsMax)}
         </div>
       </div>`;

@@ -140,11 +140,13 @@ export async function registerSet(input, { guard = false, abrirPregunta = true }
   const exerciseId = input.exerciseId;
   const peso = Number(input.peso);
   const reps = Number(input.reps);
+  /* Una serie por tiempo guarda sus segundos y reps 0 (services/timed.js). */
+  const segundos = input.segundos != null ? Math.round(Number(input.segundos)) : null;
   const tipo = input.tipo === 'calentamiento' ? 'calentamiento' : 'trabajo';
   const kind = tipo === 'calentamiento' ? 'absent' : classifyRir(input.rir);
   const rpe = kind === 'ok' ? rpeFromRir(Number(input.rir)) : null;
 
-  if (guard && sameCall(workoutId, exerciseId, peso, reps, t)) {
+  if (guard && sameCall(workoutId, exerciseId, peso, segundos ?? reps, t)) {
     return duplicateResponse(lastCall.setId);
   }
 
@@ -154,6 +156,7 @@ export async function registerSet(input, { guard = false, abrirPregunta = true }
     const sets = tx.objectStore('sets');
     meta.delete(PENDING_KEY);
     const row = { workoutId, exerciseId, peso, reps, tipo, ts: t };
+    if (segundos != null) row.segundos = segundos;
     if (rpe != null) row.rpe = rpe;
     const addReq = sets.add(row);
     addReq.onsuccess = () => {
@@ -188,7 +191,9 @@ export async function registerSet(input, { guard = false, abrirPregunta = true }
         });
         box.preguntar = true;
         box.marca = seq;
-        box.mensaje = `Pregunta exactamente: ¿Cuántas repeticiones más podrías haber hecho? Marca ${seq}. 0 es no salía otra. 4 es cuatro o más. Cuando responda, llama anotar_rpe con esa marca, también si es 0 o si está descansando. No escribas comentarios.`;
+        box.mensaje = segundos != null
+          ? `Pregunta exactamente: ¿Cuánto más podrías haber aguantado? Marca ${seq}. Cuando responda, llama anotar_rpe con esa marca y rir en pasos de 5 segundos: 0 si no aguantaba más, 1 si eran 5 s, 2 si 10 s, 3 si 15 s, 4 si 20 s o más. No escribas comentarios.`
+          : `Pregunta exactamente: ¿Cuántas repeticiones más podrías haber hecho? Marca ${seq}. 0 es no salía otra. 4 es cuatro o más. Cuando responda, llama anotar_rpe con esa marca, también si es 0 o si está descansando. No escribas comentarios.`;
       };
     };
     return box;
@@ -343,7 +348,7 @@ export function removeLoggedSet(id) {
   });
 }
 
-export function updateSet(setId, { peso, reps, tipo, rir }) {
+export function updateSet(setId, { peso, reps, segundos, tipo, rir }) {
   const sid = Number(setId);
   const nextTipo = tipo === 'calentamiento' ? 'calentamiento' : 'trabajo';
   let nextRpe = null;
@@ -361,7 +366,8 @@ export function updateSet(setId, { peso, reps, tipo, rir }) {
       const set = req.result;
       if (!set) return;
       if (peso != null && !Number.isNaN(Number(peso))) set.peso = Math.max(0, Number(peso));
-      if (reps != null && Number(reps) > 0) set.reps = Math.max(1, Math.round(Number(reps)));
+      if (segundos != null && Number(segundos) > 0) set.segundos = Math.round(Number(segundos));
+      else if (reps != null && Number(reps) > 0) set.reps = Math.max(1, Math.round(Number(reps)));
       set.tipo = nextTipo;
       if (nextTipo === 'calentamiento') {
         set.rpe = null;

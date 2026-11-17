@@ -3,6 +3,7 @@
 import { listBodyWeights } from '../body.js';
 import { getWorkoutDetail, listWorkoutSummaries } from '../workouts.js';
 import { isBodyweight, loadWords } from '../bodyweight.js';
+import { amountWords } from '../timed.js';
 import { addDays, toISO } from '../../utils/dates.js';
 
 export async function getRecentWorkoutsForFit() {
@@ -85,7 +86,7 @@ export async function queryWorkoutHistoryForFit(target) {
 
     const ejercicios = detail.groups.map((g) => {
       const corporal = isBodyweight(g.exercise);
-      const setsDesc = g.sets.map((s) => `${loadWords(s.peso, corporal)} × ${s.reps} reps${s.rir !== null ? ` (RIR ${s.rir})` : ''}`).join(', ');
+      const setsDesc = g.sets.map((s) => `${loadWords(s.peso, corporal)} × ${amountWords(s)}${s.segundos != null ? '' : ' reps'}${s.rir !== null ? ` (RIR ${s.rir})` : ''}`).join(', ');
       return `${g.exercise.nombre} (${g.sets.length} series: ${setsDesc})`;
     });
 

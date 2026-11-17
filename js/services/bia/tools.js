@@ -16,6 +16,7 @@ import { todayISO } from '../../utils/dates.js';
 import { EVENTS, emit } from '../../utils/events.js';
 import { toKg } from '../../utils/units.js';
 import { isBodyweight, loadWords } from '../bodyweight.js';
+import { amountWords, isTimed, MAX_SEGUNDOS } from '../timed.js';
 
 /* El esfuerzo dicho en voz: un entero desde 0, o null si no lo dijo o no se entiende. */
 function spokenRir(value) {
@@ -48,11 +49,6 @@ export async function executeToolCall(name, args) {
       autoStarted = true;
     }
 
-    const reps = Math.round(Number(args.reps));
-    if (!Number.isFinite(reps) || reps < 1 || reps > 100) {
-      return { error: 'Número de repeticiones no válido o no indicado por el atleta.' };
-    }
-
     const spoken = String(args.ejercicio || '').trim();
     let ex = null;
     if (spoken) {
@@ -63,6 +59,20 @@ export async function executeToolCall(name, args) {
       ex = state.activeExercise;
     } else {
       return { error: 'Dime qué ejercicio estás haciendo para anotar la serie.' };
+    }
+
+    /* En un ejercicio por tiempo se anotan segundos («plancha 45 segundos») y reps queda en 0. */
+    const timed = isTimed((await listExercises()).find((e) => e.id === ex.id) || ex);
+    let reps = Math.round(Number(args.reps));
+    let segundos = null;
+    if (timed) {
+      segundos = Math.round(Number(args.segundos ?? args.reps));
+      if (!Number.isFinite(segundos) || segundos < 1 || segundos > MAX_SEGUNDOS) {
+        return { error: 'Tiempo no válido o no indicado por el atleta. Pregunta cuántos segundos aguantó.' };
+      }
+      reps = 0;
+    } else if (!Number.isFinite(reps) || reps < 1 || reps > 100) {
+      return { error: 'Número de repeticiones no válido o no indicado por el atleta.' };
     }
 
     let peso = null;
@@ -83,12 +93,13 @@ export async function executeToolCall(name, args) {
 
     const tipo = args.tipo === 'calentamiento' ? 'calentamiento' : 'trabajo';
     const rir = spokenRir(args.rir);
-    const restEnd = now() + restSeconds(reps, state.settings, { rir, tipo }) * 1000;
+    const restEnd = now() + restSeconds(reps, state.settings, { rir, tipo, timed }) * 1000;
     const res = await registerSet({
       workoutId: active.id,
       exerciseId: ex.id,
       peso,
       reps,
+      segundos,
       tipo: args.tipo,
       rir: args.rir,
       restEnd,
@@ -98,8 +109,8 @@ export async function executeToolCall(name, args) {
       res.sesionIniciadaAutomaticamente = autoStarted;
     }
     if (!res?.duplicada) {
-      await saveActiveRest(restEnd, reps, { rir: tipo === 'trabajo' ? rir : null, tipo });
-      emit(EVENTS.SET_LOGGED, { restEnd, lastReps: reps });
+      await saveActiveRest(restEnd, segundos ?? reps, { rir: tipo === 'trabajo' ? rir : null, tipo, timed });
+      emit(EVENTS.SET_LOGGED, { restEnd, lastReps: segundos ?? reps });
     }
     return res;
   }
@@ -257,7 +268,7 @@ export async function executeToolCall(name, args) {
     const ultimaSesion = lastSess
       ? {
           fecha: lastSess.workout.fecha,
-          series: lastSess.sets.map((s) => `${loadWords(s.peso, isBodyweight(ex))} × ${s.reps} reps${s.rpe != null && s.rpe !== '' ? ` (RIR ${Math.max(0, 10 - Number(s.rpe))})` : ''}`),
+          series: lastSess.sets.map((s) => `${loadWords(s.peso, isBodyweight(ex))} × ${amountWords(s)}${s.segundos != null ? '' : ' reps'}${s.rpe != null && s.rpe !== '' ? ` (RIR ${Math.max(0, 10 - Number(s.rpe))})` : ''}`),
         }
       : null;
     const ultimasFechas = prog.sessions.slice(-5).map((d) => ({

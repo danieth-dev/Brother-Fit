@@ -10,6 +10,9 @@ export const session = {
   /* Esfuerzo de la última serie: explica un descanso alargado. */
   lastRir: null,
   lastTipo: 'trabajo',
+  lastTimed: false,
+  /* Inicio del cronómetro de una serie por tiempo; 0 si no corre. */
+  stopwatchStart: 0,
   draftTipo: 'trabajo',
   draftRir: null,
   openEffortId: null,
@@ -40,6 +43,7 @@ on(EVENTS.REST_CHANGED, (detail) => {
   if (detail?.lastReps) session.lastReps = detail.lastReps;
   if (detail?.lastReps || detail?.rir != null) session.lastRir = detail.rir ?? null;
   if (detail?.tipo) session.lastTipo = detail.tipo;
+  if (detail?.lastReps) session.lastTimed = Boolean(detail.timed);
 });
 
 on(EVENTS.EXERCISE_SELECTED, (detail) => {

@@ -3,8 +3,11 @@
  * En peso corporal manda la repetición; el peso es «peso corporal» o «peso corporal + lastre». */
 import { esc } from '../../utils/dom.js';
 import { fmtWeight } from '../../utils/units.js';
+import { formatTime } from '../../services/timed.js';
 
-function setLine(set, unidad, corporal) {
+/* En un ejercicio por tiempo, `reps` trae los segundos (asMeasured en services/timed.js). */
+function setLine(set, unidad, corporal, timed = false) {
+  if (timed) return formatTime(set.reps);
   return set.peso > 0 && !corporal
     ? `${fmtWeight(set.peso, unidad)} <span class="habitual-unit">${esc(unidad)}</span>`
     : `${set.reps} <span class="habitual-unit">reps</span>`;
@@ -25,7 +28,7 @@ function sameAsRecord(habitual, record, corporal) {
 }
 
 /** hab: de habitualForExercise(). record: { maxPeso, maxReps }. */
-export function habitualStripHtml(hab, record, unidad, corporal = false) {
+export function habitualStripHtml(hab, record, unidad, corporal = false, timed = false) {
   const { habitual, today, below, heavier } = hab || {};
   if (!habitual) return '';
   if (!today && sameAsRecord(habitual, record, corporal)) return '';
@@ -35,24 +38,24 @@ export function habitualStripHtml(hab, record, unidad, corporal = false) {
     return `
       <section class="habitual-card" aria-label="Tu habitual">
         <span class="habitual-label habitual-label--accent">Tu habitual</span>
-        <p class="habitual-val">${setLine(habitual, unidad, corporal)} ${extraReps}${load}</p>
+        <p class="habitual-val">${setLine(habitual, unidad, corporal, timed)} ${extraReps}${load}</p>
         <p class="habitual-note">${habitual.peso > 0 && !corporal ? 'Lo que levantas' : 'Lo que haces'} normalmente, según tus últimas ${habitual.sesiones} sesiones.</p>
       </section>`;
   }
   let note = '';
   if (below) note = '<p class="habitual-alert">Hoy vas por debajo de tu habitual. <span>Un día flojo no borra tu progreso.</span></p>';
-  else if (heavier && corporal) note = '<p class="habitual-alert">Hoy cargas más que de costumbre. <span>Menos repeticiones con lastre no es bajar.</span></p>';
+  else if (heavier && corporal) note = `<p class="habitual-alert">Hoy cargas más que de costumbre. <span>${timed ? 'Menos tiempo' : 'Menos repeticiones'} con lastre no es bajar.</span></p>`;
   return `
     <section class="habitual-card" aria-label="Hoy frente a tu habitual">
       <div class="habitual-pair">
         <div class="habitual-col">
           <span class="habitual-label habitual-label--accent">Hoy</span>
-          <p class="habitual-val">${setLine(today, unidad, corporal)}</p>
+          <p class="habitual-val">${setLine(today, unidad, corporal, timed)}</p>
           <span class="habitual-sub">${setSub(today, unidad, corporal)}</span>
         </div>
         <div class="habitual-col habitual-col--ref">
           <span class="habitual-label">Tu habitual</span>
-          <p class="habitual-val">${setLine(habitual, unidad, corporal)}</p>
+          <p class="habitual-val">${setLine(habitual, unidad, corporal, timed)}</p>
           <span class="habitual-sub">${setSub(habitual, unidad, corporal, ` · últimas ${habitual.sesiones}`)}</span>
         </div>
       </div>

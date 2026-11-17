@@ -24,6 +24,9 @@ import { session, setActiveExercise, resetSession } from './workout/session.js';
 import { idleMarkup, activeMarkup, todayLogMarkup, weightStep } from './workout/markup.js';
 import { startTicker, stopRest } from './workout/rest.js';
 import { setRestControls } from '../utils/rest-pill.js';
+import { parseTime, formatTime, MAX_SEGUNDOS, TIME_STEP_S } from '../services/timed.js';
+import { isBodyweight } from '../services/bodyweight.js';
+import { stopwatchRunning, toggleStopwatch, resumeStopwatch, resetStopwatch } from './workout/stopwatch.js';
 
 const MAX_PESO_KG = 600;
 const PAST_WORKOUTS_SHOWN = 3;
@@ -68,6 +71,7 @@ async function restoreRest() {
     session.lastReps = saved.lastReps || 0;
     session.lastRir = saved.rir ?? null;
     session.lastTipo = saved.tipo || 'trabajo';
+    session.lastTimed = Boolean(saved.timed);
   }
 }
 
@@ -175,11 +179,12 @@ async function renderActive(el, w) {
   el.querySelector('.today-log')?.addEventListener('toggle', (e) => {
     session.todayLogOpen = e.currentTarget.open;
   });
-  prefillWeight(el, d.targetSet);
+  prefillWeight(el, d.targetSet, isBodyweight(d.currentEx));
   syncSubmit(el);
   watchSubmitInputs(el);
   scrollTargetRefCard(el);
   startTicker(el, w, (id) => goToExercise(el, d.exs, id));
+  resumeStopwatch(el);
   setRestControls(restControls(el, d));
   const tipoSeg = el.querySelector('#draft-tipo-seg');
   if (tipoSeg) requestAnimationFrame(() => syncSegThumb(tipoSeg));
@@ -195,7 +200,7 @@ function restControls(el, d) {
   return {
     // Se lee al abrir la hoja: Bía puede alargar el descanso después de pintar Entreno.
     get zone() {
-      return state.settings.descansoMode === 'auto' && session.lastReps ? restLabel(session.lastReps, { rir: session.lastRir, tipo: session.lastTipo }) : '';
+      return state.settings.descansoMode === 'auto' && session.lastReps ? restLabel(session.lastReps, { rir: session.lastRir, tipo: session.lastTipo, timed: session.lastTimed }) : '';
     },
     action,
     onSkip: () => skipRest(el, d.exs),
@@ -230,9 +235,12 @@ async function finishFlow(w) {
   go(`/history/${w.id}`);
 }
 
-function prefillWeight(el, targetSet) {
+/* El peso de la serie a superar; en peso corporal sin sesión anterior, 0 (solo el cuerpo). */
+function prefillWeight(el, targetSet, corporal) {
   const input = el.querySelector('form[data-form="set"] input[name="peso"]');
-  if (input && targetSet && !input.value) input.value = fmtWeight(targetSet.peso);
+  if (!input || input.value) return;
+  if (targetSet) input.value = fmtWeight(targetSet.peso);
+  else if (corporal) input.value = '0';
 }
 
 function scrollTargetRefCard(el) {
@@ -241,10 +249,17 @@ function scrollTargetRefCard(el) {
 }
 
 /* El botón dice lo que falta; solo se habilita cuando la serie está completa. */
+/* Una serie por tiempo trae el campo «segundos» en vez de «reps». */
+const timedForm = (f) => Boolean(f.elements.segundos);
+
 function missingForSet(f) {
-  const reps = parseInt(f.elements.reps.value, 10);
   const peso = num(f.elements.peso.value);
-  if (!(reps > 0)) return 'Indica las repeticiones';
+  if (timedForm(f)) {
+    if (stopwatchRunning()) return 'Detén el cronómetro';
+    if (!(parseTime(f.elements.segundos.value) > 0)) return 'Indica el tiempo';
+  } else if (!(parseInt(f.elements.reps.value, 10) > 0)) {
+    return 'Indica las repeticiones';
+  }
   if (!Number.isFinite(peso)) return 'Indica el peso';
   if (session.draftTipo === 'trabajo' && !Number.isFinite(session.draftRir)) return 'Indica el esfuerzo';
   return '';
@@ -266,7 +281,7 @@ function syncSubmit(el) {
 function watchSubmitInputs(el) {
   if (el._submitSync) el.removeEventListener('input', el._submitSync);
   el._submitSync = (e) => {
-    if (e.target?.name === 'reps' || e.target?.name === 'peso') syncSubmit(el);
+    if (['reps', 'peso', 'segundos'].includes(e.target?.name)) syncSubmit(el);
   };
   el.addEventListener('input', el._submitSync);
 }
@@ -301,6 +316,7 @@ function stepInput(input, delta, { min = 0, decimals = false } = {}) {
 }
 
 async function goToExercise(el, exs, id, { announce = false } = {}) {
+  resetStopwatch(el);
   session.pendingNextEx = null;
   session.selectedEx = id;
   const ex = exs.find((e) => e.id === id);
@@ -402,9 +418,12 @@ async function saveSet(el, f, d) {
 async function saveSetNow(el, f, d) {
   const exerciseId = Number(f.elements.exerciseId.value);
   const peso = toKg(num(f.elements.peso.value));
-  const reps = parseInt(f.elements.reps.value, 10);
-  if (!Number.isFinite(peso) || peso < 0 || peso > MAX_PESO_KG || !(reps > 0)) {
-    toast('Revisa el peso y las repeticiones.', { tone: 'warn' });
+  const timed = timedForm(f);
+  const segundos = timed ? parseTime(f.elements.segundos.value) : null;
+  const reps = timed ? 0 : parseInt(f.elements.reps.value, 10);
+  const amountOk = timed ? segundos > 0 && segundos <= MAX_SEGUNDOS : reps > 0;
+  if (!Number.isFinite(peso) || peso < 0 || peso > MAX_PESO_KG || !amountOk) {
+    toast(timed ? 'Revisa el peso y el tiempo.' : 'Revisa el peso y las repeticiones.', { tone: 'warn' });
     return;
   }
   const working = session.draftTipo === 'trabajo';
@@ -415,12 +434,14 @@ async function saveSetNow(el, f, d) {
   }
 
   const rir = working ? session.draftRir : null;
-  const restEnd = now() + restSeconds(reps, state.settings, { rir, tipo: session.draftTipo }) * 1000;
+  const measure = timed ? segundos : reps;
+  const restEnd = now() + restSeconds(measure, state.settings, { rir, tipo: session.draftTipo, timed }) * 1000;
   const saved = await registerSet({
     workoutId: d.w.id,
     exerciseId,
     peso,
     reps,
+    segundos,
     tipo: session.draftTipo,
     rir: working ? rir : undefined,
     restEnd,
@@ -428,10 +449,11 @@ async function saveSetNow(el, f, d) {
 
   session.restEnd = restEnd;
   session.selectedEx = exerciseId;
-  session.lastReps = reps;
+  session.lastReps = measure;
   session.lastRir = rir;
   session.lastTipo = session.draftTipo;
-  await saveActiveRest(restEnd, reps, { rir, tipo: session.draftTipo });
+  session.lastTimed = timed;
+  await saveActiveRest(restEnd, measure, { rir, tipo: session.draftTipo, timed });
   session.pendingNextEx = nextRoutineStep(d.w.routineExercises, exerciseId, d.prevSets.length, d.curExSets.length + 1);
   session.draftTipo = 'trabajo';
   session.draftRir = null;
@@ -476,6 +498,15 @@ function bindActive(el, d) {
       const input = el.querySelector('input[name="reps"]');
       if (input) stepInput(input, Number(t.dataset.dir || 1));
     },
+    'step-time': (t) => {
+      const input = el.querySelector('input[name="segundos"]');
+      if (!input || stopwatchRunning()) return;
+      const current = parseTime(input.value);
+      const next = (Number.isFinite(current) ? current : 0) + Number(t.dataset.dir || 1) * TIME_STEP_S;
+      input.value = formatTime(Math.min(MAX_SEGUNDOS, Math.max(0, next)));
+      syncSubmit(el);
+    },
+    stopwatch: () => toggleStopwatch(el, () => syncSubmit(el)),
     'draft-tipo': (t) => {
       session.draftTipo = t.dataset.tipo === 'calentamiento' ? 'calentamiento' : 'trabajo';
       if (session.draftTipo === 'calentamiento') session.draftRir = null;

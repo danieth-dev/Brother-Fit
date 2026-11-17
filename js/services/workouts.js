@@ -7,6 +7,7 @@ import { isCatalogExercise, BASE } from './seed.js';
 import { PENDING_KEY, effortPhrase } from './effort.js';
 import { bestWorkingSet, habitualFrom, isBelowHabitual, carriesMore } from './habitual.js';
 import { isBodyweight, loadWords } from './bodyweight.js';
+import { asMeasured, amountWords } from './timed.js';
 
 export { isCatalogExercise };
 
@@ -245,8 +246,9 @@ export async function listExercises() {
   return (await db.getAll('exercises')).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
 }
 
-/* corporal: se hace con el peso del cuerpo (solo los del atleta; el catálogo ya lo sabe). */
-export async function addExercise(nombre, grupo = 'Otro', { corporal = false } = {}) {
+/* corporal: se hace con el peso del cuerpo; tiempo: se mide en segundos. Solo los del atleta: el
+ * catálogo ya lo sabe por el nombre. */
+export async function addExercise(nombre, grupo = 'Otro', { corporal = false, tiempo = false } = {}) {
   nombre = String(nombre || '').trim();
   if (!nombre) throw new Error('Escribe el nombre del ejercicio.');
   grupo = normalizeGrupo(grupo);
@@ -254,7 +256,7 @@ export async function addExercise(nombre, grupo = 'Otro', { corporal = false } =
   const dup = all.find((e) => e.nombre.toLowerCase() === nombre.toLowerCase());
   if (dup) throw new Error('Ese ejercicio ya existe.');
   try {
-    return await db.add('exercises', { nombre, grupo, ...(corporal ? { corporal: true } : {}) });
+    return await db.add('exercises', { nombre, grupo, ...(corporal ? { corporal: true } : {}), ...(tiempo ? { medida: 'tiempo' } : {}) });
   } catch (e) {
     if (e?.name === 'ConstraintError' || (e?.message && e.message.toLowerCase().includes('constraint'))) {
       throw new Error('Ese ejercicio ya existe.');
@@ -276,7 +278,7 @@ export async function countSetsForExercise(exerciseId) {
   return sets.length;
 }
 
-export async function updateExercise(id, nombre, grupo = 'Otro', { corporal = false } = {}) {
+export async function updateExercise(id, nombre, grupo = 'Otro', { corporal = false, tiempo = false } = {}) {
   const ex = await db.get('exercises', Number(id));
   if (!ex) throw new Error('Ese ejercicio ya no está.');
   if (!isOwnExercise(ex)) throw new Error('El catálogo no se edita.');
@@ -291,6 +293,8 @@ export async function updateExercise(id, nombre, grupo = 'Otro', { corporal = fa
     const next = { ...ex, nombre, grupo };
     if (corporal) next.corporal = true;
     else delete next.corporal;
+    if (tiempo) next.medida = 'tiempo';
+    else delete next.medida;
     await db.put('exercises', next);
   } catch (e) {
     if (e?.name === 'ConstraintError' || (e?.message && e.message.toLowerCase().includes('constraint'))) {
@@ -353,9 +357,9 @@ export async function loadActiveRest() {
 
 /* start sirve para dibujar cuánto queda; rir y tipo, para explicar de dónde sale el descanso.
  * Los descansos guardados antes no los traen. */
-export async function saveActiveRest(restEnd, lastReps, { start = now(), rir = null, tipo = 'trabajo' } = {}) {
-  await db.put('meta', { key: REST_KEY, value: { restEnd, lastReps, start, rir, tipo } });
-  emit(EVENTS.REST_CHANGED, { restEnd, start, lastReps, rir, tipo });
+export async function saveActiveRest(restEnd, lastReps, { start = now(), rir = null, tipo = 'trabajo', timed = false } = {}) {
+  await db.put('meta', { key: REST_KEY, value: { restEnd, lastReps, start, rir, tipo, timed } });
+  emit(EVENTS.REST_CHANGED, { restEnd, start, lastReps, rir, tipo, timed });
 }
 
 export async function clearActiveRest() {
@@ -373,7 +377,7 @@ export async function shiftActiveRest(deltaMs, { rir } = {}) {
     await clearActiveRest();
     return 0;
   }
-  await saveActiveRest(restEnd, rest.lastReps, { start: rest.start ?? now(), rir: rir ?? rest.rir ?? null, tipo: rest.tipo });
+  await saveActiveRest(restEnd, rest.lastReps, { start: rest.start ?? now(), rir: rir ?? rest.rir ?? null, tipo: rest.tipo, timed: rest.timed });
   return restEnd;
 }
 
@@ -470,7 +474,7 @@ export async function finishWorkoutSummary(id) {
 
 function setBit(s, corporal = false) {
   /* Resumen en kg canónicos: la memoria del agente y el historial hablado usan kg. */
-  const base = `${loadWords(s.peso, corporal)} × ${s.reps}`;
+  const base = `${loadWords(s.peso, corporal)} × ${amountWords(s)}`;
   if (s.tipo === 'calentamiento') return `${base} calentamiento`;
   if (s.tipo === 'trabajo' && (s.rpe == null || s.rpe === '')) return `${base} sin esfuerzo`;
   if (s.rpe != null && s.rpe !== '') return `${base} ${effortPhrase(s.rpe)}`;
@@ -663,7 +667,7 @@ export async function habitualForExercise(exerciseId) {
   for (const s of sets) {
     if (!fechaDe.has(s.workoutId)) continue;
     if (!byWorkout.has(s.workoutId)) byWorkout.set(s.workoutId, []);
-    byWorkout.get(s.workoutId).push(s);
+    byWorkout.get(s.workoutId).push(asMeasured(s));
   }
   const activeId = active?.id ?? null;
   const past = [...byWorkout.keys()]
