@@ -47,7 +47,8 @@ export function muscleName(grupo) {
 /* Músculo que trabaja cada ejercicio, con su nombre anatómico completo. «Pecho alto» o «espalda
  * media» no son músculos: el pectoral mayor, el deltoides, el trapecio y el tríceps son uno solo, y un
  * ejercicio solo pone más énfasis en una porción o cabeza. Por eso se escribe «énfasis», nunca la
- * porción como si fuera un músculo aparte. */
+ * porción como si fuera un músculo aparte. Solo se marca un énfasis con respaldo (crecimiento o
+ * activación medidos, o la dirección de las fibras); si es solo una deducción, va el músculo a secas. */
 const FOCO = {
   // Pecho
   'Press banca': 'pectoral mayor y tríceps',
@@ -61,7 +62,7 @@ const FOCO = {
   'Dominadas': 'dorsal ancho y bíceps',
   'Remo con barra': 'dorsal ancho, trapecio y romboides',
   'Jalón al pecho': 'dorsal ancho',
-  'Peso muerto': 'glúteo, isquiotibiales y erectores espinales',
+  'Peso muerto': 'glúteo, isquiotibiales y erector de la columna',
   'Remo unilateral': 'dorsal ancho',
   'Remo T': 'trapecio, romboides y dorsal ancho',
   'Jalón a la cara': 'deltoides (énfasis posterior) y trapecio',
@@ -86,7 +87,7 @@ const FOCO = {
 
   // Tríceps
   'Fondos': 'tríceps y pectoral mayor (énfasis en fibras bajas)',
-  'Extensión de tríceps': 'tríceps (énfasis en cabezas lateral y medial)',
+  'Extensión de tríceps': 'tríceps',
   'Copa': 'tríceps (énfasis en cabeza larga)',
 
   // Core
