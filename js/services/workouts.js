@@ -351,11 +351,11 @@ export async function loadActiveRest() {
   return value;
 }
 
-/* start sirve para dibujar cuánto queda y rir para explicar un descanso alargado por esfuerzo;
- * los descansos guardados antes no los traen. */
-export async function saveActiveRest(restEnd, lastReps, { start = now(), rir = null } = {}) {
-  await db.put('meta', { key: REST_KEY, value: { restEnd, lastReps, start, rir } });
-  emit(EVENTS.REST_CHANGED, { restEnd, start, lastReps, rir });
+/* start sirve para dibujar cuánto queda; rir y tipo, para explicar de dónde sale el descanso.
+ * Los descansos guardados antes no los traen. */
+export async function saveActiveRest(restEnd, lastReps, { start = now(), rir = null, tipo = 'trabajo' } = {}) {
+  await db.put('meta', { key: REST_KEY, value: { restEnd, lastReps, start, rir, tipo } });
+  emit(EVENTS.REST_CHANGED, { restEnd, start, lastReps, rir, tipo });
 }
 
 export async function clearActiveRest() {
@@ -373,7 +373,7 @@ export async function shiftActiveRest(deltaMs, { rir } = {}) {
     await clearActiveRest();
     return 0;
   }
-  await saveActiveRest(restEnd, rest.lastReps, { start: rest.start ?? now(), rir: rir ?? rest.rir ?? null });
+  await saveActiveRest(restEnd, rest.lastReps, { start: rest.start ?? now(), rir: rir ?? rest.rir ?? null, tipo: rest.tipo });
   return restEnd;
 }
 

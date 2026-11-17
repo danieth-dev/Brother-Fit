@@ -9,7 +9,7 @@ import { ensureNotifyPermission, cancelWaterReminders, resumeWaterReminders } fr
 import { getActiveAgent } from '../voice/fit-agent.js';
 import { toast, esc, num } from '../utils/dom.js';
 import { formatCountdown } from '../utils/dates.js';
-import { REST_ZONES, RIR_BONUS } from '../services/session-plan.js';
+import { REST_ZONES, RIR_BONUS, WARMUP_ZONES } from '../services/session-plan.js';
 import { icons } from '../utils/icons.js';
 import { askConfirm } from '../utils/confirm-sheet.js';
 import { showMemoriesPanel } from '../utils/memories-panel.js';
@@ -121,7 +121,7 @@ export async function render(el) {
                 <p class="val">${formatCountdown(z.secs)}</p>
               </div>`).join('')}
             </div>
-            <p class="settings-rest-note">Al fallo, +${RIR_BONUS[0]} s. A 1 del fallo, +${RIR_BONUS[1]} s. Los calentamientos no se alargan.</p>
+            <p class="settings-rest-note">Cuentan las repeticiones que podías hacer: las hechas más las que te sobraban. Al fallo, +${RIR_BONUS[0]} s; a 1 del fallo, +${RIR_BONUS[1]} s. Calentamientos: ${formatCountdown(WARMUP_ZONES[0].secs)}, o ${formatCountdown(WARMUP_ZONES[1].secs)} con ${WARMUP_ZONES[1].range.replace('+', '')} repeticiones o más.</p>
           `
               : `
             <div class="settings-inline-form">

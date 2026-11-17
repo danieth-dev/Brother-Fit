@@ -2,7 +2,7 @@
 
 Documento vivo del producto. Describe cómo está armado, dónde vive cada dato y qué no se puede romper. Cuando cambie el comportamiento, el esquema, una pantalla o la forma de publicar, este archivo se actualiza en el mismo cambio.
 
-Última revisión: 16 de noviembre de 2026. Base de datos versión 3. Caché de la app `v211`.
+Última revisión: 16 de noviembre de 2026. Base de datos versión 3. Caché de la app `v212`.
 
 ## Qué es
 
@@ -134,7 +134,7 @@ Claves de `meta`:
 | `settings` | `{ descanso, descansoMode, unidad, aguaRecordatorios, tema, modo, creatinaCompacta, metaKcal, metaProteina, metaCarbos, metaGrasa, metaObjetivo }`. `unidad` es `kg` o `lb` (preferencia de pantalla). `tema` es `amarillo`, `azul` o `rosado`; `modo` es `oscuro`, `claro` o `sistema`. `metaObjetivo` es `ganar`, `mantener` o `definir`. La toma de creatina es siempre 5 g (`DOSE_G`). |
 | `waterReminders` | Plan del día: `{ fecha, items: [{ id, at, body, done }] }`. Avisos locales de agua tras la creatina. |
 | `activeWorkoutId` | Id de la sesión abierta. Se borra al terminar o si esa sesión ya está cerrada. |
-| `activeRest` | `{ restEnd, lastReps, start, rir }` del descanso en curso; `rir` explica un descanso alargado por esfuerzo; `start` sirve para dibujar cuánto queda en la hoja del descanso y falta en los guardados antes de la `v203`. Si ya venció, se borra al leerlo. |
+| `activeRest` | `{ restEnd, lastReps, start, rir, tipo }` del descanso en curso; `rir` y `tipo` explican un descanso alargado por esfuerzo; `start` sirve para dibujar cuánto queda en la hoja del descanso y falta en los guardados antes de la `v203`. Si ya venció, se borra al leerlo. |
 | `pendingRpe` | Pregunta abierta: `{ setId, mark, attempts, until }`. Se suelta al anotar, al vencer, al crear otra serie, al terminar o descartar, al borrar esa serie, al pasarla a calentamiento o al usar los botones. |
 | `rpeSeq` | Entero de la próxima marca. No vuelve a cero al cerrar la pregunta. Solo puede bajar si se importa un respaldo o se borra todo, porque esas dos acciones recargan la página y cortan la sesión de Bía. |
 | `seeded` | Marca de que el catálogo ya se intentó. La semilla ya no depende de esta marca para volver a correr. |
@@ -167,9 +167,9 @@ Toasts (`#toast`): píldora elevada con borde amarillo completo (look clásico B
 
 Una sesión empieza con `startWorkout()`. Si ya hay una abierta, se reutiliza. Al terminar se escribe `finishedAt` y `duracion`, y se suelta `activeWorkoutId`.
 
-Cada serie dispara el descanso y lo guarda en `meta.activeRest`. Recargar el teléfono no lo borra. En modo automático el tiempo sale de las repeticiones (`REST_ZONES` en `services/session-plan.js`; Ajustes dibuja la misma tabla):
+Cada serie dispara el descanso y lo guarda en `meta.activeRest`. Recargar el teléfono no lo borra. En modo automático, el de una serie de trabajo sale de las **repeticiones que podía hacer** con ese peso: las hechas más las que le sobraban (`possibleReps()`; «4 o más» cuenta como 4). Eso dice lo pesada que fue la carga; las repeticiones solas no: 10 kg × 5 con 4 de sobra son unas 9 posibles, no una serie de fuerza. Sin esfuerzo anotado se usan las hechas. La tabla es `REST_ZONES` en `services/session-plan.js` y Ajustes dibuja la misma:
 
-| Reps | Descanso |
+| Reps posibles | Descanso |
 | --- | --- |
 | 1–5 | 3:00 |
 | 6–8 | 2:00 |
@@ -178,7 +178,9 @@ Cada serie dispara el descanso y lo guarda en `meta.activeRest`. Recargar el tel
 
 Nunca baja de 1:30: con un minuto o menos el rendimiento de la serie siguiente cae. Hasta la `v210` la fila de 13 o más era 1:00.
 
-**Ajuste por esfuerzo** (`effortBonus()`, `RIR_BONUS`): a una serie de trabajo al fallo (0 en «¿Cuántas más podrías haber hecho?») se le suman 30 s, y a una con 1 en reserva, 15 s. Con 2 o más, sin esfuerzo o en calentamiento no cambia. El porqué: una serie al fallo cansa más y tarda más en recuperarse, y descansar algo más ayuda a repetir el rendimiento. Los estudios dan rangos, no una cifra exacta, así que el ajuste es moderado. La hoja del descanso lo dice: «Hipertrofia · 1:30 + 30 s por llegar al fallo» (`restLabel()`). Bía usa la misma regla. Si el esfuerzo le llega después de anotar, con el descanso ya corriendo (`anotar_rpe`), lo alarga con `shiftActiveRest()`.
+Los **calentamientos** no buscan cansar y descansan poco, según sus repeticiones (`WARMUP_ZONES`): 1:00 hasta 10 y 1:30 con 11 o más, porque un calentamiento largo, como 3 × 20 flexiones, cansa algo más. Si cuesta de verdad, ya es una serie de trabajo y conviene anotarla así.
+
+**Ajuste por esfuerzo** (`effortBonus()`, `RIR_BONUS`): a una serie de trabajo al fallo (0 en «¿Cuántas más podrías haber hecho?») se le suman 30 s, y a una con 1 en reserva, 15 s. Con 2 o más, sin esfuerzo o en calentamiento no cambia. El porqué: una serie al fallo cansa más y tarda más en recuperarse, y descansar algo más ayuda a repetir el rendimiento. Los estudios dan rangos, no una cifra exacta, así que el ajuste es moderado. La hoja del descanso explica el cálculo (`restLabel()`): «Hipertrofia · 1:30 · podías unas 9 reps», «Hipertrofia · 1:30 + 30 s por llegar al fallo» o «Calentamiento · 1:00». Bía usa la misma regla. Si el esfuerzo le llega después de anotar, con el descanso ya corriendo (`anotar_rpe`), lo alarga con `shiftActiveRest()`.
 
 En modo manual se usan los segundos de Ajustes (`descanso`, 90 por defecto), sin ajuste.
 

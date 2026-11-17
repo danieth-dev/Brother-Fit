@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { restZone, restSeconds, restLabel, effortBonus, workoutTitle, orderExercises, nextRoutineStep, routineComplete, ROUTINE_DONE } from '../js/services/session-plan.js';
+import { restZone, restSeconds, restLabel, effortBonus, possibleReps, workoutTitle, orderExercises, nextRoutineStep, routineComplete, ROUTINE_DONE } from '../js/services/session-plan.js';
 import { formatWeekdayShort, formatCountdown } from '../js/utils/dates.js';
 
 test('descanso automático por repeticiones; el fijo sale de Ajustes', () => {
@@ -22,18 +22,38 @@ test('cerca del fallo se descansa un poco más', () => {
   assert.equal(restSeconds(15, auto, { rir: 3 }), 90);
 });
 
-test('calentamiento y modo manual no se ajustan por esfuerzo', () => {
+test('la zona sale de las repeticiones que podía hacer, no de las hechas', () => {
+  const auto = { descansoMode: 'auto', descanso: 90 };
+  assert.equal(possibleReps(5, 4), 9);
+  assert.equal(possibleReps(5, 6), 9);
+  assert.equal(possibleReps(5, null), 5);
+  // 10 kg × 5 con 4 de sobra no es fuerza: unas 9 posibles.
+  assert.equal(restSeconds(5, auto, { rir: 4 }), 90);
+  assert.equal(restSeconds(5, auto, { rir: 0 }), 210);
+  assert.equal(restSeconds(6, auto, { rir: 2 }), 120);
+  assert.equal(restSeconds(6, auto, { rir: 3 }), 90);
+  // Sin esfuerzo anotado, las repeticiones solas.
+  assert.equal(restSeconds(5, auto), 180);
+});
+
+test('calentamientos cortos por repeticiones y modo manual sin ajuste', () => {
+  const auto = { descansoMode: 'auto', descanso: 90 };
   assert.equal(effortBonus(0, 'calentamiento'), 0);
   assert.equal(effortBonus(1.5), 0);
-  assert.equal(restSeconds(10, { descansoMode: 'auto', descanso: 90 }, { rir: 0, tipo: 'calentamiento' }), 90);
+  assert.equal(restSeconds(5, auto, { tipo: 'calentamiento' }), 60);
+  assert.equal(restSeconds(10, auto, { rir: 0, tipo: 'calentamiento' }), 60);
+  assert.equal(restSeconds(20, auto, { tipo: 'calentamiento' }), 90);
   assert.equal(restSeconds(10, { descansoMode: 'manual', descanso: 90 }, { rir: 0 }), 90);
 });
 
 test('la etiqueta del descanso dice por qué se alargó', () => {
   assert.equal(restLabel(10, { rir: 0 }), 'Hipertrofia · 1:30 + 30 s por llegar al fallo');
-  assert.equal(restLabel(10, { rir: 1 }), 'Hipertrofia · 1:30 + 15 s por quedarte a 1');
-  assert.equal(restLabel(10, { rir: 3 }), 'Hipertrofia · 1:30');
+  assert.equal(restLabel(10, { rir: 1 }), 'Hipertrofia · 1:30 · podías unas 11 reps + 15 s por quedarte a 1');
+  assert.equal(restLabel(10, { rir: 3 }), 'Resistencia · 1:30 · podías unas 13 reps');
   assert.equal(restLabel(10), 'Hipertrofia · 1:30');
+  assert.equal(restLabel(5, { rir: 4 }), 'Hipertrofia · 1:30 · podías 9 o más reps');
+  assert.equal(restLabel(5, { rir: 1 }), 'Fuerza-Hipertrofia · 2 min · podías unas 6 reps + 15 s por quedarte a 1');
+  assert.equal(restLabel(20, { tipo: 'calentamiento' }), 'Calentamiento · 1:30');
 });
 
 test('título de una sesión por sus grupos', () => {

@@ -1,7 +1,8 @@
 /* Reglas del entreno en curso que no tocan la base: descanso sugerido, título de una sesión,
  * orden de la lista de ejercicios y el siguiente paso de una rutina repetida. */
 
-/* Descanso automático según las repeticiones de la última serie (fuerza descansa más). Nunca menos
+/* Descanso automático de una serie de trabajo según las repeticiones que PODÍA hacer con ese peso
+ * (possibleReps: hechas + las que sobraban): cuanto más pesada la carga, más descanso. Nunca menos
  * de 1:30: por debajo de un minuto el rendimiento de la serie siguiente cae, y una serie larga
  * también cansa. Ajustes dibuja esta misma tabla. */
 export const REST_ZONES = [
@@ -18,27 +19,61 @@ export const RIR_BONUS = { 0: 30, 1: 15 };
 
 const RIR_REASON = { 0: 'por llegar al fallo', 1: 'por quedarte a 1' };
 
+/* «4 o más» se guarda como piso: cuenta como 4. */
+const RIR_FLOOR = 4;
+
+/* Un calentamiento no busca cansar: descanso corto. Con muchas repeticiones el volumen sí cansa
+ * algo más (3 × 20 flexiones holgadas), así que pide un poco más. */
+export const WARMUP_ZONES = [
+  { maxReps: 10, range: '1–10', secs: 60, label: 'Calentamiento · 1:00' },
+  { maxReps: Infinity, range: '11+', secs: 90, label: 'Calentamiento · 1:30' },
+];
+
+const isWarmup = (tipo) => tipo === 'calentamiento';
+const validRir = (rir) => Number.isInteger(rir) && rir >= 0;
+
 export function restZone(reps) {
   return REST_ZONES.find((z) => reps <= z.maxReps);
 }
 
+function warmupZone(reps) {
+  return WARMUP_ZONES.find((z) => reps <= z.maxReps);
+}
+
+/**
+ * Cuántas repeticiones podía hacer con ese peso: las hechas más las que le sobraban. Es lo que dice
+ * lo pesada que fue la carga para él; las repeticiones solas no (10 kg × 5 con 4 de sobra no es
+ * fuerza). Sin esfuerzo anotado, las hechas.
+ */
+export function possibleReps(reps, rir = null) {
+  return validRir(rir) ? reps + Math.min(rir, RIR_FLOOR) : reps;
+}
+
 /** Segundos extra por el esfuerzo de una serie de trabajo; 0 en calentamiento o sin esfuerzo. */
 export function effortBonus(rir, tipo = 'trabajo') {
-  if (tipo === 'calentamiento' || !Number.isInteger(rir)) return 0;
+  if (isWarmup(tipo) || !validRir(rir)) return 0;
   return RIR_BONUS[rir] ?? 0;
 }
 
-/** Segundos de descanso: en automático, la zona más el esfuerzo; en manual, los fijos de Ajustes. */
+/**
+ * Segundos de descanso. En automático: un calentamiento, por sus repeticiones; una serie de trabajo,
+ * por las repeticiones posibles más el ajuste cerca del fallo. En manual, los fijos de Ajustes.
+ */
 export function restSeconds(reps, { descansoMode, descanso }, { rir = null, tipo = 'trabajo' } = {}) {
   if (descansoMode !== 'auto') return descanso;
-  return restZone(reps).secs + effortBonus(rir, tipo);
+  if (isWarmup(tipo)) return warmupZone(reps).secs;
+  return restZone(possibleReps(reps, rir)).secs + effortBonus(rir, tipo);
 }
 
-/** «Hipertrofia · 1:30 + 30 s por llegar al fallo», o solo la zona si no hay ajuste. */
+/** Lo que dice la hoja del descanso: «Hipertrofia · 1:30 · podías unas 9 reps», «… + 30 s por llegar al fallo». */
 export function restLabel(reps, { rir = null, tipo = 'trabajo' } = {}) {
-  const zone = restZone(reps).label;
+  if (isWarmup(tipo)) return warmupZone(reps).label;
+  const possible = possibleReps(reps, rir);
+  let label = restZone(possible).label;
+  if (possible !== reps) label += ` · podías ${rir >= RIR_FLOOR ? `${possible} o más` : `unas ${possible}`} reps`;
   const bonus = effortBonus(rir, tipo);
-  return bonus ? `${zone} + ${bonus} s ${RIR_REASON[rir]}` : zone;
+  if (bonus) label += ` + ${bonus} s ${RIR_REASON[rir]}`;
+  return label;
 }
 
 /** «Pecho», «Pecho y Espalda», «Pecho, Espalda y Hombros» o «Pecho, Espalda (+2)». */

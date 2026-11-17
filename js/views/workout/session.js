@@ -9,6 +9,7 @@ export const session = {
   lastReps: 0,
   /* Esfuerzo de la última serie: explica un descanso alargado. */
   lastRir: null,
+  lastTipo: 'trabajo',
   draftTipo: 'trabajo',
   draftRir: null,
   openEffortId: null,
@@ -38,6 +39,7 @@ on(EVENTS.REST_CHANGED, (detail) => {
   session.restEnd = detail?.restEnd || 0;
   if (detail?.lastReps) session.lastReps = detail.lastReps;
   if (detail?.lastReps || detail?.rir != null) session.lastRir = detail.rir ?? null;
+  if (detail?.tipo) session.lastTipo = detail.tipo;
 });
 
 on(EVENTS.EXERCISE_SELECTED, (detail) => {

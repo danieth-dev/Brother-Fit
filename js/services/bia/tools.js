@@ -98,7 +98,7 @@ export async function executeToolCall(name, args) {
       res.sesionIniciadaAutomaticamente = autoStarted;
     }
     if (!res?.duplicada) {
-      await saveActiveRest(restEnd, reps, { rir: tipo === 'trabajo' ? rir : null });
+      await saveActiveRest(restEnd, reps, { rir: tipo === 'trabajo' ? rir : null, tipo });
       emit(EVENTS.SET_LOGGED, { restEnd, lastReps: reps });
     }
     return res;

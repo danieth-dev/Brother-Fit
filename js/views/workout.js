@@ -67,6 +67,7 @@ async function restoreRest() {
   if (saved) {
     session.lastReps = saved.lastReps || 0;
     session.lastRir = saved.rir ?? null;
+    session.lastTipo = saved.tipo || 'trabajo';
   }
 }
 
@@ -194,7 +195,7 @@ function restControls(el, d) {
   return {
     // Se lee al abrir la hoja: Bía puede alargar el descanso después de pintar Entreno.
     get zone() {
-      return state.settings.descansoMode === 'auto' && session.lastReps ? restLabel(session.lastReps, { rir: session.lastRir }) : '';
+      return state.settings.descansoMode === 'auto' && session.lastReps ? restLabel(session.lastReps, { rir: session.lastRir, tipo: session.lastTipo }) : '';
     },
     action,
     onSkip: () => skipRest(el, d.exs),
@@ -429,7 +430,8 @@ async function saveSetNow(el, f, d) {
   session.selectedEx = exerciseId;
   session.lastReps = reps;
   session.lastRir = rir;
-  await saveActiveRest(restEnd, reps, { rir });
+  session.lastTipo = session.draftTipo;
+  await saveActiveRest(restEnd, reps, { rir, tipo: session.draftTipo });
   session.pendingNextEx = nextRoutineStep(d.w.routineExercises, exerciseId, d.prevSets.length, d.curExSets.length + 1);
   session.draftTipo = 'trabajo';
   session.draftRir = null;
