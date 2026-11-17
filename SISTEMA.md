@@ -2,7 +2,7 @@
 
 Documento vivo del producto. Describe cómo está armado, dónde vive cada dato y qué no se puede romper. Cuando cambie el comportamiento, el esquema, una pantalla o la forma de publicar, este archivo se actualiza en el mismo cambio.
 
-Última revisión: 16 de noviembre de 2026. Base de datos versión 3. Caché de la app `v206`.
+Última revisión: 16 de noviembre de 2026. Base de datos versión 3. Caché de la app `v207`.
 
 ## Qué es
 
@@ -108,7 +108,7 @@ El día del peso corporal y el de una toma de creatina usan la misma hoja, con e
 | `#/settings` | Ajustes | Cinco grupos: Preferencias (Aspecto, descanso, recordatorios de agua), Asistente Bía (Recuerdos y Conexión), Datos y respaldo, Aplicación (instalar) y Zona de riesgo (borrar todo). |
 | `#/appearance` | Aspecto e inicio | Modo de pantalla (oscuro, claro o sistema), color de acento (amarillo, azul o rosado) y vista del disco de creatina en Inicio (completo o compacto al tomar). |
 
-Si el ejercicio tiene grupo muscular, el nombre lo lleva debajo, en letra pequeña y con un punto de color. También queda bajo el campo ya elegido y junto al nombre en las series registradas. El grupo `Otro` no se muestra: no nombra un músculo. Cuando el grupo se queda corto, la misma línea sigue con el músculo en minúscula, por ejemplo «PIERNAS · cuádriceps y glúteo mayor». Esa línea usa siempre el nombre anatómico (`FOCO` en `services/workouts.js`): pectoral mayor, dorsal ancho, trapecio medio, isquiotibiales, erectores espinales. «Pecho alto», «medio» o «bajo» y «espalda media» no son músculos; un ángulo solo pone más énfasis en una porción, y así se escribe: «pectoral mayor (énfasis clavicular)», «pectoral mayor (fibras bajas)». Bía sigue la misma regla al hablar. Eso se ve al elegir y bajo el campo. En las series ya registradas sigue solo el grupo.
+Si el ejercicio tiene grupo muscular, el nombre lo lleva debajo, en letra pequeña y con un punto de color. También queda bajo el campo ya elegido y junto al nombre en las series registradas. El grupo `Otro` no se muestra: no nombra un músculo. Cuando el grupo se queda corto, la misma línea sigue con el músculo en minúscula, por ejemplo «PIERNAS · cuádriceps y glúteo mayor». Esa línea usa siempre el nombre anatómico completo (`FOCO` en `services/workouts.js`): pectoral mayor, deltoides, trapecio, tríceps, dorsal ancho, isquiotibiales, erectores espinales. «Pecho alto», «medio» o «bajo» y «espalda media» no son músculos, y una porción o cabeza tampoco: un ejercicio solo pone más énfasis en ella, y así se escribe: «pectoral mayor (énfasis clavicular)», «deltoides (énfasis lateral)», «tríceps (énfasis en cabeza larga)». Bía sigue la misma regla al hablar. Eso se ve al elegir y bajo el campo. En las series ya registradas sigue solo el grupo.
 
 Un ejercicio es del atleta cuando su nombre no está en el catálogo. En la lista, esa fila lleva un lápiz justo antes del círculo y fuera de la cápsula amarilla. El nombre sigue eligiendo. El lápiz abre la ficha «Editar ejercicio» (nombre y grupo). Eliminar está en esa ficha, no en la fila: si hay series, la confirmación dice cuántas y se borran con el ejercicio en la misma operación. El catálogo no lleva lápiz. La ficha vive en `document.body`, como las otras hojas.
 

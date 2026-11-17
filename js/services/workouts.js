@@ -44,9 +44,10 @@ export function muscleName(grupo) {
   return g && g !== 'Otro' ? g : '';
 }
 
-/* Músculo que trabaja cada ejercicio, con su nombre anatómico. «Pecho alto» o «espalda media» no
- * son músculos: el pectoral mayor es uno solo y un ángulo solo pone más énfasis en una porción
- * (la clavicular, las fibras bajas). Por eso se dice «énfasis», nunca un músculo aparte. */
+/* Músculo que trabaja cada ejercicio, con su nombre anatómico completo. «Pecho alto» o «espalda
+ * media» no son músculos: el pectoral mayor, el deltoides, el trapecio y el tríceps son uno solo, y un
+ * ejercicio solo pone más énfasis en una porción o cabeza. Por eso se escribe «énfasis», nunca la
+ * porción como si fuera un músculo aparte. */
 const FOCO = {
   // Pecho
   'Press banca': 'pectoral mayor y tríceps',
@@ -58,12 +59,12 @@ const FOCO = {
 
   // Espalda
   'Dominadas': 'dorsal ancho y bíceps',
-  'Remo con barra': 'dorsal ancho, trapecio medio y romboides',
+  'Remo con barra': 'dorsal ancho, trapecio y romboides',
   'Jalón al pecho': 'dorsal ancho',
   'Peso muerto': 'glúteo, isquiotibiales y erectores espinales',
   'Remo unilateral': 'dorsal ancho',
-  'Remo T': 'trapecio medio, romboides y dorsal ancho',
-  'Jalón a la cara': 'deltoides posterior y trapecio medio',
+  'Remo T': 'trapecio, romboides y dorsal ancho',
+  'Jalón a la cara': 'deltoides (énfasis posterior) y trapecio',
 
   // Piernas
   'Sentadilla': 'cuádriceps y glúteo mayor',
@@ -75,18 +76,18 @@ const FOCO = {
   'Sentadilla péndulo': 'cuádriceps y glúteo mayor',
 
   // Hombros
-  'Press militar': 'deltoides anterior y tríceps',
-  'Elevaciones laterales': 'deltoides lateral',
-  'Elevaciones frontales': 'deltoides anterior',
+  'Press militar': 'deltoides (énfasis anterior) y tríceps',
+  'Elevaciones laterales': 'deltoides (énfasis lateral)',
+  'Elevaciones frontales': 'deltoides (énfasis anterior)',
 
   // Bíceps
   'Curl de bíceps': 'bíceps braquial',
   'Curl martillo': 'braquial y braquiorradial',
 
   // Tríceps
-  'Fondos': 'tríceps y pectoral mayor (fibras bajas)',
-  'Extensión de tríceps': 'tríceps (cabezas lateral y medial)',
-  'Copa': 'tríceps (cabeza larga)',
+  'Fondos': 'tríceps y pectoral mayor (énfasis en fibras bajas)',
+  'Extensión de tríceps': 'tríceps (énfasis en cabezas lateral y medial)',
+  'Copa': 'tríceps (énfasis en cabeza larga)',
 
   // Core
   'Plancha': 'transverso del abdomen y recto abdominal',
