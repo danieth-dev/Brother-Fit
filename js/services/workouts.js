@@ -44,50 +44,52 @@ export function muscleName(grupo) {
   return g && g !== 'Otro' ? g : '';
 }
 
-/* Músculo o enfoque específico de cada ejercicio. */
+/* Músculo que trabaja cada ejercicio, con su nombre anatómico. «Pecho alto» o «espalda media» no
+ * son músculos: el pectoral mayor es uno solo y un ángulo solo pone más énfasis en una porción
+ * (la clavicular, las fibras bajas). Por eso se dice «énfasis», nunca un músculo aparte. */
 const FOCO = {
   // Pecho
   'Press banca': 'pectoral mayor y tríceps',
-  'Press inclinado con mancuernas': 'pectoral superior (clavicular)',
-  'Aperturas': 'pectoral (estiramiento y aislamiento)',
-  'Press en poleas': 'pectoral (tensión constante)',
-  'Press Hammer': 'pectoral medio e inferior',
-  'Flexiones': 'pectoral y core',
+  'Press inclinado con mancuernas': 'pectoral mayor (énfasis clavicular)',
+  'Aperturas': 'pectoral mayor (aislamiento)',
+  'Press en poleas': 'pectoral mayor (tensión constante)',
+  'Press Hammer': 'pectoral mayor y tríceps',
+  'Flexiones': 'pectoral mayor, tríceps y core',
 
   // Espalda
   'Dominadas': 'dorsal ancho y bíceps',
-  'Remo con barra': 'espalda media y dorsal',
+  'Remo con barra': 'dorsal ancho, trapecio medio y romboides',
   'Jalón al pecho': 'dorsal ancho',
-  'Peso muerto': 'cadena posterior y lumbar',
+  'Peso muerto': 'glúteo, isquiotibiales y erectores espinales',
   'Remo unilateral': 'dorsal ancho',
-  'Remo T': 'espalda media y romboides',
-  'Jalón a la cara': 'deltoides posterior y trapecio',
+  'Remo T': 'trapecio medio, romboides y dorsal ancho',
+  'Jalón a la cara': 'deltoides posterior y trapecio medio',
 
   // Piernas
-  'Sentadilla': 'cuádriceps y glúteo',
-  'Prensa de piernas': 'cuádriceps y glúteo (inclinada)',
-  'Prensa de piernas vertical': 'cuádriceps y glúteo (90°)',
-  'Peso muerto rumano': 'isquios y glúteo',
-  'Zancadas': 'glúteo y cuádriceps',
+  'Sentadilla': 'cuádriceps y glúteo mayor',
+  'Prensa de piernas': 'cuádriceps y glúteo mayor (inclinada)',
+  'Prensa de piernas vertical': 'cuádriceps y glúteo mayor (90°)',
+  'Peso muerto rumano': 'isquiotibiales y glúteo mayor',
+  'Zancadas': 'glúteo mayor y cuádriceps',
   'Extensión de pierna': 'cuádriceps (aislamiento)',
-  'Sentadilla péndulo': 'cuádriceps y glúteo',
+  'Sentadilla péndulo': 'cuádriceps y glúteo mayor',
 
   // Hombros
-  'Press militar': 'deltoides anterior',
+  'Press militar': 'deltoides anterior y tríceps',
   'Elevaciones laterales': 'deltoides lateral',
   'Elevaciones frontales': 'deltoides anterior',
 
   // Bíceps
   'Curl de bíceps': 'bíceps braquial',
-  'Curl martillo': 'braquial y antebrazo',
+  'Curl martillo': 'braquial y braquiorradial',
 
   // Tríceps
-  'Fondos': 'tríceps y pectoral inferior',
-  'Extensión de tríceps': 'tríceps (cabeza lateral/medial)',
+  'Fondos': 'tríceps y pectoral mayor (fibras bajas)',
+  'Extensión de tríceps': 'tríceps (cabezas lateral y medial)',
   'Copa': 'tríceps (cabeza larga)',
 
   // Core
-  'Plancha': 'estabilidad y transverso',
+  'Plancha': 'transverso del abdomen y recto abdominal',
   'Crunch en polea': 'recto abdominal',
 };
 
