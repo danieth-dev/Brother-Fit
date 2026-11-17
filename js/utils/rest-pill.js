@@ -1,5 +1,5 @@
 /* Cápsula del descanso: flota sobre la isla, encima de Entreno, en todas las pantallas.
- * Muestra la cuenta atrás y una barra que se vacía. En Entreno, si la rutina repetida tiene
+ * Muestra la cuenta atrás. En Entreno, si la rutina repetida tiene
  * algo que ofrecer («Siguiente», «Terminar sesión»), lo añade al lado y tocar el reloj abre
  * la hoja del descanso; fuera de Entreno, tocarla vuelve a Entreno.
  * Solo dibuja: cuándo acaba el descanso y qué pasa entonces lo decide Entreno. */
@@ -96,10 +96,8 @@ function paint() {
     refreshRestSheet();
     return;
   }
-  const { total } = restState();
   const label = formatCountdown(left);
   numEl.textContent = label;
-  pill.style.setProperty('--rest-left', `${Math.min(100, (left / total) * 100).toFixed(1)}%`);
   timeBtn.setAttribute('aria-label', `Descanso, quedan ${label}. ${onWorkout() ? 'Opciones' : 'Volver a Entreno'}`);
   paintAction();
   refreshRestSheet();

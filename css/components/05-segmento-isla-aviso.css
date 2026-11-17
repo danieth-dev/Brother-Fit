@@ -387,7 +387,7 @@ body.has-rest-pill {
   align-items: center;
   gap: 8px;
   min-height: 44px;
-  padding: 0 18px 2px;
+  padding: 0 18px;
   border: 0;
   border-radius: var(--r-full);
   background: var(--primary);
@@ -397,30 +397,11 @@ body.has-rest-pill {
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.02em;
   flex-shrink: 0;
-  /* El anillo del color de fondo la separa de lo que pase por debajo al hacer scroll. */
-  box-shadow: 0 0 0 2px var(--bg), var(--shadow-lg);
+  box-shadow: var(--shadow-lg);
   cursor: pointer;
 }
 .rest-pill--action .rest-pill-time {
   box-shadow: none;
-}
-/* La barra de abajo se vacía con el descanso: --rest-left es lo que queda. */
-.rest-pill-time::before,
-.rest-pill-time::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  height: 3px;
-}
-.rest-pill-time::before {
-  right: 0;
-  background: color-mix(in srgb, var(--primary-ink) 18%, transparent);
-}
-.rest-pill-time::after {
-  width: var(--rest-left, 100%);
-  background: var(--primary-ink);
-  transition: width 1s linear;
 }
 .tabbar .rest-pill svg {
   width: 18px;

@@ -134,7 +134,7 @@ Claves de `meta`:
 | `settings` | `{ descanso, descansoMode, unidad, aguaRecordatorios, tema, modo, creatinaCompacta, metaKcal, metaProteina, metaCarbos, metaGrasa, metaObjetivo }`. `unidad` es `kg` o `lb` (preferencia de pantalla). `tema` es `amarillo`, `azul` o `rosado`; `modo` es `oscuro`, `claro` o `sistema`. `metaObjetivo` es `ganar`, `mantener` o `definir`. La toma de creatina es siempre 5 g (`DOSE_G`). |
 | `waterReminders` | Plan del día: `{ fecha, items: [{ id, at, body, done }] }`. Avisos locales de agua tras la creatina. |
 | `activeWorkoutId` | Id de la sesión abierta. Se borra al terminar o si esa sesión ya está cerrada. |
-| `activeRest` | `{ restEnd, lastReps, start }` del descanso en curso; `start` sirve para dibujar cuánto queda y falta en los guardados antes de la `v203`. Si ya venció, se borra al leerlo. |
+| `activeRest` | `{ restEnd, lastReps, start }` del descanso en curso; `start` sirve para dibujar cuánto queda en la hoja del descanso y falta en los guardados antes de la `v203`. Si ya venció, se borra al leerlo. |
 | `pendingRpe` | Pregunta abierta: `{ setId, mark, attempts, until }`. Se suelta al anotar, al vencer, al crear otra serie, al terminar o descartar, al borrar esa serie, al pasarla a calentamiento o al usar los botones. |
 | `rpeSeq` | Entero de la próxima marca. No vuelve a cero al cerrar la pregunta. Solo puede bajar si se importa un respaldo o se borra todo, porque esas dos acciones recargan la página y cortan la sesión de Bía. |
 | `seeded` | Marca de que el catálogo ya se intentó. La semilla ya no depende de esta marca para volver a correr. |
