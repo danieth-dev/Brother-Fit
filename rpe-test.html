@@ -205,6 +205,16 @@
         assert((await row(A.setId)).rpe == null, 'no rellenó A');
       });
 
+      await check('la repetición de 8 s de una serie por tiempo tampoco se guarda dos veces', async () => {
+        const A = await effort.registerSet({ workoutId: 24, exerciseId: 1, peso: 0, reps: 0, segundos: 45, restEnd: clock.t + 90_000 }, { guard: true });
+        const dup = await effort.registerSet({ workoutId: 24, exerciseId: 1, peso: 0, reps: 0, segundos: 45, restEnd: clock.t + 90_000 }, { guard: true });
+        assert(dup.duplicada && dup.setId === A.setId, dup.mensaje);
+        const twins = (await db.getAll('sets')).filter((s) => s.workoutId === 24);
+        assert(twins.length === 1, String(twins.length));
+        const other = await effort.registerSet({ workoutId: 24, exerciseId: 1, peso: 0, reps: 0, segundos: 50 }, { guard: true });
+        assert(!other.duplicada, 'otro tiempo es otra serie');
+      });
+
       await check('la marca no vuelve a empezar', async () => {
         const A = await effort.registerSet({ workoutId: 15, exerciseId: 1, peso: 33, reps: 6, restEnd: clock.t + 60_000 });
         await effort.anotarRpe({ mark: A.marca, rir: 1 });

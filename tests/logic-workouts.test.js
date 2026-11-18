@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   estimate1RM, adjusted1RM, rpeEnRango, volume, normalizeGrupo, muscleName, matchExercise,
+  prFromSets, progressFromSets,
 } from '../js/services/workouts.js';
 
 test('1RM de Epley: una repetición es el peso', () => {
@@ -59,4 +60,25 @@ test('varios candidatos o ninguno no eligen por su cuenta', () => {
   assert.equal(matchExercise('curl', LISTA).status, 'many');
   assert.equal(matchExercise('sentadilla búlgara', LISTA).status, 'none');
   assert.equal(matchExercise('', LISTA).status, 'absent');
+});
+
+test('récords y progreso no cuentan calentamientos', () => {
+  const sets = [
+    { workoutId: 1, peso: 60, reps: 20, tipo: 'calentamiento' },
+    { workoutId: 1, peso: 80, reps: 5, tipo: 'trabajo', rpe: 9 },
+  ];
+  const pr = prFromSets(sets);
+  assert.equal(pr.maxReps, 5);
+  assert.equal(pr.e1rmMax, estimate1RM(80, 5));
+  const { sessions } = progressFromSets(sets, new Map([[1, '2026-11-18']]));
+  assert.equal(sessions.length, 1);
+  assert.equal(sessions[0].series, 1);
+  assert.equal(sessions[0].e1rm, estimate1RM(80, 5));
+  assert.equal(sessions[0].volumen, 400);
+});
+
+test('un día solo de calentamiento no es una sesión ni un récord', () => {
+  const sets = [{ workoutId: 2, peso: 40, reps: 12, tipo: 'calentamiento' }];
+  assert.deepEqual(prFromSets(sets), { maxPeso: 0, maxReps: 0, e1rmMax: 0 });
+  assert.equal(progressFromSets(sets, new Map([[2, '2026-11-18']])).sessions.length, 0);
 });

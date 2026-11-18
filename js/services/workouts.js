@@ -542,14 +542,22 @@ export async function lastSessionSetsFor(exerciseId) {
 }
 
 /* PRs históricos de un ejercicio: peso máximo, 1RM estimado máximo y reps máximas. */
-export async function prByExercise(exerciseId) {
-  const sets = await db.byIndex('sets', 'exerciseId', exerciseId);
+/* Récords y progreso miden el trabajo: un calentamiento (60 kg × 20) no puede dar la marca ni el 1RM. */
+const workingSets = (sets) => sets.filter((s) => s.tipo !== 'calentamiento');
+
+/** Récords de un ejercicio con sus series, sin calentamientos. */
+export function prFromSets(allSets) {
+  const sets = workingSets(allSets);
   if (!sets.length) return { maxPeso: 0, maxReps: 0, e1rmMax: 0 };
   return {
     maxPeso: Math.max(...sets.map((s) => s.peso)),
     maxReps: Math.max(...sets.map((s) => s.reps)),
     e1rmMax: Math.max(...sets.map((s) => estimate1RM(s.peso, s.reps))),
   };
+}
+
+export async function prByExercise(exerciseId) {
+  return prFromSets(await db.byIndex('sets', 'exerciseId', exerciseId));
 }
 
 export async function lastTrainedExerciseId() {
@@ -685,9 +693,13 @@ export async function habitualForExercise(exerciseId) {
 
 export async function progressForExercise(exerciseId) {
   const [sets, ws] = await Promise.all([db.byIndex('sets', 'exerciseId', exerciseId), db.getAll('workouts')]);
-  const fechaDe = new Map(ws.map((w) => [w.id, w.fecha]));
+  return progressFromSets(sets, new Map(ws.map((w) => [w.id, w.fecha])));
+}
+
+/** Sesiones por día sin calentamientos. fechaDe: id de entreno → 'YYYY-MM-DD'. */
+export function progressFromSets(allSets, fechaDe) {
   const byDay = new Map();
-  for (const s of sets) {
+  for (const s of workingSets(allSets)) {
     const f = fechaDe.get(s.workoutId);
     if (!f) continue;
     const d = byDay.get(f) || { fecha: f, maxPeso: 0, e1rm: 0, volumen: 0, series: 0, adj: null, adjReliable: true, adjFloor: false };

@@ -200,7 +200,8 @@ export async function registerSet(input, { guard = false, abrirPregunta = true }
   });
 
   if (out?.setId) {
-    lastCall = { workoutId, exerciseId, peso, reps, time: t, setId: out.setId };
+    /* Se compara con la misma medida que sameCall(): los segundos en una serie por tiempo. */
+    lastCall = { workoutId, exerciseId, peso, reps: segundos ?? reps, time: t, setId: out.setId };
   }
   return out;
 }

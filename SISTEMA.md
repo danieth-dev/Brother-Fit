@@ -2,7 +2,7 @@
 
 Documento vivo del producto. Describe cómo está armado, dónde vive cada dato y qué no se puede romper. Cuando cambie el comportamiento, el esquema, una pantalla o la forma de publicar, este archivo se actualiza en el mismo cambio.
 
-Última revisión: 16 de noviembre de 2026. Base de datos versión 3. Caché de la app `v216`.
+Última revisión: 16 de noviembre de 2026. Base de datos versión 3. Caché de la app `v217`.
 
 ## Qué es
 
@@ -188,11 +188,11 @@ El descanso se ve en una cápsula sobre la isla de navegación, encima de Entren
 
 Una sesión repetida desde Historial guarda la rutina (`routineExercises`, los ejercicios de la sesión de origen en orden). Al igualar las series de la vez anterior en un ejercicio, la cápsula del descanso ofrece «Siguiente · ejercicio» y, al acabar, pasa solo. «Terminar sesión» aparece en la cápsula solo cuando el atleta está en el **último** ejercicio de la rutina y **todos** sus ejercicios tienen hoy al menos sus series de la sesión de origen (`routineComplete()`); terminar el último con otros a medias, añadir series a otro de la rutina o un ejercicio fuera de ella solo dice «Completaste las series de …» y deja «Saltar». Un entreno nuevo, que no repite otro, no tiene rutina: nunca ofrece «Siguiente» ni «Terminar sesión». Debajo de la sesión anterior, «Igualaste» o «Superaste» según las series de hoy.
 
-El 1RM estimado es Epley: si hay una repetición, el peso; si hay más, `peso * (1 + reps / 30)`. El volumen de una serie es peso por repeticiones, también en el calentamiento. El PR de un ejercicio sigue siendo el mayor peso, las mayores reps y el mayor 1RM de Epley. Esa curva no cambia el día que empieza el esfuerzo.
+El 1RM estimado es Epley: si hay una repetición, el peso; si hay más, `peso * (1 + reps / 30)`. El volumen de una serie es peso por repeticiones; el volumen de la sesión en Historial incluye el calentamiento. El PR de un ejercicio es el mayor peso, las mayores reps y el mayor 1RM de Epley **de sus series de trabajo**: un calentamiento (60 kg × 20) no da la marca ni el 1RM (`prFromSets()`, con prueba). Esa curva no cambia el día que empieza el esfuerzo.
 
 Una serie de trabajo pregunta «¿Cuántas repeticiones más podrías haber hecho?» con cinco botones: 0, 1, 2, 3 y «4 o más». Debajo, «0 es no salía otra». No se copia de la serie anterior. Se guarda `rpe = 10 - rir`, y un 4 o cualquier entero mayor queda en 4, así que el RPE es 6. Ese 6 es un piso, no un punto medio, y no cuenta como serie efectiva. En calentamiento los botones siguen en su sitio, atenuados: «Los calentamientos no llevan esfuerzo». Si había un número elegido, se borra y no vuelve solo al pasar otra vez a trabajo.
 
-En la pantalla, una serie de trabajo **no se guarda** sin elegir el esfuerzo (0–4). El aviso es «Elige el esfuerzo (0–4).» y no se crea la fila. El calentamiento sí se guarda sin RIR. Bía por voz puede seguir anotando sin `rir` y abrir la pregunta pendiente: el pendiente significa solo que Bía preguntó en voz alta y espera respuesta. Un doble toque en «Registrar» no crea dos series: mientras se guarda, el segundo toque no hace nada. Dos series iguales anotadas seguidas, por rápido que sea, son dos series. El candado de 8 segundos con la misma serie es solo de Bía, que a veces repite la llamada. En series ya hechas (p. ej. importadas o de Bía sin respuesta), «Falta esfuerzo» sigue abriendo los cinco botones. Esos botones sí pisan un esfuerzo ya guardado. Bía no lo pisa.
+En la pantalla, una serie de trabajo **no se guarda** sin elegir el esfuerzo (0–4). El aviso es «Elige el esfuerzo (0–4).» y no se crea la fila. El calentamiento sí se guarda sin RIR. Bía por voz puede seguir anotando sin `rir` y abrir la pregunta pendiente: el pendiente significa solo que Bía preguntó en voz alta y espera respuesta. Un doble toque en «Registrar» no crea dos series: mientras se guarda, el segundo toque no hace nada. Dos series iguales anotadas seguidas, por rápido que sea, son dos series. El candado de 8 segundos con la misma serie es solo de Bía, que a veces repite la llamada; en una serie por tiempo compara los segundos. En series ya hechas (p. ej. importadas o de Bía sin respuesta), «Falta esfuerzo» sigue abriendo los cinco botones. Esos botones sí pisan un esfuerzo ya guardado. Bía no lo pisa.
 
 Bía, si no lo oyó al anotar, abre una pregunta con marca y hace la misma pregunta que la pantalla. El plazo se escribe en ese momento: fin del descanso más un minuto si hay reloj, o cinco minutos si no hay. Saltar el descanso es el único caso que lo reescribe, a un minuto desde ahora, en la misma operación que apaga el reloj. La respuesta entra con `anotar_rpe` y la marca vigente. Una marca vieja no anota y no gasta intento. Un número inválido gasta un intento; al segundo, la serie se queda sin esfuerzo. «No sé» la suelta sin gastar ese intento. Si no hay pregunta, el plazo venció o la serie ya no está, Bía no vuelve a preguntar.
 
@@ -244,7 +244,7 @@ Los carbos son el resto de las kcal, con un piso de 100, 80 o 60 g según el obj
 
 ## Progreso y peso corporal
 
-Progreso agrupa las series de un ejercicio por día y muestra el 1RM estimado, el 1RM ajustado, el peso máximo y el volumen. El ajustado no se dibuja en la misma línea que el estimado. La gráfica es un SVG propio (`js/utils/chart.js`). Los números del eje van en el color del texto, no en el negro por defecto del SVG.
+Progreso agrupa las series de trabajo de un ejercicio por día (`progressFromSets()`, sin calentamientos, como lo habitual y el peso corporal) y muestra el 1RM estimado, el 1RM ajustado, el peso máximo, el volumen y las series. Un día solo de calentamiento no es una sesión. El ajustado no se dibuja en la misma línea que el estimado. La gráfica es un SVG propio (`js/utils/chart.js`). Los números del eje van en el color del texto, no en el negro por defecto del SVG.
 
 Con un entreno en curso, `#/progress` sin id abre el ejercicio que está abierto en Entreno (`state.activeExercise`) y la tarjeta lo marca «En Entreno ahora». Elegir otro en la lista lleva a `#/progress/:id` y se respeta. Tras recargar el teléfono Entreno aún no ha elegido ejercicio, así que Progreso abre el último entrenado, como sin entreno.
 
